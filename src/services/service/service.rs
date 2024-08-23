@@ -44,7 +44,7 @@ pub trait Service: Object + std::fmt::Debug {
         vec![]
     }
     ///
-    /// Returns Receiver<Point>, where will be pushed all points by subscription
+    /// Returns `Receiver<Point>`, where will be pushed all points by subscription
     fn gi(&self, _receiver_name: &str, _points: &[SubscriptionCriteria]) -> Receiver<Point> {
         panic!("{}.gi | Does not supported", self.id())
     }    

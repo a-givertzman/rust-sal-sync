@@ -14,4 +14,5 @@ pub mod entity;
 // pub mod multi_queue;
 pub mod service;
 pub mod subscription;
+pub mod task;
 pub mod types;

@@ -11,7 +11,7 @@ use crate::services::{
             point_config_filters::PointConfigFilter, 
             point_config_type::PointConfigType, 
         },
-    }
+    }, task::functions::conf::fn_conf_keywd::FnConfKeywd
 };
 use super::point_config_history::PointConfigHistory;
 ///

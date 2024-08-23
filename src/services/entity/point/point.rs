@@ -49,7 +49,7 @@ impl ToPoint for String {
 }
 
 ///
-/// enum container for Point<T>
+/// The enum container for `Point<T>`
 /// - supported types: Bool, Int, Real, Double, String
 #[derive(Debug, Clone, PartialEq)]
 pub enum Point {
@@ -126,7 +126,7 @@ impl Point {
         }
     }
     ///
-    /// Returns containing Point<bool>
+    /// Returns containing `Point<bool>`
     pub fn as_bool(&self) -> PointHlr<Bool> {
         match self {
             Point::Bool(point) => point.clone(),
@@ -134,7 +134,7 @@ impl Point {
         }
     }
     ///
-    /// Returns containing Point<bool>
+    /// Returns containing `Point<bool>`
     pub fn try_as_bool(&self) -> Result<PointHlr<Bool>, String> {
         match self {
             Point::Bool(point) => Ok(point.clone()),
@@ -142,7 +142,7 @@ impl Point {
         }
     }
     ///
-    /// Returns containing Point<i64>
+    /// Returns containing `Point<i64>`
     pub fn as_int(&self) -> PointHlr<i64> {
         match self {
             Point::Int(point) => point.clone(),
@@ -150,7 +150,7 @@ impl Point {
         }
     }
     ///
-    /// Returns containing Point<i64>
+    /// Returns containing `Point<i64>`
     pub fn try_as_int(&self) -> Result<PointHlr<i64>, String> {
         match self {
             Point::Int(point) => Ok(point.clone()),
@@ -158,7 +158,7 @@ impl Point {
         }
     }
     ///
-    /// Returns containing Point<f32>
+    /// Returns containing `Point<f32>`
     pub fn as_real(&self) -> PointHlr<f32> {
         match self {
             Point::Real(point) => point.clone(),
@@ -166,7 +166,7 @@ impl Point {
         }
     }
     ///
-    /// Returns containing Point<f32>
+    /// Returns containing `Point<f32>`
     pub fn try_as_real(&self) -> Result<PointHlr<f32>, String> {
         match self {
             Point::Real(point) => Ok(point.clone()),
@@ -174,7 +174,7 @@ impl Point {
         }
     }
     ///
-    /// Returns containing Point<f64>
+    /// Returns containing `Point<f64>`
     pub fn as_double(&self) -> PointHlr<f64> {
         match self {
             Point::Double(point) => point.clone(),
@@ -182,7 +182,7 @@ impl Point {
         }
     }
     ///
-    /// Returns containing Point<f64>
+    /// Returns containing `Point<f64>`
     pub fn try_as_double(&self) -> Result<PointHlr<f64>, String> {
         match self {
             Point::Double(point) => Ok(point.clone()),
@@ -190,7 +190,7 @@ impl Point {
         }
     }
     ///
-    /// Returns containing Point<String>
+    /// Returns containing `Point<String>`
     pub fn as_string(&self) -> PointHlr<String> {
         match self {
             Point::String(point) => point.clone(),
@@ -198,7 +198,7 @@ impl Point {
         }
     }
     ///
-    /// Returns containing Point<String>
+    /// Returns containing `Point<String>`
     pub fn try_as_string(&self) -> Result<PointHlr<String>, String> {
         match self {
             Point::String(point) => Ok(point.clone()),
@@ -376,7 +376,7 @@ impl Point {
         ))
     }
     ///
-    /// Raises self to a [factor] power.
+    /// Raises self to the `exp` power.
     pub fn pow(&self, exp: Self) -> Self {
         match &self {
             Point::Int(self_point) => {

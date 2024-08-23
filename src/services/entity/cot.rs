@@ -3,7 +3,7 @@
 //! Bitmask (Enum) being a part of the [Point](../point/index.html).  
 //! Contains information about transmission cause and direction.  
 //! Basic values at the moment (can be extended):
-//! ```
+//! ```ignore
 //! Inf      = 0b_0000_0010; // 2   (0x2);
 //! Act      = 0b_0000_0100; // 4   (0x4);
 //! ActCon   = 0b_0000_1000; // 8   (0x8);
@@ -14,7 +14,7 @@
 //! Read     = 0b_1101_1010; // 218 (0xDA)
 //! Write    = 0b_0010_0100; // 36  (0x24)
 //! All      = 0b_1111_1111; // 255 (0xFF)
-//!
+//! ```
 use serde::{Serialize, Deserialize};
 ///
 mod cot {
@@ -71,7 +71,7 @@ pub enum Cot {
 // 
 impl Cot {
     ///
-    /// Returns true if [self] contains [rhs]
+    /// Returns true if [self] contains `rhs`
     pub fn contains(&self, rhs: Cot) -> bool {
         (*self & rhs) > 0
     }

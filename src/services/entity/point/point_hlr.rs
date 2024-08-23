@@ -40,7 +40,7 @@ impl<T> PointHlr<T> {
 // 
 impl PointHlr<Bool> {
     ///
-    /// creates Point<Bool> with given name & value, taking current timestamp, Status::Ok, Direction::Read
+    /// creates `Point<Bool>` with given `name` & `value`, taking current timestamp, `Status::Ok`, `Direction::Read`
     pub fn new_bool(tx_id: usize, name: &str, value: bool) -> PointHlr<Bool> {
         PointHlr {
             tx_id,
@@ -128,8 +128,8 @@ impl PointHlr<Bool> {
 // 
 impl PointHlr<i64> {
     ///
-    /// creates Point<i64> with given name & value,
-    /// taking current timestamp, Status::Ok, Direction::Read
+    /// Creates `Point<i64>` with given `name` & `value`,
+    /// taking current timestamp, `Status::Ok`, `Direction::Read`
     pub fn new_int(tx_id: usize, name: &str, value: i64) -> PointHlr<i64> {
         PointHlr {
             tx_id,
@@ -213,7 +213,7 @@ impl PointHlr<i64> {
         }
     }
     ///
-    /// Raises self to a [factor] power.
+    /// Raises self to the `exp` power.
     pub fn pow(&self, exp: Self) -> Self {
         let status = match self.status.cmp(&exp.status) {
             std::cmp::Ordering::Less => exp.status,
@@ -244,7 +244,7 @@ impl PointHlr<i64> {
 // 
 impl PointHlr<f32> {
     ///
-    /// creates Point<f32> with given name & value, taking current timestamp, Status::Ok, Direction::Read
+    /// creates `Point<f32>` with given `name` & `value`, taking current timestamp, `Status::Ok`, `Direction::Read`
     pub fn new_real(tx_id: usize, name: &str, value: f32) -> PointHlr<f32> {
         PointHlr {
             tx_id,
@@ -328,7 +328,7 @@ impl PointHlr<f32> {
         }
     }
     ///
-    /// Raises self to a [factor] power.
+    /// Raises self to the `exp` power.
     pub fn pow(&self, exp: Self) -> Self {
         let status = match self.status.cmp(&exp.status) {
             std::cmp::Ordering::Less => exp.status,
@@ -359,7 +359,7 @@ impl PointHlr<f32> {
 // 
 impl PointHlr<f64> {
     ///
-    /// creates Point<f64> with given name & value, taking current timestamp, Status::Ok, Direction::Read
+    /// creates `Point<f64>` with given `name` & `value`, taking current timestamp, `Status::Ok`, `Direction::Read`
     pub fn new_double(tx_id: usize, name: &str, value: f64) -> PointHlr<f64> {
         PointHlr {
             tx_id,
@@ -443,7 +443,7 @@ impl PointHlr<f64> {
         }
     }
     ///
-    /// Raises self to a [factor] power.
+    /// Raises self to the `exp` power.
     pub fn pow(&self, exp: Self) -> Self {
         let status = match self.status.cmp(&exp.status) {
             std::cmp::Ordering::Less => exp.status,
@@ -474,7 +474,7 @@ impl PointHlr<f64> {
 // 
 impl PointHlr<String> {
     ///
-    /// creates Point<String> with given name & value, taking current timestamp, Status::Ok, Direction::Read
+    /// creates `Point<String>`` with given `name` & `value`, taking current timestamp, `Status::Ok`, `Direction::Read`
     pub fn new_string(tx_id: usize, name: &str, value: impl Into<String>) -> PointHlr<String> {
         PointHlr {
             tx_id,
