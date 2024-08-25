@@ -403,4 +403,56 @@ mod point {
         }
         test_duration.exit();
     }
+    ///
+    /// Testing Point::status
+    #[test]
+    fn status() {
+        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        init_once();
+        init_each();
+        let self_id = "status";
+        debug!("\n{}", self_id);
+        let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
+        test_duration.run().unwrap();
+        let test_data = [
+            (01, 01, "/App/Service/Point01", Value::Bool(false), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (02, 02, "/App/Service/Point02", Value::Bool(true), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (03, 03, "/App/Service/Point03", Value::Bool(true), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (04, 04, "/App/Service/Point04", Value::Bool(false), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (05, 05, "/App/Service/Point05", Value::Int(100i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (06, 06, "/App/Service/Point06", Value::Int(-100i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (07, 07, "/App/Service/Point07", Value::Int(200i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (08, 08, "/App/Service/Point08", Value::Int(-200i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (09, 09, "/App/Service/Point09", Value::Real(300.1f32), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (10, 10, "/App/Service/Point10", Value::Real(-300.1f32), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (11, 11, "/App/Service/Point11", Value::Double(300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (12, 12, "/App/Service/Point12", Value::Double(-300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (13, 13, "/App/Service/Point13", Value::String("101.1".into()), Status::Ok, Cot::default(), chrono::Utc::now()),
+        ];
+        for (step, tx_id, name, value, status, cot, timestamp) in test_data {
+            match value {
+                Value::Bool(value) => {
+                    let result = Point::Bool(PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp));
+                    assert!(result.status() == status, "step {} \nresult: {:?}\ntarget: {:?}", step, result.status(), status);
+                }
+                Value::Int(value) => {
+                    let result = Point::Int(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                    assert!(result.status() == status, "step {} \nresult: {:?}\ntarget: {:?}", step, result.status(), status);
+                }
+                Value::Real(value) => {
+                    let result = Point::Real(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                    assert!(result.status() == status, "step {} \nresult: {:?}\ntarget: {:?}", step, result.status(), status);
+                }
+                Value::Double(value) => {
+                    let result = Point::Double(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                    assert!(result.status() == status, "step {} \nresult: {:?}\ntarget: {:?}", step, result.status(), status);
+                }
+                Value::String(value) => {
+                    let result = Point::String(PointHlr::new(tx_id, &name, value.clone(), status, cot, timestamp));
+                    assert!(result.status() == status, "step {} \nresult: {:?}\ntarget: {:?}", step, result.status(), status);
+                }
+            };
+        }
+        test_duration.exit();
+    }
 }
