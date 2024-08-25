@@ -38,7 +38,7 @@ mod point_config_address {
     }
     ///
     /// Testing PointConfigType::serialize
-    // #[test]
+    #[test]
     fn serialize() {
         DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
@@ -49,12 +49,15 @@ mod point_config_address {
         let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
         test_duration.run().unwrap();
         let test_data = [
-            (01, r#"Bool"#, PointConfigType::Bool),
-            (03, r#"Int"#, PointConfigType::Int),
-            (05, r#"Real"#, PointConfigType::Real),
-            (07, r#"Double"#, PointConfigType::Double),
-            (09, r#"String"#, PointConfigType::String),
-            (11, r#"Json"#, PointConfigType::Json),
+            (01, r#"
+                offset: 111
+            "#, 
+            PointConfigAddress { offset: Some(111), bit: None }),
+            // (03, r#"Int"#, PointConfigAddress::Int),
+            // (05, r#"Real"#, PointConfigAddress::Real),
+            // (07, r#"Double"#, PointConfigAddress::Double),
+            // (09, r#"String"#, PointConfigAddress::String),
+            // (11, r#"Json"#, PointConfigAddress::Json),
         ];
         for (step, target, value) in test_data {
             let result = serde_yaml::to_value(&value).unwrap();
