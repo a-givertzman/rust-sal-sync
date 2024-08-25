@@ -485,4 +485,64 @@ mod point_hlr {
         }
         test_duration.exit();
     }
+    ///
+    /// Testing PointHlr::abs
+    #[test]
+    fn abs() {
+        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        init_once();
+        init_each();
+        let self_id = "abs";
+        debug!("\n{}", self_id);
+        let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
+        test_duration.run().unwrap();
+        let test_data = [
+            (01, 01, "/App/Service/Point01", Value::Bool(false), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (02, 02, "/App/Service/Point02", Value::Bool(true), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (03, 03, "/App/Service/Point03", Value::Int(100i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (04, 04, "/App/Service/Point04", Value::Int(-100i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (05, 05, "/App/Service/Point05", Value::Int(200i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (06, 06, "/App/Service/Point06", Value::Int(-200i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (07, 07, "/App/Service/Point07", Value::Real(300.1f32), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (08, 08, "/App/Service/Point08", Value::Real(-300.1f32), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (09, 09, "/App/Service/Point09", Value::Double(300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (10, 10, "/App/Service/Point10", Value::Double(-300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (11, 11, "/App/Service/Point11", Value::String("101.1".to_owned()), Status::Ok, Cot::default(), chrono::Utc::now()),
+        ];
+        for (step, tx_id, name, value, status, cot, timestamp) in test_data {
+            match value {
+                Value::Bool(value) => {
+                    let result = PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp);
+                    let value = Bool(value);
+                    let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
+                    assert!(result.abs() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                }
+                Value::Int(value) => {
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let value = value.abs();
+                    let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
+                    assert!(result.abs() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                }
+                Value::Real(value) => {
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let value = value.abs();
+                    let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
+                    assert!(result.abs() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                }
+                Value::Double(value) => {
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let value = value.abs();
+                    let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
+                    assert!(result.abs() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                }
+                Value::String(_) => {
+                    // let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    // let value = value.parse().unwrap();
+                    // let target = PointHlr { tx_id, name: name.to_owned(), value: value, status, cot, timestamp };
+                    // assert!(result.abs() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                }
+            };
+        }
+        test_duration.exit();
+    }
 }
