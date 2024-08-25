@@ -11,8 +11,10 @@
 ///
 pub mod conf;
 pub mod entity;
+pub mod future;
 // pub mod multi_queue;
 pub mod service;
+// pub mod services;
 pub mod subscription;
 pub mod task;
 pub mod types;
