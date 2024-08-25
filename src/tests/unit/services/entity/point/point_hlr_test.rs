@@ -240,24 +240,24 @@ mod point_hlr {
         for (step, tx_id, name, value, status, cot, timestamp) in test_data {
             match value {
                 Value::Bool(value) => {
-                    let result = PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp).to_bool();
                     let target = PointHlr { tx_id, name: name.to_owned(), value: Bool(value), status, cot, timestamp };
-                    assert!(result.to_bool() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Int(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_bool();
                     let target = PointHlr { tx_id, name: name.to_owned(), value: Bool(value > 0), status, cot, timestamp };
-                    assert!(result.to_bool() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Real(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_bool();
                     let target = PointHlr { tx_id, name: name.to_owned(), value: Bool(value > 0.0), status, cot, timestamp };
-                    assert!(result.to_bool() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Double(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_bool();
                     let target = PointHlr { tx_id, name: name.to_owned(), value: Bool(value > 0.0), status, cot, timestamp };
-                    assert!(result.to_bool() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::String(_) => {}
             };
@@ -287,33 +287,33 @@ mod point_hlr {
         for (step, tx_id, name, value, status, cot, timestamp) in test_data {
             match value {
                 Value::Bool(value) => {
-                    let result = PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp).to_int();
                     let value: i64 = if value {1} else {0};
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_int() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Int(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_int();
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_int() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Real(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_int();
                     let value: i64 = value.round() as i64;
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_int() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Double(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_int();
                     let value: i64 = value.round() as i64;
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_int() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::String(_) => {
-                    // let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    // let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_int();
                     // let value: i64 = value.parse().unwrap();
                     // let target = PointHlr { tx_id, name: name.to_owned(), value: value, status, cot, timestamp };
-                    // assert!(result.to_int() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    // assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
             };
         }
@@ -342,33 +342,33 @@ mod point_hlr {
         for (step, tx_id, name, value, status, cot, timestamp) in test_data {
             match value {
                 Value::Bool(value) => {
-                    let result = PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp).to_real();
                     let value: f32 = if value {1.0} else {0.0};
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_real() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Int(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_real();
                     let value: f32 = value as f32;
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_real() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Real(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_real();
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_real() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Double(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_real();
                     let value: f32 = value as f32;
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_real() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::String(_) => {
-                    // let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    // let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_real();
                     // let value: f32 = value.parse().unwrap();
                     // let target = PointHlr { tx_id, name: name.to_owned(), value: value, status, cot, timestamp };
-                    // assert!(result.to_real() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    // assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
             };
         }
@@ -397,33 +397,33 @@ mod point_hlr {
         for (step, tx_id, name, value, status, cot, timestamp) in test_data {
             match value {
                 Value::Bool(value) => {
-                    let result = PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp).to_double();
                     let value: f64 = if value {1.0} else {0.0};
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_double() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Int(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_double();
                     let value: f64 = value as f64;
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_double() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Real(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_double();
                     let value: f64 = value as f64;
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_double() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Double(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_double();
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_double() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::String(_) => {
-                    // let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    // let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_double();
                     // let value: f64 = value.parse().unwrap();
                     // let target = PointHlr { tx_id, name: name.to_owned(), value: value, status, cot, timestamp };
-                    // assert!(result.to_double() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    // assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
             };
         }
@@ -452,34 +452,34 @@ mod point_hlr {
         for (step, tx_id, name, value, status, cot, timestamp) in test_data {
             match value {
                 Value::Bool(value) => {
-                    let result = PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp).to_string();
                     let value: String = value.to_string();
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_string() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Int(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_string();
                     let value: String = value.to_string();
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_string() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Real(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_string();
                     let value: String = value.to_string();
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_string() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Double(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_string();
                     let value: String = value.to_string();
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.to_string() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::String(_) => {
-                    // let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    // let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).to_string();
                     // let value: String = value.parse().unwrap();
                     // let target = PointHlr { tx_id, name: name.to_owned(), value: value, status, cot, timestamp };
-                    // assert!(result.to_string() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    // assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
             };
         }
@@ -512,34 +512,34 @@ mod point_hlr {
         for (step, tx_id, name, value, status, cot, timestamp) in test_data {
             match value {
                 Value::Bool(value) => {
-                    let result = PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp).abs();
                     let value = Bool(value);
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.abs() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Int(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).abs();
                     let value = value.abs();
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.abs() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Real(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).abs();
                     let value = value.abs();
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.abs() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::Double(value) => {
-                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).abs();
                     let value = value.abs();
                     let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
-                    assert!(result.abs() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
                 Value::String(_) => {
-                    // let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    // let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp).abs();
                     // let value = value.parse().unwrap();
                     // let target = PointHlr { tx_id, name: name.to_owned(), value: value, status, cot, timestamp };
-                    // assert!(result.abs() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                    // assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
                 }
             };
         }
@@ -591,6 +591,63 @@ mod point_hlr {
                     assert!(result.value == target.value, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value, target.value);
                 }
                 Value::String(_) => {}
+            };
+        }
+        test_duration.exit();
+    }
+    ///
+    /// Testing PointHlr::add
+    #[test]
+    fn add() {
+        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        init_once();
+        init_each();
+        let self_id = "add";
+        debug!("\n{}", self_id);
+        let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
+        test_duration.run().unwrap();
+        let test_data = [
+            (01, 01, "/App/Service/Point01", Value::Bool(false), Value::Bool(false), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (02, 02, "/App/Service/Point02", Value::Bool(true), Value::Bool(true), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (02, 02, "/App/Service/Point02", Value::Bool(true), Value::Bool(false), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (02, 02, "/App/Service/Point02", Value::Bool(false), Value::Bool(true), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (03, 03, "/App/Service/Point03", Value::Int(10), Value::Int(100i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (04, 04, "/App/Service/Point04", Value::Int(10), Value::Int(-100i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (05, 05, "/App/Service/Point05", Value::Int(10), Value::Int(200i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (06, 06, "/App/Service/Point06", Value::Int(10), Value::Int(-200i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (07, 07, "/App/Service/Point07", Value::Real(10.0), Value::Real(300.1f32), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (08, 08, "/App/Service/Point08", Value::Real(10.0), Value::Real(-300.1f32), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (09, 09, "/App/Service/Point09", Value::Double(10.0), Value::Double(300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (10, 10, "/App/Service/Point10", Value::Double(10.0), Value::Double(-300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (11, 11, "/App/Service/Point11", Value::String("10.0".into()), Value::String("101.1".into()), Status::Ok, Cot::default(), chrono::Utc::now()),
+        ];
+        for (step, tx_id, name, value1, value2, status, cot, timestamp) in test_data {
+            match value1 {
+                Value::Bool(value1) => {
+                    let result = PointHlr::new(tx_id, &name, Bool(value1), status, cot, timestamp) + PointHlr::new_bool(tx_id, "", value2.as_bool());
+                    let target = PointHlr { tx_id, name: name.to_owned(), value: Bool(value1) + Bool(value2.as_bool()), status, cot, timestamp };
+                    assert!(result.value == target.value, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value, target.value);
+                }
+                Value::Int(value1) => {
+                    let result = PointHlr::new(tx_id, &name, value1, status, cot, timestamp) + PointHlr::new_int(tx_id, "", value2.as_int());
+                    let target = PointHlr { tx_id, name: name.to_owned(), value: value1 + value2.as_int(), status, cot, timestamp };
+                    assert!(result.value == target.value, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value, target.value);
+                }
+                Value::Real(value1) => {
+                    let result = PointHlr::new(tx_id, &name, value1, status, cot, timestamp) + PointHlr::new_real(tx_id, "", value2.as_real());
+                    let target = PointHlr { tx_id, name: name.to_owned(), value: value1 + value2.as_real(), status, cot, timestamp };
+                    assert!(result.value == target.value, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value, target.value);
+                }
+                Value::Double(value1) => {
+                    let result = PointHlr::new(tx_id, &name, value1, status, cot, timestamp) + PointHlr::new_double(tx_id, "", value2.as_double());
+                    let target = PointHlr { tx_id, name: name.to_owned(), value: value1 + value2.as_double(), status, cot, timestamp };
+                    assert!(result.value == target.value, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value, target.value);
+                }
+                Value::String(_value1) => {
+                    // let result = PointHlr::new(tx_id, &name, value1, status, cot, timestamp) + PointHlr::new_string(tx_id, "", value2.as_string());
+                    // let target = PointHlr { tx_id, name: name.to_owned(), value: value1 + &value2.as_string(), status, cot, timestamp };
+                    // assert!(result.value == target.value, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value, target.value);
+                }
             };
         }
         test_duration.exit();
