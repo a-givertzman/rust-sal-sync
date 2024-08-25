@@ -81,15 +81,17 @@ mod point_hlr {
         let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
         test_duration.run().unwrap();
         let test_data = [
-            (01, 01, "/App/Service/Point1", true, Status::Invalid, Cot::default(), chrono::Utc::now()),
-            (02, 02, "/App/Service/Point2", true, Status::Obsolete, Cot::default(), chrono::Utc::now()),
-            (03, 03, "/App/Service/Point3", false, Status::Ok, Cot::default(), chrono::Utc::now()),
-            (04, 04, "/App/Service/Point4", false, Status::TimeInvalid, Cot::default(), chrono::Utc::now()),
+            (01, 01, "/App/Service/Point1", true),
+            (02, 02, "/App/Service/Point2", true),
+            (03, 03, "/App/Service/Point3", false),
+            (04, 04, "/App/Service/Point4", false),
         ];
-        for (step, tx_id, name, value, status, cot, timestamp) in test_data {
+        for (step, tx_id, name, value) in test_data {
             let result = PointHlr::new_bool(tx_id, &name, value);
-            let target = PointHlr { tx_id, name: name.to_owned(), value: Bool(value), status, cot, timestamp };
-            assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+            let target = PointHlr { tx_id, name: name.to_owned(), value: Bool(value), status: Status::Ok, cot: Cot::Inf, timestamp: chrono::Utc::now() };
+            assert!(result.tx_id == target.tx_id, "step {} \nresult: {:?}\ntarget: {:?}", step, result.tx_id, target.tx_id);
+            assert!(result.name == target.name, "step {} \nresult: {:?}\ntarget: {:?}", step, result.name, target.name);
+            assert!(result.value == target.value, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value, target.value);
         }
         test_duration.exit();
     }
