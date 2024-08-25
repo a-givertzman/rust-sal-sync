@@ -28,7 +28,7 @@ mod point_hlr {
         DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
         init_each();
-        let self_id = "test";
+        let self_id = "new";
         debug!("\n{}", self_id);
         let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
         test_duration.run().unwrap();
@@ -76,7 +76,7 @@ mod point_hlr {
         DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
         init_each();
-        let self_id = "test";
+        let self_id = "new_bool";
         debug!("\n{}", self_id);
         let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
         test_duration.run().unwrap();
@@ -89,6 +89,35 @@ mod point_hlr {
         for (step, tx_id, name, value) in test_data {
             let result = PointHlr::new_bool(tx_id, &name, value);
             let target = PointHlr { tx_id, name: name.to_owned(), value: Bool(value), status: Status::Ok, cot: Cot::Inf, timestamp: chrono::Utc::now() };
+            assert!(result.tx_id == target.tx_id, "step {} \nresult: {:?}\ntarget: {:?}", step, result.tx_id, target.tx_id);
+            assert!(result.name == target.name, "step {} \nresult: {:?}\ntarget: {:?}", step, result.name, target.name);
+            assert!(result.value == target.value, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value, target.value);
+        }
+        test_duration.exit();
+    }
+    ///
+    /// Testing PointHlr::new
+    #[test]
+    fn new_int() {
+        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        init_once();
+        init_each();
+        let self_id = "new_int";
+        debug!("\n{}", self_id);
+        let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
+        test_duration.run().unwrap();
+        let test_data = [
+            (01, 01, "/App/Service/Point1", i64::MIN),
+            (02, 02, "/App/Service/Point2", -2),
+            (03, 03, "/App/Service/Point3", -1),
+            (04, 04, "/App/Service/Point4", 0),
+            (05, 05, "/App/Service/Point5", 1),
+            (06, 06, "/App/Service/Point6", 2),
+            (07, 07, "/App/Service/Point7", i64::MAX),
+        ];
+        for (step, tx_id, name, value) in test_data {
+            let result = PointHlr::new_int(tx_id, &name, value);
+            let target = PointHlr { tx_id, name: name.to_owned(), value: value, status: Status::Ok, cot: Cot::Inf, timestamp: chrono::Utc::now() };
             assert!(result.tx_id == target.tx_id, "step {} \nresult: {:?}\ntarget: {:?}", step, result.tx_id, target.tx_id);
             assert!(result.name == target.name, "step {} \nresult: {:?}\ntarget: {:?}", step, result.name, target.name);
             assert!(result.value == target.value, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value, target.value);
