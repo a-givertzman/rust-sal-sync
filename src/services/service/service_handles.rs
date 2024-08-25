@@ -1,17 +1,18 @@
-use std::{collections::{hash_map::IntoIter, HashMap}, thread::JoinHandle};
+use std::thread::JoinHandle;
+use indexmap::{map::IntoIter, IndexMap};
 
 ///
-/// Holds Services's id & JoinHandle pairs
-pub struct ServiceHandles {
+/// Holds the collaction of the Services's id & JoinHandle pairs
+pub struct ServiceHandles<T> {
     // id: String,
-    handles: HashMap<String, JoinHandle<()>>
+    handles: IndexMap<String, JoinHandle<T>>
 }
 //
 // 
-impl ServiceHandles {
+impl<T> ServiceHandles<T> {
     ///
-    /// 
-    pub fn new(handles: Vec<(String, JoinHandle<()>)>) -> Self {
+    /// Creates new collaction of the JoinHandle  
+    pub fn new(handles: Vec<(String, JoinHandle<T>)>) -> Self {
         Self {
             handles: handles.into_iter().collect()
         }
@@ -24,8 +25,8 @@ impl ServiceHandles {
     ///
     /// inserts new Services's id & JoinHandle 
     /// - if already have such id, current handle will be updated
-    pub fn insert(&mut self, id: &str, handle: JoinHandle<()>) {
-        self.handles.insert(id.to_owned(), handle);
+    pub fn insert(&mut self, id: impl Into<String>, handle: JoinHandle<T>) {
+        self.handles.insert(id.into(), handle);
     }
     // ///
     // /// 
@@ -48,10 +49,10 @@ impl ServiceHandles {
 }
 //
 // 
-impl IntoIterator for ServiceHandles {
-    type Item = (String, JoinHandle<()>);
+impl<T> IntoIterator for ServiceHandles<T> {
+    type Item = (String, JoinHandle<T>);
 
-    type IntoIter = IntoIter<String, JoinHandle<()>>;
+    type IntoIter = IntoIter<String, JoinHandle<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
         // todo!()

@@ -37,7 +37,7 @@ pub trait Service: Object + std::fmt::Debug {
     }
     ///
     /// Starts service's main loop in the individual thread
-    fn run(&mut self) -> Result<ServiceHandles, String>;
+    fn run(&mut self) -> Result<ServiceHandles<()>, String>;
     ///
     /// Returns list of configurations of the defined points
     fn points(&self) -> Vec<PointConfig> {

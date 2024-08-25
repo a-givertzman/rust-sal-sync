@@ -3,7 +3,7 @@ use testing::stuff::wait::WaitTread;
 
 use super::service_handles::ServiceHandles;
 
-impl WaitTread for ServiceHandles {
+impl<T> WaitTread for ServiceHandles<T> {
     fn wait(self) -> Result<(), Box<dyn std::any::Any + Send>> {
         let mut errors  = vec![];
         for (id, handle) in self {
