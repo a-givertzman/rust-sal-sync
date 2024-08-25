@@ -1,7 +1,7 @@
 use log::warn;
 use crate::services::types::type_of::TypeOf;
 ///
-/// Provide approximately equality for f36, f64
+/// Provide approximately equality for f32, f64
 pub trait AproxEq<T> {
     ///
     /// Returns true if self & other rounded to specified digits are equals
@@ -10,6 +10,7 @@ pub trait AproxEq<T> {
     }
     ///
     /// Returns true if self & other truncated to specified digits are equals
+    #[allow(dead_code)]
     fn trunc_eq(&self, _other: T, _decimals: usize) -> bool {
         panic!("{}.trunc_eq | Not implemented yet", self.type_of())
     }
