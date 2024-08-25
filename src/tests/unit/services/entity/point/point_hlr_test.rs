@@ -429,4 +429,60 @@ mod point_hlr {
         }
         test_duration.exit();
     }
+    ///
+    /// Testing PointHlr::to_string
+    #[test]
+    fn to_string() {
+        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        init_once();
+        init_each();
+        let self_id = "to_string";
+        debug!("\n{}", self_id);
+        let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
+        test_duration.run().unwrap();
+        let test_data = [
+            (01, 01, "/App/Service/Point1", Value::Bool(false), Status::Invalid, Cot::default(), chrono::Utc::now()),
+            (02, 02, "/App/Service/Point2", Value::Bool(true), Status::Invalid, Cot::default(), chrono::Utc::now()),
+            (03, 03, "/App/Service/Point3", Value::Int(100i64), Status::Invalid, Cot::default(), chrono::Utc::now()),
+            (04, 04, "/App/Service/Point4", Value::Int(200i64), Status::Obsolete, Cot::default(), chrono::Utc::now()),
+            (05, 05, "/App/Service/Point5", Value::Real(300.1f32), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (06, 06, "/App/Service/Point6", Value::Double(300.2f64), Status::TimeInvalid, Cot::default(), chrono::Utc::now()),
+            (07, 07, "/App/Service/Point7", Value::String("101.1".to_owned()), Status::Ok, Cot::default(), chrono::Utc::now()),
+        ];
+        for (step, tx_id, name, value, status, cot, timestamp) in test_data {
+            match value {
+                Value::Bool(value) => {
+                    let result = PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp);
+                    let value: String = value.to_string();
+                    let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
+                    assert!(result.to_string() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                }
+                Value::Int(value) => {
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let value: String = value.to_string();
+                    let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
+                    assert!(result.to_string() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                }
+                Value::Real(value) => {
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let value: String = value.to_string();
+                    let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
+                    assert!(result.to_string() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                }
+                Value::Double(value) => {
+                    let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    let value: String = value.to_string();
+                    let target = PointHlr { tx_id, name: name.to_owned(), value, status, cot, timestamp };
+                    assert!(result.to_string() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                }
+                Value::String(_) => {
+                    // let result = PointHlr::new(tx_id, &name, value, status, cot, timestamp);
+                    // let value: String = value.parse().unwrap();
+                    // let target = PointHlr { tx_id, name: name.to_owned(), value: value, status, cot, timestamp };
+                    // assert!(result.to_string() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+                }
+            };
+        }
+        test_duration.exit();
+    }
 }
