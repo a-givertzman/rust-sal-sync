@@ -23,3 +23,5 @@ indexmap = "^2.4"
 regex = "^1.10"
 
 rand = "^0.8"
+
+lexical = "^6.1"

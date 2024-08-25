@@ -1,6 +1,5 @@
-#[cfg(test)]
-
 mod service_cycle {
+    #[cfg(test)]
     use log::{info, warn, debug};
     use std::{sync::Once, time::{Duration, Instant}};
     use rand::Rng;
