@@ -33,7 +33,7 @@ mod point {
         println!();
         let self_id = "serialize_json";
         println!("\n{}", self_id);
-        let test_duration = TestDuration::new(self_id, Duration::from_secs(10));
+        let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
         test_duration.run().unwrap();
         let test_data = [
             (r#"{"cot":"Inf","name":"/App/path/Point.Name.0","status":0,"timestamp":"2024-04-08T09:44:43.950510784+00:00","type":"Bool","value":1}"#,

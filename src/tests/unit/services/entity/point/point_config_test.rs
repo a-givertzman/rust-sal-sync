@@ -33,7 +33,7 @@ mod point_config {
         println!();
         let self_id = "test PointConfig deserialize";
         println!("\n{}", self_id);
-        let test_duration = TestDuration::new(self_id, Duration::from_secs(10));
+        let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
         test_duration.run().unwrap();
         let test_data = [
             (r#"
