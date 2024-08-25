@@ -880,4 +880,61 @@ mod point_hlr {
         }
         test_duration.exit();
     }
+    ///
+    /// Testing PointHlr::bitand
+    #[test]
+    fn bitand() {
+        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        init_once();
+        init_each();
+        let self_id = "bitand";
+        debug!("\n{}", self_id);
+        let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
+        test_duration.run().unwrap();
+        let test_data = [
+            (01, 01, "/App/Service/Point01", Value::Bool(false), Value::Bool(false), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (02, 02, "/App/Service/Point02", Value::Bool(true), Value::Bool(true), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (02, 02, "/App/Service/Point02", Value::Bool(true), Value::Bool(false), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (02, 02, "/App/Service/Point02", Value::Bool(false), Value::Bool(true), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (03, 03, "/App/Service/Point03", Value::Int(10), Value::Int(100i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (04, 04, "/App/Service/Point04", Value::Int(10), Value::Int(-100i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (05, 05, "/App/Service/Point05", Value::Int(10), Value::Int(200i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (06, 06, "/App/Service/Point06", Value::Int(10), Value::Int(-200i64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (07, 07, "/App/Service/Point07", Value::Real(10.0), Value::Real(300.1f32), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (08, 08, "/App/Service/Point08", Value::Real(10.0), Value::Real(-300.1f32), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (09, 09, "/App/Service/Point09", Value::Double(10.0), Value::Double(300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (10, 10, "/App/Service/Point10", Value::Double(10.0), Value::Double(-300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
+            (11, 11, "/App/Service/Point11", Value::String("10.0".into()), Value::String("101.1".into()), Status::Ok, Cot::default(), chrono::Utc::now()),
+        ];
+        for (step, tx_id, name, value1, value2, status, cot, timestamp) in test_data {
+            match value1 {
+                Value::Bool(value1) => {
+                    let result = PointHlr::new(tx_id, &name, Bool(value1), status, cot, timestamp) & PointHlr::new_bool(tx_id, "", value2.as_bool());
+                    let target = PointHlr { tx_id, name: name.to_owned(), value: Bool(value1) & Bool(value2.as_bool()), status, cot, timestamp };
+                    assert!(result.value == target.value, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value, target.value);
+                }
+                Value::Int(value1) => {
+                    let result = PointHlr::new(tx_id, &name, value1, status, cot, timestamp) & PointHlr::new_int(tx_id, "", value2.as_int());
+                    let target = PointHlr { tx_id, name: name.to_owned(), value: value1 & value2.as_int(), status, cot, timestamp };
+                    assert!(result.value == target.value, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value, target.value);
+                }
+                Value::Real(_value1) => {
+                    // let result = PointHlr::new(tx_id, &name, value1, status, cot, timestamp) & PointHlr::new_real(tx_id, "", value2.as_real());
+                    // let target = PointHlr { tx_id, name: name.to_owned(), value: value1 & value2.as_real(), status, cot, timestamp };
+                    // assert!(result.value == target.value, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value, target.value);
+                }
+                Value::Double(_value1) => {
+                    // let result = PointHlr::new(tx_id, &name, value1, status, cot, timestamp) & PointHlr::new_double(tx_id, "", value2.as_double());
+                    // let target = PointHlr { tx_id, name: name.to_owned(), value: value1 & value2.as_double(), status, cot, timestamp };
+                    // assert!(result.value == target.value, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value, target.value);
+                }
+                Value::String(_value1) => {
+                    // let result = PointHlr::new(tx_id, &name, value1, status, cot, timestamp) & PointHlr::new_string(tx_id, "", value2.as_string());
+                    // let target = PointHlr { tx_id, name: name.to_owned(), value: value1 & &value2.as_string(), status, cot, timestamp };
+                    // assert!(result.value == target.value, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value, target.value);
+                }
+            };
+        }
+        test_duration.exit();
+    }
 }
