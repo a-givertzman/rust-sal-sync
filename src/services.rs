@@ -14,7 +14,7 @@ pub mod entity;
 pub mod future;
 // pub mod multi_queue;
 pub mod service;
-// pub mod services;        <=  RetainPointId, SafeLock, QueueName
+// pub mod services;        <=  RetainPointId, SafeLock
 pub mod subscription;
 pub mod task;
 pub mod types;
