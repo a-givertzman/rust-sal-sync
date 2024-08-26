@@ -13,6 +13,7 @@ pub mod conf;
 pub mod entity;
 pub mod future;
 // pub mod multi_queue;
+pub mod retain_point_id;
 pub mod service;
 // pub mod services;        <=  RetainPointId, SafeLock
 pub mod subscription;

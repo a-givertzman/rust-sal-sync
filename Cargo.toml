@@ -9,6 +9,7 @@ env_logger = "^0.11"
 
 testing = { git = "https://github.com/a-givertzman/rust-testing.git" }
 debugging = { git = "https://github.com/a-givertzman/rust-debuging.git", tag = "0.0.1" }
+api-tools = { git = "https://github.com/a-givertzman/rust-api-tools.git", tag = "0.0.6" }
 
 concat-in-place = "^1.1"
 concat-string = "^1.0"
