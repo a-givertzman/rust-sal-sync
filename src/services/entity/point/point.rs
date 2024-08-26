@@ -48,6 +48,18 @@ impl ToPoint for String {
     }
 }
 
+impl ToPoint for Value {
+    fn to_point(&self, tx_id: usize, name: &str) -> Point {
+        match self {
+            Value::Bool(value) => value.to_point(tx_id, name),
+            Value::Int(value) => value.to_point(tx_id, name),
+            Value::Real(value) => value.to_point(tx_id, name),
+            Value::Double(value) => value.to_point(tx_id, name),
+            Value::String(value) => value.to_point(tx_id, name),
+        }
+    }
+}
+
 ///
 /// The enum container for `Point<T>`
 /// - supported types: Bool, Int, Real, Double, String
