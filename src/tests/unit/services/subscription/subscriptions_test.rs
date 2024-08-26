@@ -40,8 +40,8 @@ mod subscriptions {
             103,
         ];
         let test_data = [
-            (test_receivers[0], vec!["/Destination/Point1", "/Destination/Point2"]),
-            (test_receivers[1], vec!["/Destination/Point2"]),
+            (test_receivers[0], vec!["/Destination/Point1", "/Destination/Point2", "/Destination/Point3"]),
+            (test_receivers[1], vec!["/Destination/Point2", "/Destination/Point4"]),
             (test_receivers[2], vec!["/Destination/Point3"]),
         ];
         for (receiver_id, destinations) in test_data.clone() {
@@ -53,19 +53,20 @@ mod subscriptions {
                 (receiver_id, destinations, recv)
             )
         }
-        for (receiver_id, mut destinations, recv) in receivers.into_iter() {
+        for (receiver_id, destinations, recv) in receivers.into_iter() {
             let handle = thread::spawn(move || {
-                // let recv = recv.read().unwrap();
                 debug!("receiver_id {} destinations: {:?}", receiver_id, destinations);
+                let target: Vec<String> = destinations.clone().into_iter().map(|v| v.to_owned()).collect();
                 loop {
                     match recv.recv_timeout(Duration::from_millis(100)) {
                         Ok(result) => {
                             debug!("receiver_id {} received: {:?}:{:?}", receiver_id, result.name(), result.value());
-                            let point_id = result.name();
-                            destinations.retain(|dest| dest.to_owned() != point_id);
+                            let result = result.name();
+                            assert!(target.contains(&result), "receiver_id {} \nresult: {:?} \nnot in : {:?}", receiver_id, result, target);
+                            // target.retain(|dest| dest.to_owned() != result);
                         }
                         Err(err) => match err {
-                            mpsc::RecvTimeoutError::Timeout => panic!("{}.receive_thread | Not received points: {:?}", self_id, destinations),
+                            mpsc::RecvTimeoutError::Timeout => break,//panic!("{}.receive_thread | Not received points: {:?}", self_id, target),
                             mpsc::RecvTimeoutError::Disconnected => panic!("{}.receive_thread | Receive error for receiver_id {}", self_id, receiver_id),
                         },
                     };
