@@ -251,6 +251,20 @@ pub struct RetainPointApi {
 }
 //
 //
+impl RetainPointApi {
+    ///
+    /// 
+    pub fn new(table: impl Into<String>, address: impl Into<String>, auth_token: impl Into<String>, database: impl Into<String>) -> Self {
+        Self { 
+            table: table.into(),
+            address: address.into(),
+            auth_token: auth_token.into(),
+            database: database.into()
+        }
+    }
+}
+//
+//
 impl Default for RetainPointApi {
     ///
     /// **Returns `RetainPointIdTable` with the default walues**
