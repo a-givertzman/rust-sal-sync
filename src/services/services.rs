@@ -2,10 +2,7 @@ use std::{collections::HashMap, fmt::Debug, sync::{atomic::{AtomicBool, AtomicUs
 use log::{debug, error, info, warn};
 use concat_string::concat_string;
 use crate::services::{
-        entity::{name::Name, object::Object, point::point::Point, point::point_config::PointConfig},
-        future::future::{Future, Sink},
-        subscription::subscription_criteria::SubscriptionCriteria,
-        service::service::Service, service_cycle::ServiceCycle,
+        entity::{name::Name, object::Object, point::{point::Point, point_config::PointConfig}}, future::future::{Future, Sink}, service::{service::Service, service_cycle::ServiceCycle}, subscription::subscription_criteria::SubscriptionCriteria
     };
 use super::service::service_handles::ServiceHandles;
 ///
@@ -89,7 +86,7 @@ impl Services {
     }
     ///
     /// Main loop of the Services
-    pub fn run(&mut self) -> Result<ServiceHandles, String> {
+    pub fn run(&mut self) -> Result<ServiceHandles<()>, String> {
         info!("{}.run | Starting...", self.id);
         let self_id = self.id.clone();
         let points_requested = self.points_requested.clone();
