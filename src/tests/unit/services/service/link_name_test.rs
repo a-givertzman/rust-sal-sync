@@ -129,7 +129,7 @@ mod link_name {
         ];
         for (step, input, target) in test_data {
             let link_name = LinkName::new(input);
-            let result = link_name.queue();
+            let result = link_name.link();
             match result {
                 Ok(queue) => {
                     let (_, target_queue) = target.unwrap();
