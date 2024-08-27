@@ -1,3 +1,6 @@
+//!
+//! # Common application entities
+//! 
 pub mod cot;
 pub mod point;
 pub mod status;
