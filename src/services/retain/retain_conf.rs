@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use super::retain_point_conf::RetainPointConf;
 ///
@@ -15,8 +15,11 @@ pub struct RetainConf {
 impl RetainConf {
     ///
     /// Creates new instance of `RetainConf`
-    pub fn new(path: Option<PathBuf>, point: Option<RetainPointConf>) -> Self {
-        Self { path, point }
+    pub fn new(path: Option<impl AsRef<Path>>, point: Option<RetainPointConf>) -> Self {
+        Self {
+            path: path.map(|v| PathBuf::from(v.as_ref())),
+            point
+        }
     }
 }
 //
