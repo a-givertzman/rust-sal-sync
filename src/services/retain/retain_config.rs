@@ -7,3 +7,10 @@ use super::retain_point_conf::RetainPointConf;
 pub struct RetainConfig {
     point: Option<RetainPointConf>,
 }
+//
+//
+impl Default for RetainConfig {
+    fn default() -> Self {
+        Self { point: Default::default() }
+    }
+}
