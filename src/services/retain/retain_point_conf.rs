@@ -47,6 +47,8 @@ impl Default for RetainPointConfApi {
 }
 ///
 /// Conf parameters to store/load Point's Id's on the disk
+/// - `path` - where to store Point's Id's, something like `"assets/retain/point/id.json"`
+/// - `api` - database parameters to store Point's Id's in the database 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RetainPointConf {
     pub path: String,
