@@ -15,7 +15,6 @@ type RetainedCahe = HashMapFxHasher<String, HashMapFxHasher<String, RetainedPoin
 #[derive(Debug)]
 pub struct RetainPointId {
     id: String,
-    path: String,
     cache: IndexMap<String, Vec<PointConfig>>,
     conf: RetainPointConf,
 }
@@ -28,10 +27,9 @@ impl RetainPointId {
     ///  - `services` - Services thread safe mutable reference
     ///  - `conf` - path to the file, where point id's will be stored
     ///  - `conf.api` - API parameters to send Point's to the database 
-    pub fn new(parent: &str, path: &str, conf: RetainPointConf) -> Self {
+    pub fn new(parent: &str, conf: RetainPointConf) -> Self {
         Self {
             id: format!("{}/RetainPointId", parent),
-            path: path.to_owned(),
             cache: IndexMap::new(),
             conf,
         }
@@ -46,7 +44,7 @@ impl RetainPointId {
     pub fn insert(&mut self, owner: &str, points: Vec<PointConfig>) {
         info!("{}.points | Caching Point's from '{}'...", self.id, owner);
         let mut update_retained = false;
-        let mut retained: RetainedCahe = self.read(self.path.clone());
+        let mut retained: RetainedCahe = self.read(self.conf.path.clone());
         trace!("{}.points | retained: {:#?}", self.id, retained);
         for mut point in points {
             trace!("{}.points | point: {}...", self.id, point.name);
@@ -72,7 +70,7 @@ impl RetainPointId {
                 .push(point.clone());
         }
         if update_retained {
-            self.write(&self.path, &retained).unwrap();
+            self.write(&self.conf.path, &retained).unwrap();
             self.sql_write(&retained)
         }
         info!("{}.points | Caching Point's from '{}' - Ok", self.id, owner);
