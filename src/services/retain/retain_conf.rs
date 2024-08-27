@@ -12,6 +12,15 @@ pub struct RetainConf {
 }
 //
 //
+impl RetainConf {
+    ///
+    /// Creates new instance of `RetainConf`
+    pub fn new(path: Option<PathBuf>, point: Option<RetainPointConf>) -> Self {
+        Self { path, point }
+    }
+}
+//
+//
 impl Default for RetainConf {
     fn default() -> Self {
         Self {
