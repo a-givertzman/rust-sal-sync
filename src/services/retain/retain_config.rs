@@ -5,7 +5,7 @@ use super::retain_point_conf::RetainPointConf;
 /// - 'point' - store / load Point Id
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RetainConfig {
-    point: Option<RetainPointConf>,
+    pub point: Option<RetainPointConf>,
 }
 //
 //
