@@ -6,7 +6,7 @@ use concat_string::concat_string;
 use indexmap::IndexMap;
 use log::{debug, error, info, trace};
 use serde::{Deserialize, Serialize};
-use super::retain_point_api::RetainPointApi;
+use super::retain_point_conf::RetainPointConf;
 type RetainedCahe = HashMapFxHasher<String, HashMapFxHasher<String, RetainedPointConfig>>;
 ///
 /// Stores unique Point ID
@@ -17,7 +17,7 @@ pub struct RetainPointId {
     id: String,
     path: String,
     cache: IndexMap<String, Vec<PointConfig>>,
-    api: Option<RetainPointApi>,
+    conf: RetainPointConf,
 }
 //
 //
@@ -26,14 +26,14 @@ impl RetainPointId {
     /// Creates new instance of the RetainPointId
     ///  - `parent` - the name of the parent object
     ///  - `services` - Services thread safe mutable reference
-    ///  - `path` - path to the file, where point id's will be stored
-    ///  - `api` - API parameters to send Point's to the database 
-    pub fn new(parent: &str, path: &str, api: Option<RetainPointApi>) -> Self {
+    ///  - `conf` - path to the file, where point id's will be stored
+    ///  - `conf.api` - API parameters to send Point's to the database 
+    pub fn new(parent: &str, path: &str, conf: RetainPointConf) -> Self {
         Self {
             id: format!("{}/RetainPointId", parent),
             path: path.to_owned(),
             cache: IndexMap::new(),
-            api,
+            conf,
         }
     }
     ///
@@ -163,7 +163,7 @@ impl RetainPointId {
     ///
     /// Stores points into the database
     fn sql_write(&self, retained: &RetainedCahe) {
-        match &self.api {
+        match &self.conf.api {
             Some(api) => {
                 let api_keep_alive = true;
                 let sql_keep_alive = true;
@@ -192,7 +192,7 @@ impl RetainPointId {
     ///
     /// Make the sql request to store ponts to the database
     fn sql_request(&self, request: &mut ApiRequest, sql: &str, keep_alive: bool) -> Result<ApiReply, String> {
-        match &self.api {
+        match &self.conf.api {
             Some(api) => {
                 let query = ApiQuery::new(
                     ApiQueryKind::Sql(ApiQuerySql::new(&api.database, sql)),
