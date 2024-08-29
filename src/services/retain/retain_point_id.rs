@@ -6,7 +6,7 @@ use concat_string::concat_string;
 use indexmap::IndexMap;
 use log::{debug, error, info, trace};
 use serde::{Deserialize, Serialize};
-use super::retain_point_conf::RetainPointConf;
+use super::retain_conf::RetainConf;
 type RetainedCahe = HashMapFxHasher<String, HashMapFxHasher<String, RetainedPointConfig>>;
 ///
 /// Stores unique Point ID
@@ -16,7 +16,8 @@ type RetainedCahe = HashMapFxHasher<String, HashMapFxHasher<String, RetainedPoin
 pub struct RetainPointId {
     id: String,
     cache: IndexMap<String, Vec<PointConfig>>,
-    conf: RetainPointConf,
+    path: PathBuf,
+    conf: RetainConf,
 }
 //
 //
@@ -27,10 +28,16 @@ impl RetainPointId {
     ///  - `services` - Services thread safe mutable reference
     ///  - `conf` - path to the file, where point id's will be stored
     ///  - `conf.api` - API parameters to send Point's to the database 
-    pub fn new(parent: &str, conf: RetainPointConf) -> Self {
+    pub fn new(parent: &str, conf: RetainConf) -> Self {
+        let id = format!("{}/RetainPointId", parent);
+        let path = match conf.point_path() {
+            Ok(path) => path,
+            Err(err) => panic!("{}.new | Error: {:#?}", id, err),
+        };
         Self {
-            id: format!("{}/RetainPointId", parent),
+            id,
             cache: IndexMap::new(),
+            path,
             conf,
         }
     }
@@ -44,7 +51,7 @@ impl RetainPointId {
     pub fn insert(&mut self, owner: &str, points: Vec<PointConfig>) {
         info!("{}.points | Caching Point's from '{}'...", self.id, owner);
         let mut update_retained = false;
-        let mut retained: RetainedCahe = self.read(self.conf.path.clone());
+        let mut retained: RetainedCahe = self.read(self.path.clone());
         trace!("{}.points | retained: {:#?}", self.id, retained);
         for mut point in points {
             trace!("{}.points | point: {}...", self.id, point.name);
@@ -70,7 +77,7 @@ impl RetainPointId {
                 .push(point.clone());
         }
         if update_retained {
-            self.write(&self.conf.path, &retained).unwrap();
+            self.write(&self.path, &retained).unwrap();
             self.sql_write(&retained)
         }
         info!("{}.points | Caching Point's from '{}' - Ok", self.id, owner);
@@ -109,7 +116,7 @@ impl RetainPointId {
     ///     ...
     /// }
     /// ```
-    fn read<P: AsRef<Path> + AsRef<OsStr> + std::fmt::Display>(&self, path: P) -> HashMapFxHasher<String, HashMapFxHasher<String, RetainedPointConfig>> {
+    fn read<P: AsRef<Path> + AsRef<OsStr> + std::fmt::Debug>(&self, path: P) -> HashMapFxHasher<String, HashMapFxHasher<String, RetainedPointConfig>> {
         match fs::read_to_string(&path) {
             Ok(json_string) => {
                 match serde_json::from_str(&json_string) {
@@ -122,7 +129,7 @@ impl RetainPointId {
                 }
             }
             Err(err) => {
-                debug!("{}.read | File {} reading error: {:?}", self.id, path, err);
+                debug!("{}.read | File '{:?}' reading error: {:?}", self.id, path, err);
             }
         };
         HashMap::with_hasher(BuildHasherDefault::<FxHasher>::default())
@@ -161,8 +168,8 @@ impl RetainPointId {
     ///
     /// Stores points into the database
     fn sql_write(&self, retained: &RetainedCahe) {
-        match &self.conf.api {
-            Some(api) => {
+        match &self.conf.point_api() {
+            Ok(api) => {
                 let api_keep_alive = true;
                 let sql_keep_alive = true;
                 let mut request = ApiRequest::new(
@@ -184,14 +191,14 @@ impl RetainPointId {
                     }
                 }
             }
-            None => log::warn!("{}.sql_write | Database cant be updates, api is not specified", self.id),
+            Err(err) => log::warn!("{}.sql_write | Database cant be updates, api is not specified, \n\t error: {:#?}", self.id, err),
         }
     }
     ///
     /// Make the sql request to store ponts to the database
     fn sql_request(&self, request: &mut ApiRequest, sql: &str, keep_alive: bool) -> Result<ApiReply, String> {
-        match &self.conf.api {
-            Some(api) => {
+        match &self.conf.point_api() {
+            Ok(api) => {
                 let query = ApiQuery::new(
                     ApiQueryKind::Sql(ApiQuerySql::new(&api.database, sql)),
                     true,
@@ -222,8 +229,8 @@ impl RetainPointId {
                     }
                 }
             }
-            None => {
-                let message = concat_string!("{}.sql_request | Database cant be updates, api is not specified", self.id);
+            Err(err) => {
+                let message = concat_string!("{}.sql_request | Database cant be updates, api is not specified, \n\t error: {:#?}", self.id, err);
                 log::warn!("{}", message);
                 Err(message)
             }
