@@ -13,7 +13,9 @@ pub struct RetainPointConf {
 //
 impl RetainPointConf {
     ///
-    /// 
+    /// Creates conf parameters to store/load Point's Id's on the disk (and database if api specified)
+    /// - `path` - where to store Point's Id's, something like `"point/id.json"`, with will be inside assets/retain/ - specified in the RetainConf
+    /// - `api` - database parameters to store Point's Id's in the database 
     pub fn new(path: impl Into<String>, api: Option<RetainPointConfApi>) -> Self {
         Self { 
             path: path.into(),
