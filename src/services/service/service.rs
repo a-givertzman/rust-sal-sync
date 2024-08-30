@@ -7,7 +7,7 @@ use crate::services::{
 ///
 /// Interface for application service
 /// - Running in the individual thread
-pub trait Service: Object + std::fmt::Debug {
+pub trait Service: Object + std::fmt::Debug + Send + Sync {
     // ///
     // /// Returns service's ID
     // fn id(&self) -> &str;
