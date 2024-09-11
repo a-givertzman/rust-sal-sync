@@ -28,7 +28,7 @@ impl Default for RetainPointConfApi {
     ///
     /// **Returns `RetainPointConfApi` with the default walues**
     /// 
-    /// ```
+    /// ```ignore
     /// RetainPointConfApi {
     ///    table: "public.tags",
     ///    address: "0.0.0.0:8080",

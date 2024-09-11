@@ -29,7 +29,7 @@ impl Default for RetainPointConf {
     ///
     /// **Returns `RetainPointConf` with the default walues**
     /// 
-    /// ```
+    /// ```ignore
     /// RetainPointConf {
     ///     path: "id.json",    // file name withing standart path coming from retain_config: assets/retain/point/
     ///     api: None,
