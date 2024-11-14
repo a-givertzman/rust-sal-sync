@@ -203,7 +203,7 @@ impl RetainPointId {
                     ApiQueryKind::Sql(ApiQuerySql::new(&api.database, sql)),
                     true,
                 );
-                match request.fetch(&query, keep_alive) {
+                match request.fetch_with(&query, keep_alive) {
                     Ok(reply) => {
                         if log::max_level() > log::LevelFilter::Debug {
                             let reply_str = std::str::from_utf8(&reply).unwrap();
