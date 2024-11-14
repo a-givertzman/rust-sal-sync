@@ -853,7 +853,7 @@ checksum = "f3cb5ba0dc43242ce17de99c180e96db90b235b8a9fdc9543c96d2209116bd9f"
 
 [[package]]
 name = "sal-sync"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "api-tools",
  "chrono",
@@ -1019,7 +1019,7 @@ dependencies = [
 [[package]]
 name = "testing"
 version = "0.1.1"
-source = "git+https://github.com/a-givertzman/rust-testing.git#f18b33703e0ff3cef3d2787bc1f361edd1a45f6a"
+source = "git+https://github.com/a-givertzman/rust-testing.git?tag=0.1.2#f18b33703e0ff3cef3d2787bc1f361edd1a45f6a"
 dependencies = [
  "env_logger",
  "log",
