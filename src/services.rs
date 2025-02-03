@@ -64,7 +64,7 @@ pub mod future;
 // pub mod multi_queue;
 pub mod retain;
 pub mod service;
-// pub mod services;        <=  RetainPointId, SafeLock
+pub mod services;        // <=  RetainPointId, SafeLock
 pub mod subscription;
 pub mod task;
 pub mod types;
