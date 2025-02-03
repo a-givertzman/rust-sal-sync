@@ -11,39 +11,19 @@ use std::{
 };
 use log::{debug, error, info, warn};
 use concat_string::concat_string;
-///
-/// States of the Services behavior for logging
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-enum NotifyState {
-    Start,
-    Info,
-    Warn,
-    RetainPointNotConfiguredWarn,
-    Error,
-    PointsRequestsIsEmpty,
-    PointsRequestsAccessError,
-}
+
+use super::conf::services_conf::ServicesConf;
 ///
 /// Holds a map of the all services in app by there names
 pub struct Services {
     id: String,
     name: Name,
     map: Arc<RwLock<HashMap<String, Arc<RwLock<dyn Service>>>>>,
-    retain_conf: RetainConf,
+    conf: ServicesConf,
     retain_point_id: Option<Arc<RwLock<RetainPointId>>>,
     points_requested: Arc<AtomicUsize>,
     points_request: Arc<RwLock<Vec< (String, Sink<Vec<PointConfig>>) >>>,
     exit: Arc<AtomicBool>,
-}
-//
-//
-impl Object for Services {
-    fn id(&self) -> &str {
-        &self.id
-    }
-    fn name(&self) -> Name {
-        self.name.clone()
-    }
 }
 //
 //
@@ -59,18 +39,18 @@ impl Services {
     pub const SLMP_CLIENT: &'static str = "SlmpClient";
     ///
     /// Creates new instance of the Services
-    pub fn new(parent: impl Into<String>, conf: RetainConf) -> Self {
+    pub fn new(parent: impl Into<String>, conf: ServicesConf) -> Self {
         let name = Name::new(parent, "Services");
         let self_id = name.join();
         Self {
             id: self_id.clone(),
             name,
             map: Arc::new(RwLock::new(HashMap::new())),
-            retain_point_id: match &conf.point {
-                Some(_) => Some(Arc::new(RwLock::new(RetainPointId::new(&self_id, conf.clone())))),
+            retain_point_id: match &conf.retain.point {
+                Some(_) => Some(Arc::new(RwLock::new(RetainPointId::new(&self_id, conf.retain.clone())))),
                 None => None,
             },
-            retain_conf: conf,
+            conf: conf,
             points_requested: Arc::new(AtomicUsize::new(0)),
             points_request: Arc::new(RwLock::new(vec![])),
             exit: Arc::new(AtomicBool::new(false)),
@@ -307,22 +287,6 @@ impl Services {
             Err(err) => error!("{}.get | Services read access error: {:#?}", self.id, err),
         }
         future
-        // let points = if !self.point_ids.read().unwrap().is_cached() {
-        //     debug!("{}.points | requester_id: '{}'", self.id, requester_name);
-        //     let mut points = vec![];
-        //     for (service_id, service) in &self.map {
-        //         if service_id != requester_name {
-        //             let mut service_points = service.rlock(&self.id).points();
-        //             points.append(&mut service_points);
-        //         }
-        //     };
-        //     self.point_ids.write().unwrap().points(points)
-        // } else {
-        //     self.point_ids.write().unwrap().points(vec![])
-        // };
-        // debug!("{}.points | points: '{:#?}'", self.id, points.len());
-        // trace!("{}.points | points: '{:#?}'", self.id, points);
-        // points
     }
     ///
     /// Sends the General Interogation request to all services
@@ -332,12 +296,22 @@ impl Services {
     ///
     /// Returns Retain configuration
     pub fn retain(&self) -> RetainConf {
-        self.retain_conf.clone()
+        self.conf.retain.clone()
     }
     ///
     /// 
     pub fn exit(&self) {
         self.exit.store(true, Ordering::SeqCst);
+    }
+}
+//
+//
+impl Object for Services {
+    fn id(&self) -> &str {
+        &self.id
+    }
+    fn name(&self) -> Name {
+        self.name.clone()
     }
 }
 //
@@ -349,4 +323,16 @@ impl Debug for Services {
             .field("id", &self.id)
             .finish()
     }
+}
+///
+/// States of the Services behavior for logging
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum NotifyState {
+    Start,
+    Info,
+    Warn,
+    RetainPointNotConfiguredWarn,
+    Error,
+    PointsRequestsIsEmpty,
+    PointsRequestsAccessError,
 }
