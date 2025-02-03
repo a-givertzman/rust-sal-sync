@@ -1,3 +1,4 @@
+pub mod services_conf;
 use std::{
     collections::HashMap, fmt::Debug,
     sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{Receiver, Sender}, Arc, Mutex, RwLock},
@@ -5,6 +6,7 @@ use std::{
 };
 use log::{debug, error, info, warn};
 use concat_string::concat_string;
+use services_conf::ServicesConf;
 use crate::services::{
         entity::{name::Name, object::Object, point::{point::Point, point_config::PointConfig}},
         future::future::{Future, Sink},
@@ -49,6 +51,8 @@ impl Services {
     pub const SLMP_CLIENT: &'static str = "SlmpClient";
     ///
     /// Creates new instance of the Services
+    /// - conf: 
+    ///     - retain: RetainConf::new(path, point) "assets/retain/retain_points.json"
     pub fn new(parent: impl Into<String>, conf: ServicesConf) -> Self {
         let name = Name::new(parent, "Services");
         // let self_id = format!("{}/Services", parent.into());
@@ -57,7 +61,7 @@ impl Services {
             id: self_id.clone(),
             name,
             map: Arc::new(RwLock::new(HashMap::new())),
-            retain_point_id: Arc::new(RwLock::new(RetainPointId::new(&self_id, RetainConf::new(path, point) "assets/retain_points.json"))),
+            retain_point_id: Arc::new(RwLock::new(RetainPointId::new(&self_id, conf.retain))),
             points_requested: Arc::new(AtomicUsize::new(0)),
             points_request: Arc::new(RwLock::new(vec![])),
             exit: Arc::new(AtomicBool::new(false)),
