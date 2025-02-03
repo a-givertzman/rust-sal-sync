@@ -1,10 +1,19 @@
-use std::{collections::HashMap, fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{Receiver, Sender}, Arc, Mutex, RwLock}, thread, time::Duration};
+use std::{
+    collections::HashMap, fmt::Debug,
+    sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{Receiver, Sender}, Arc, Mutex, RwLock},
+    thread, time::Duration,
+};
 use log::{debug, error, info, warn};
 use concat_string::concat_string;
 use crate::services::{
-        entity::{name::Name, object::Object, point::{point::Point, point_config::PointConfig}}, future::future::{Future, Sink}, service::{service::Service, service_cycle::ServiceCycle}, subscription::subscription_criteria::SubscriptionCriteria
-    };
-use super::service::service_handles::ServiceHandles;
+        entity::{name::Name, object::Object, point::{point::Point, point_config::PointConfig}},
+        future::future::{Future, Sink},
+        service::{service::Service, service_cycle::ServiceCycle, service_handles::ServiceHandles},
+        subscription::subscription_criteria::SubscriptionCriteria,
+        retain::retain_point_id::RetainPointId,
+};
+
+use super::retain::retain_conf::RetainConf;
 ///
 /// Holds a map of the all services in the application by there names
 pub struct Services {
@@ -40,7 +49,7 @@ impl Services {
     pub const SLMP_CLIENT: &'static str = "SlmpClient";
     ///
     /// Creates new instance of the Services
-    pub fn new(parent: impl Into<String>) -> Self {
+    pub fn new(parent: impl Into<String>, conf: ServicesConf) -> Self {
         let name = Name::new(parent, "Services");
         // let self_id = format!("{}/Services", parent.into());
         let self_id = name.join();
@@ -48,7 +57,7 @@ impl Services {
             id: self_id.clone(),
             name,
             map: Arc::new(RwLock::new(HashMap::new())),
-            retain_point_id: Arc::new(RwLock::new(RetainPointId::new(&self_id, "assets/retain_points.json"))),
+            retain_point_id: Arc::new(RwLock::new(RetainPointId::new(&self_id, RetainConf::new(path, point) "assets/retain_points.json"))),
             points_requested: Arc::new(AtomicUsize::new(0)),
             points_request: Arc::new(RwLock::new(vec![])),
             exit: Arc::new(AtomicBool::new(false)),
