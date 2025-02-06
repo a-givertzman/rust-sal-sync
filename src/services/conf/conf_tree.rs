@@ -61,18 +61,18 @@ impl ConfTree {
             None
         }
     }
-    ///
-    /// returns tree node by it's key if exists
-    pub fn get(&self, key: &str) -> Option<ConfTree> {
-        if self.conf.is_mapping() {
-            self.conf.as_mapping().unwrap().get(key).map(|value| ConfTree {
-                key: key.to_string(),
-                conf: value.clone(),
-            })
-        } else {
-            None
-        }
-    }
+    // ///
+    // /// returns tree node by it's key if exists
+    // pub fn get(&self, key: &str) -> Option<ConfTree> {
+    //     if self.conf.is_mapping() {
+    //         self.conf.as_mapping().unwrap().get(key).map(|value| ConfTree {
+    //             key: key.to_string(),
+    //             conf: value.clone(),
+    //         })
+    //     } else {
+    //         None
+    //     }
+    // }
     ///
     /// returns tree node value as bool by it's key if exists
     pub fn as_bool(&self, key: &str) -> Result<bool, String> {
@@ -172,20 +172,68 @@ impl ConfTree {
         }
     }
 }
+
 ///
 /// 
 pub trait ConfTreeGet<T> {
-    fn get(key: impl AsRef<str>) -> T;
+    fn get(&self, key: impl AsRef<str>) -> T;
 }
 
-impl ConfTreeGet<u64> for ConfTree {
-    fn get(key: impl AsRef<str>) -> u64 {
-        todo!()
+
+impl ConfTreeGet<bool> for ConfTree {
+    fn get(&self, key: impl AsRef<str>) -> bool {
+        let val = self.conf.get(key.as_ref()).unwrap().as_bool().unwrap();
+        log::debug!("{}: {}", key.as_ref(), val);
+        val
+    }
+}
+
+impl ConfTreeGet<f64> for ConfTree {
+    fn get(&self, key: impl AsRef<str>) -> f64 {
+        let val = self.conf.get(key.as_ref()).unwrap().as_f64().unwrap();
+        log::debug!("{}: {}", key.as_ref(), val);
+        val
     }
 }
 
 impl ConfTreeGet<i64> for ConfTree {
-    fn get(key: impl AsRef<str>) -> i64 {
-        todo!()
+    fn get(&self, key: impl AsRef<str>) -> i64 {
+        let val = self.conf.get(key.as_ref()).unwrap().as_i64().unwrap();
+        log::debug!("{}: {}", key.as_ref(), val);
+        val
     }
 }
+
+impl ConfTreeGet<serde_yaml::Mapping> for ConfTree {
+    fn get(&self, key: impl AsRef<str>) -> serde_yaml::Mapping {
+        let val = self.conf.get(key.as_ref()).unwrap().as_mapping().unwrap();
+        log::debug!("{}: {:#?}", key.as_ref(), val);
+        val.to_owned()
+    }
+}
+
+impl ConfTreeGet<Vec<serde_yaml::Value>> for ConfTree {
+    fn get(&self, key: impl AsRef<str>) -> Vec<serde_yaml::Value> {
+        let val = self.conf.get(key.as_ref()).unwrap().as_sequence().unwrap();
+        log::debug!("{}: {:#?}", key.as_ref(), val);
+        val.to_owned()
+    }
+}
+
+impl ConfTreeGet<String> for ConfTree {
+    fn get(&self, key: impl AsRef<str>) -> String {
+        let val = self.conf.get(key.as_ref()).unwrap().as_str().unwrap();
+        log::debug!("{}: {}", key.as_ref(), val);
+        val.to_owned()
+    }
+}
+
+impl ConfTreeGet<u64> for ConfTree {
+    fn get(&self, key: impl AsRef<str>) -> u64 {
+        let val = self.conf.get(key.as_ref()).unwrap().as_u64().unwrap();
+        log::debug!("{}: {}", key.as_ref(), val);
+        val
+    }
+}
+
+

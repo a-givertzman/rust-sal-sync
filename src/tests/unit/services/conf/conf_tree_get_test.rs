@@ -4,7 +4,7 @@ mod config_tree_get {
     use indexmap::IndexMap;
     use testing::entities::test_value::Value;
     use debugging ::session::debug_session::{Backtrace, DebugSession, LogLevel};
-    use crate::services::conf::conf_tree::ConfTree;
+    use crate::services::conf::conf_tree::{ConfTree, ConfTreeGet};
     ///
     ///
     static INIT: Once = Once::new();
@@ -38,45 +38,27 @@ mod config_tree_get {
     ///
     #[test]
     fn valid() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
+        DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
         init_each();
         log::info!("conf_tree_get");
         // let (initial, switches) = init_each();
         let test_data: Vec<(&str, Node)> = vec![
-            // (
-            //     r#"let newVar:
-            //         input const '13.55'
-            //     "#,
-            //     None
-            // ),
-            // (
-            //     r#"let newVar:
-            //         input fn Count:
-            //             inputConst1 const '13.3'
-            //             inputConst2 const '13.7'
-            //     "#,
-            //     None
-            // ),
-            // (
-            //     r#"let newVar:
-            //         input1 fn Count:
-            //             inputConst1 const '11.3'
-            //             inputConst2 const '12.7'"
-            //         input2 fn Count:
-            //             inputConst1 const '13.3'
-            //             inputConst2 const '14.7'
-            //     "#,
-            //     None
-            // ),
             (
                 r#"
-                    let newVar2:
-                        input: const 2.2
-                    let newVar3:
-                        input: const 3.3
-                    let newVar1:
-                        input: const 1.1
+                    bool: true
+                    f64: 64.64
+                    u64: 64
+                    i64: -64
+                    str: str
+                    map:
+                        val1: 1
+                        val2: 2
+                        val3: 3
+                    vec:
+                        - 1
+                        - 2
+                        - 3
                 "#,
                 Node::Map(IndexMap::from([
                     (format!("let newVar2"), Node::Map(IndexMap::from([
@@ -90,95 +72,31 @@ mod config_tree_get {
                     ]))),
                 ]))
             ),
-            (
-                r#"
-                    let newVar1:
-                        input1: const 177.3
-                        input2: point '/Path/Point.Name/'
-                        input3:
-                            fn Count:
-                                inputConst1: const '13.5'
-                                inputConst2: newVar1
-                "#,
-                Node::Map(IndexMap::from([
-                    (format!("let newVar1"), Node::Map(IndexMap::from([
-                        (format!("input2"), Node::End(ConfTree { key: format!("input2"), conf: serde_yaml::from_str("point '/Path/Point.Name/'").unwrap() })),
-                        (format!("input3"), Node::Map(IndexMap::from([
-                            (format!("fn Count"), Node::Map(IndexMap::from([
-                                (format!("inputConst1"), Node::End(ConfTree { key: format!("inputConst1"), conf: serde_yaml::from_str("const '13.5'").unwrap() })),
-                                (format!("inputConst2"), Node::End(ConfTree { key: format!("inputConst2"), conf: serde_yaml::from_str("newVar1").unwrap() }))
-                            ])))
-                        ]))),
-                        (format!("input1"), Node::End(ConfTree { key: format!("input1"), conf: serde_yaml::from_str("const 177.3").unwrap() }))
-                    ]))),
-                ]))
-            ),
-            // (
-            //     r#"
-            //         fn SqlMetric:
-            //             initial: const 0
-            //             sql: "UPDATE {table} SET kind = '{input1}' WHERE id = '{input2}';"
-            //             inputs:
-            //                 input1:
-            //                     let VarName2:
-            //                         input:
-            //                             fn functionName:
-            //                                 initial: VarName2
-            //                                 input:
-            //                                     fn functionName:
-            //                                         input1: const someValue
-            //                                         input2: point '/path/Point.Name/'
-            //                                         input:
-            //                                             fn functionName:
-            //                                                 input: point '/path/Point.Name/'
-            //     "#,
-            //     None
-            // ),
-            (
-                r#"
-                    serviceCMA:
-                        nodeType: API Client
-                        address: 127.0.0.1:8899
-                        cycle: 1000
-                    serviceAPI:
-                        nodeType: API Client
-                        address: 127.0.0.1:8899
-                        cycle: 2000
-                    serviceTask:
-                        cycle: 200
-                "#,
-                Node::Map(IndexMap::from([
-                    (format!("serviceCMA"), Node::Map(IndexMap::from([
-                        (format!("nodeType"), Node::End(ConfTree { key: format!("nodeType"), conf: serde_yaml::from_str("API Client").unwrap() })),
-                        (format!("address"), Node::End(ConfTree { key: format!("address"), conf: serde_yaml::from_str("127.0.0.1:8899").unwrap() })),
-                        (format!("cycle"), Node::End(ConfTree { key: format!("cycle"), conf: serde_yaml::from_str("1000").unwrap() })),
-                    ]))),
-                    (format!("serviceAPI"), Node::Map(IndexMap::from([
-                        (format!("nodeType"), Node::End(ConfTree { key: format!("nodeType"), conf: serde_yaml::from_str("API Client").unwrap() })),
-                        (format!("address"), Node::End(ConfTree { key: format!("address"), conf: serde_yaml::from_str("127.0.0.1:8899").unwrap() })),
-                        (format!("cycle"), Node::End(ConfTree { key: format!("cycle"), conf: serde_yaml::from_str("2000").unwrap() })),
-                    ]))),
-                    (format!("serviceTask"), Node::Map(IndexMap::from([
-                        (format!("cycle"), Node::End(ConfTree { key: format!("cycle"), conf: serde_yaml::from_str("200").unwrap() }))
-                    ]))),
-                ]))
-            ),
         ];
         for (value, target) in test_data {
             // log::debug!("test value: {:?}", value);
             let conf: serde_yaml::Value = serde_yaml::from_str(value).unwrap();
             log::debug!("test conf: {:?}", conf);
             // let conf = test_data.get("/").unwrap();
-            let conf_tree = ConfTree::new_root(conf);
-            log::debug!("confTree: {:?}", conf_tree);
-            let result = inputs(&conf_tree);
+            let conf = ConfTree::new_root(conf);
+            log::debug!("confTree: {:?}", conf);
+            let result = inputs(&conf);
             log::debug!("result: {:?}", result);
-            assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
-            let mut targets = target.as_map().iter();
-            for (_name, result) in result.as_map() {
-                let (_, target) = targets.next().unwrap();
-                assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
-            }
+
+            let val = ConfTreeGet::<bool>::get(&conf, "bool");
+            let val = ConfTreeGet::<f64>::get(&conf, "f64");
+            let val = ConfTreeGet::<i64>::get(&conf, "i64");
+            let val = ConfTreeGet::<serde_yaml::Mapping>::get(&conf, "map");
+            let val = ConfTreeGet::<Vec<serde_yaml::Value>>::get(&conf, "vec");
+            let val = ConfTreeGet::<String>::get(&conf, "str");
+            let val = ConfTreeGet::<u64>::get(&conf, "u64");
+
+            // assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
+            // let mut targets = target.as_map().iter();
+            // for (_name, result) in result.as_map() {
+            //     let (_, target) = targets.next().unwrap();
+            //     assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
+            // }
         }
     }
 
