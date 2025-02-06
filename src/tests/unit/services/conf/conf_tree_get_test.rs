@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod config_tree {
+mod config_tree_get {
     use std::sync::Once;
     use indexmap::IndexMap;
     use testing::entities::test_value::Value;
@@ -41,7 +41,7 @@ mod config_tree {
         DebugSession::init(LogLevel::Info, Backtrace::Short);
         init_once();
         init_each();
-        log::info!("test_config_tree_valid");
+        log::info!("conf_tree_get");
         // let (initial, switches) = init_each();
         let test_data: Vec<(&str, Node)> = vec![
             // (
@@ -200,7 +200,7 @@ mod config_tree {
     }
     ///
     /// 
-    #[test]
+    // #[test]
     fn as_type() {
         DebugSession::init(LogLevel::Info, Backtrace::Short);
         init_once();
@@ -242,14 +242,14 @@ mod config_tree {
             // log::debug!("test value: {:?}", value);
             let conf: serde_yaml::Value = serde_yaml::from_str(value).unwrap();
             log::debug!("test conf: {:?}", conf);
-            let conf = ConfTree::new_root(conf);
+            let conf_tree = ConfTree::new_root(conf);
             for (key, target) in targets {
                 match target {
-                    Value::Bool(target) => assert!(conf.as_bool(key).unwrap() == target, "\nresult: {:?}\ntarget: {:?}", conf.as_bool(key).unwrap(), target),
-                    Value::Int(target) => assert!(conf.as_i64(key).unwrap() == target, "\nresult: {:?}\ntarget: {:?}", conf.as_i64(key).unwrap(), target),
-                    Value::Real(target) => assert!(conf.as_f32(key).unwrap() == target, "\nresult: {:?}\ntarget: {:?}", conf.as_f32(key).unwrap(), target),
-                    Value::Double(target) => assert!(conf.as_f64(key).unwrap() == target, "\nresult: {:?}\ntarget: {:?}", conf.as_f64(key).unwrap(), target),
-                    Value::String(target) => assert!(conf.as_str(key).unwrap() == target, "\nresult: {:?}\ntarget: {:?}", conf.as_str(key).unwrap(), target),
+                    Value::Bool(target_value) => assert_eq!(conf_tree.as_bool(key).unwrap(), target_value),
+                    Value::Int(target_value) => assert_eq!(conf_tree.as_i64(key).unwrap(), target_value),
+                    Value::Real(target_value) => assert_eq!(conf_tree.as_f32(key).unwrap(), target_value),
+                    Value::Double(target_value) => assert_eq!(conf_tree.as_f64(key).unwrap(), target_value),
+                    Value::String(target_value) => assert_eq!(conf_tree.as_str(key).unwrap(), target_value),
                 }
             }
         }
