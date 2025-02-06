@@ -172,3 +172,20 @@ impl ConfTree {
         }
     }
 }
+///
+/// 
+pub trait ConfTreeGet<T> {
+    fn get(key: impl AsRef<str>) -> T;
+}
+
+impl ConfTreeGet<u64> for ConfTree {
+    fn get(key: impl AsRef<str>) -> u64 {
+        todo!()
+    }
+}
+
+impl ConfTreeGet<i64> for ConfTree {
+    fn get(key: impl AsRef<str>) -> i64 {
+        todo!()
+    }
+}

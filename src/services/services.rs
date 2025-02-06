@@ -11,7 +11,6 @@ use std::{
 };
 use log::{debug, error, info, warn};
 use concat_string::concat_string;
-
 use super::conf::services_conf::ServicesConf;
 ///
 /// Holds a map of the all services in app by there names

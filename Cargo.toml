@@ -11,19 +11,27 @@ testing = { git = "https://github.com/a-givertzman/rust-testing.git", tag = "0.1
 debugging = { git = "https://github.com/a-givertzman/rust-debuging.git", tag = "0.0.1" }
 api-tools = { git = "https://github.com/a-givertzman/rust-api-tools.git", tag = "0.1.1" }
 
-concat-in-place = "^1.1"
-concat-string = "^1.0"
-
+#
+# Time
 chrono = "^0.4"
+#
+# Serde
 serde = { version = "^1.0", features = ["derive"] }
 serde_yaml = "^0.9"
 serde_json = "^1.0"
-
+#
+# Collection
 hashers = "^1.0"
-indexmap = "^2.6"
+indexmap = "^2.7"
 
 regex = "^1.10"
 
-rand = "^0.8"
+rand = "^0.9"
 
 lexical = "^7.0"
+#
+# Working with enums and strings
+strum = "^0.26"
+strum_macros = "^0.26"
+concat-in-place = "^1.1"
+concat-string = "^1.0"
