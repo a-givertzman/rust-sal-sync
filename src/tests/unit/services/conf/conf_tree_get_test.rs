@@ -20,17 +20,30 @@ mod config_tree_get {
     ///  - ...
     fn init_each() -> () {}
     ///
-    ///
-    #[derive(Clone, Debug, PartialEq, Eq)]
-    enum Node {
-        Map(IndexMap<String, Node>),
-        End(ConfTree),
+    /// For storing different types in the same collection
+    #[derive(Debug)]
+    enum Kind {
+        Val(Value),
+        Map(IndexMap<String, Value>),
+        Vec(Vec<Value>),
     }
-    impl Node {
-        fn as_map(&self) ->&IndexMap<String, Node> {
+    impl Kind {
+        fn as_val(&self) -> Value {
             match self {
-                Node::Map(map) => map,
-                Node::End(_) => panic!("is not a map"),
+                Kind::Val(value) => value.to_owned(),
+                _ => panic!("Kind {:?} - is not Value", self)
+            }
+        }
+        fn as_map(&self) -> IndexMap<String, Value> {
+            match self {
+                Kind::Map(map) => map.to_owned(),
+                _ => panic!("Kind {:?} - is not Map", self)
+            }
+        }
+        fn as_vec(&self) -> Vec<Value> {
+            match self {
+                Kind::Vec(value) => value.to_owned(),
+                _ => panic!("Kind {:?} - is not Vec", self)
             }
         }
     }
@@ -43,7 +56,7 @@ mod config_tree_get {
         init_each();
         log::info!("conf_tree_get");
         // let (initial, switches) = init_each();
-        let test_data: Vec<(&str, Node)> = vec![
+        let test_data: Vec<(&str, IndexMap<&str, Kind>)> = vec![
             (
                 r#"
                     bool: true
@@ -60,116 +73,65 @@ mod config_tree_get {
                         - 2
                         - 3
                 "#,
-                Node::Map(IndexMap::from([
-                    (format!("let newVar2"), Node::Map(IndexMap::from([
-                        (format!("input"), Node::End(ConfTree { key: format!("input"), conf: serde_yaml::from_str("const 2.2").unwrap() })),
+                IndexMap::from([
+                    ("bool", Kind::Val(Value::Bool(true))),
+                    ("f64", Kind::Val(Value::Double(64.64))),
+                    ("u64", Kind::Val(Value::Int(64))),
+                    ("i64", Kind::Val(Value::Int(-64))),
+                    ("str", Kind::Val(Value::String("str".to_owned()))),
+                    ("map", Kind::Map(IndexMap::from([
+                        ("val1".to_owned(), Value::Int(1)),
+                        ("val2".to_owned(), Value::Int(2)),
+                        ("val3".to_owned(), Value::Int(3)),
                     ]))),
-                    (format!("let newVar3"), Node::Map(IndexMap::from([
-                        (format!("input"), Node::End(ConfTree { key: format!("input"), conf: serde_yaml::from_str("const 3.3").unwrap() })),
-                    ]))),
-                    (format!("let newVar1"), Node::Map(IndexMap::from([
-                        (format!("input"), Node::End(ConfTree { key: format!("input"), conf: serde_yaml::from_str("const 1.1").unwrap() })),
-                    ]))),
-                ]))
+                    ("vec", Kind::Vec(vec![
+                        Value::Int(1),
+                        Value::Int(2),
+                        Value::Int(3),
+                    ])),
+                ])
             ),
         ];
-        for (value, target) in test_data {
+        for (value, targets) in test_data {
             // log::debug!("test value: {:?}", value);
             let conf: serde_yaml::Value = serde_yaml::from_str(value).unwrap();
             log::debug!("test conf: {:?}", conf);
             // let conf = test_data.get("/").unwrap();
             let conf = ConfTree::new_root(conf);
             log::debug!("confTree: {:?}", conf);
-            let result = inputs(&conf);
-            log::debug!("result: {:?}", result);
-
-            let val = ConfTreeGet::<bool>::get(&conf, "bool");
-            let val = ConfTreeGet::<f64>::get(&conf, "f64");
-            let val = ConfTreeGet::<i64>::get(&conf, "i64");
-            let val = ConfTreeGet::<serde_yaml::Mapping>::get(&conf, "map");
-            let val = ConfTreeGet::<Vec<serde_yaml::Value>>::get(&conf, "vec");
-            let val = ConfTreeGet::<String>::get(&conf, "str");
-            let val = ConfTreeGet::<u64>::get(&conf, "u64");
-
-            // assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
-            // let mut targets = target.as_map().iter();
-            // for (_name, result) in result.as_map() {
-            //     let (_, target) = targets.next().unwrap();
-            //     assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
-            // }
-        }
-    }
-
-    fn inputs(conf_tree: &ConfTree) -> Node {
-        match conf_tree.sub_nodes() {
-            Some(nodes) => {
-                let mut res: IndexMap<String, Node> = IndexMap::new();
-                for node in nodes {
-                    log::debug!("key: {:?}\t|\tnode: {:?}", &node.key, &node.conf);
-                    let sub_res = inputs(&node);
-                    res.insert(node.key.clone(), sub_res);
-                }
-                return Node::Map(res)
-            }
-            None => {
-                return Node::End(conf_tree.clone());
-            }
-        };
-    }
-    ///
-    /// 
-    // #[test]
-    fn as_type() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
-        init_once();
-        init_each();
-        log::info!("test_config_tree_valid");
-        // let (initial, switches) = init_each();
-        let test_data: Vec<(&str, IndexMap<&str, Value>)> = vec![
-            (
-                r#"
-                    boolTrue: true
-                    boolFalse: false
-                    int1: 177
-                    int2: -177
-                    real1: 177.3
-                    real2: -177.3
-                    double1: 177.3
-                    double2: -177.3
-                    string1: /Path/Point.Name/
-                    string2: '/Path/Point.Name/'
-                    string3: "/Path/Point.Name/"
-                "#,
-                IndexMap::from([
-                    ("boolTrue", Value::Bool(true)),
-                    ("boolFalse", Value::Bool(false)),
-                    ("int1", Value::Int(177)),
-                    ("int2", Value::Int(-177)),
-                    ("real1", Value::Real(177.3)),
-                    ("real2", Value::Real(-177.3)),
-                    ("double1", Value::Double(177.3)),
-                    ("double2", Value::Double(-177.3)),
-                    ("string1", Value::String("/Path/Point.Name/".to_string())),
-                    ("string2", Value::String("/Path/Point.Name/".to_string())),
-                    ("string3", Value::String("/Path/Point.Name/".to_string())),
-                ])
-            ),
-
-        ];
-        for (value, targets) in test_data {
-            // log::debug!("test value: {:?}", value);
-            let conf: serde_yaml::Value = serde_yaml::from_str(value).unwrap();
-            log::debug!("test conf: {:?}", conf);
-            let conf_tree = ConfTree::new_root(conf);
-            for (key, target) in targets {
-                match target {
-                    Value::Bool(target_value) => assert_eq!(conf_tree.as_bool(key).unwrap(), target_value),
-                    Value::Int(target_value) => assert_eq!(conf_tree.as_i64(key).unwrap(), target_value),
-                    Value::Real(target_value) => assert_eq!(conf_tree.as_f32(key).unwrap(), target_value),
-                    Value::Double(target_value) => assert_eq!(conf_tree.as_f64(key).unwrap(), target_value),
-                    Value::String(target_value) => assert_eq!(conf_tree.as_str(key).unwrap(), target_value),
-                }
-            }
+            let key = "bool";
+            let result: bool = conf.get(key);
+            let target = targets.get(key).unwrap().as_val().as_bool();
+            assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
+            let key = "f64";
+            let result: f64 = conf.get(key);
+            let target = targets.get(key).unwrap().as_val().as_double();
+            assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
+            let key = "i64";
+            let result: i64 = conf.get(key);
+            let target = targets.get(key).unwrap().as_val().as_int();
+            assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
+            let key = "map";
+            let result: serde_yaml::Mapping = conf.get(key);
+            let result: IndexMap<String, Value> = result
+                .into_iter()
+                .map(|(key, val)| (key.as_str().unwrap().to_owned(), Value::Int(val.as_i64().unwrap())))
+                .collect();
+            let target = targets.get(key).unwrap().as_map();
+            assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
+            let key = "vec";
+            let result: Vec<serde_yaml::Value> = conf.get(key);
+            let result: Vec<Value> = result.into_iter().map(|item| Value::Int(item.as_i64().unwrap())).collect();
+            let target = targets.get(key).unwrap().as_vec();
+            assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
+            let key = "str";
+            let result: String = conf.get(key);
+            let target = targets.get(key).unwrap().as_val().as_string();
+            assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
+            let key = "u64";
+            let result: u64 = conf.get(key);
+            let target = targets.get(key).unwrap().as_val().as_int() as u64;
+            assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
         }
     }
 }
