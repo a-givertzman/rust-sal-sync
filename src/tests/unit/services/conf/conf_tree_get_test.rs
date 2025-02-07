@@ -26,6 +26,7 @@ mod config_tree_get {
         Val(Value),
         Map(IndexMap<String, Value>),
         Vec(Vec<Value>),
+        Node(ConfTree),
     }
     impl Kind {
         fn as_val(&self) -> Value {
@@ -44,6 +45,12 @@ mod config_tree_get {
             match self {
                 Kind::Vec(value) => value.to_owned(),
                 _ => panic!("Kind {:?} - is not Vec", self)
+            }
+        }
+        fn as_node(&self) -> ConfTree {
+            match self {
+                Kind::Node(value) => value.to_owned(),
+                _ => panic!("Kind {:?} - is not ConfTree node", self)
             }
         }
     }
@@ -72,6 +79,10 @@ mod config_tree_get {
                         - 1
                         - 2
                         - 3
+                    node: 
+                        val4: 4
+                        val5: 5
+                        val6: 6
                 "#,
                 IndexMap::from([
                     ("bool", Kind::Val(Value::Bool(true))),
@@ -89,16 +100,24 @@ mod config_tree_get {
                         Value::Int(2),
                         Value::Int(3),
                     ])),
+                    ("node", Kind::Node(ConfTree {
+                        key: "node".to_owned(),
+                        conf: serde_yaml::from_str(r#"
+                            val4: 4
+                            val5: 5
+                            val6: 6
+                        "#).unwrap(),
+                    })),
                 ])
             ),
         ];
         for (value, targets) in test_data {
-            // log::debug!("test value: {:?}", value);
+            // log::debug!("value: {:?}", value);
             let conf: serde_yaml::Value = serde_yaml::from_str(value).unwrap();
-            log::debug!("test conf: {:?}", conf);
+            log::trace!("conf: {:?}", conf);
             // let conf = test_data.get("/").unwrap();
             let conf = ConfTree::new_root(conf);
-            log::debug!("confTree: {:?}", conf);
+            log::trace!("confTree: {:?}", conf);
             let key = "bool";
             let result: bool = conf.get(key);
             let target = targets.get(key).unwrap().as_val().as_bool();
@@ -115,7 +134,10 @@ mod config_tree_get {
             let result: serde_yaml::Mapping = conf.get(key);
             let result: IndexMap<String, Value> = result
                 .into_iter()
-                .map(|(key, val)| (key.as_str().unwrap().to_owned(), Value::Int(val.as_i64().unwrap())))
+                .map(|(key, val)| (
+                    key.as_str().unwrap().to_owned(),
+                    Value::Int(val.as_i64().unwrap()),
+                ))
                 .collect();
             let target = targets.get(key).unwrap().as_map();
             assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
@@ -132,6 +154,13 @@ mod config_tree_get {
             let result: u64 = conf.get(key);
             let target = targets.get(key).unwrap().as_val().as_int() as u64;
             assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
+            let key = "node";
+            if let Some(result) = conf.get(key) {
+                let target = targets.get(key).unwrap().as_node();
+                assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
+            } else {
+                panic!("key: {key} - not found");
+            };
         }
     }
 }
