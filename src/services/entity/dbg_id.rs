@@ -5,8 +5,8 @@ pub struct DbgId(pub String);
 //
 //
 impl DbgId {
-    pub fn with_parent(dbgid: &DbgId, me: &str) -> Self {
-        Self(format!("{}/{}", dbgid, me))
+    pub fn with_parent(dbgid: impl Into<String>, me: impl Into<String>) -> Self {
+        Self(format!("{}/{}", dbgid.into(), me.into()))
     }
 }
 //
