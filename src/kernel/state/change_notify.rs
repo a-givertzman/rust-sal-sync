@@ -1,11 +1,11 @@
 use log::error;
-use crate::collections::map::IndexMapFxHasher;
+use crate::collections::map::FxIndexMap;
 ///
 /// Provides callback on connection status changes
 pub struct ChangeNotify<S, T> {
     id: String,
     state: S,
-    states: IndexMapFxHasher<S, Box<dyn Fn(T)>>
+    states: FxIndexMap<S, Box<dyn Fn(T)>>
 }
 //
 //
@@ -13,10 +13,7 @@ impl<S: Clone + std::cmp::PartialEq + std::cmp::Eq + std::hash::Hash + std::fmt:
     //
     //
     pub fn new(parent: impl Into<String>, initial: S, states: Vec<(S, Box<dyn Fn(T)>)>) -> Self {
-        // fn callback<T>(c: impl Fn(T) + 'static) -> Box<dyn Fn(T)> {
-        //     Box::new(c)
-        // }
-        let states = IndexMapFxHasher::from_iter(states);
+        let states = FxIndexMap::from_iter(states);
         Self {
             id: format!("{}/ChangeNotify<{}>", parent.into(), std::any::type_name::<S>()),
             state: initial,
