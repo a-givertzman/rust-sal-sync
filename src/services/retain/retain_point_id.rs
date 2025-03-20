@@ -1,4 +1,4 @@
-use crate::{collections::map::HashMapFxHasher, services::entity::point::{point_config::PointConfig, point_config_type::PointConfigType}};
+use crate::{collections::map::FxHashMap, services::entity::point::{point_config::PointConfig, point_config_type::PointConfigType}};
 use std::{collections::HashMap, env, ffi::OsStr, fs, hash::BuildHasherDefault, path::{Path, PathBuf}};
 use api_tools::{api::reply::api_reply::ApiReply, client::{api_query::{ApiQuery, ApiQueryKind, ApiQuerySql}, api_request::ApiRequest}};
 use hashers::fx_hash::FxHasher;
@@ -7,7 +7,7 @@ use indexmap::IndexMap;
 use log::{debug, error, info, trace};
 use serde::{Deserialize, Serialize};
 use super::retain_conf::RetainConf;
-type RetainedCahe = HashMapFxHasher<String, HashMapFxHasher<String, RetainedPointConfig>>;
+type RetainedCahe = FxHashMap<String, FxHashMap<String, RetainedPointConfig>>;
 ///
 /// Stores unique Point ID
 /// - In the json file
@@ -58,7 +58,7 @@ impl RetainPointId {
             let retained_clone = retained.clone();
             point.id = retained
                 .entry(owner.to_owned())
-                .or_insert(HashMapFxHasher::with_hasher(BuildHasherDefault::<FxHasher>::default()))
+                .or_insert(FxHashMap::with_hasher(BuildHasherDefault::<FxHasher>::default()))
                 .entry(point.name.clone())
                 .or_insert_with(|| {
                     let id = retained_clone.values().map(|v| {
@@ -116,7 +116,7 @@ impl RetainPointId {
     ///     ...
     /// }
     /// ```
-    fn read<P: AsRef<Path> + AsRef<OsStr> + std::fmt::Debug>(&self, path: P) -> HashMapFxHasher<String, HashMapFxHasher<String, RetainedPointConfig>> {
+    fn read<P: AsRef<Path> + AsRef<OsStr> + std::fmt::Debug>(&self, path: P) -> FxHashMap<String, FxHashMap<String, RetainedPointConfig>> {
         match fs::read_to_string(&path) {
             Ok(json_string) => {
                 match serde_json::from_str(&json_string) {

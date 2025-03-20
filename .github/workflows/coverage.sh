@@ -27,7 +27,8 @@ grcov \
   --output-path target/coverage \
   --output-types html,covdir \
   --keep-only 'src/*' \
-  --ignore 'tests/*'
+  --ignore 'tests/*' \
+  target/coverage
 
 ############ REPORT ############
 
