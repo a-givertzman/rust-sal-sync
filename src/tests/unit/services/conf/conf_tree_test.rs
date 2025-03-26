@@ -80,13 +80,13 @@ mod config_tree {
                 "#,
                 Node::Map(IndexMap::from([
                     (format!("let newVar2"), Node::Map(IndexMap::from([
-                        (format!("input"), Node::End(ConfTree { key: format!("input"), conf: serde_yaml::from_str("const 2.2").unwrap() })),
+                        (format!("input"), Node::End(ConfTree::new("input", serde_yaml::from_str("const 2.2").unwrap()))),
                     ]))),
                     (format!("let newVar3"), Node::Map(IndexMap::from([
-                        (format!("input"), Node::End(ConfTree { key: format!("input"), conf: serde_yaml::from_str("const 3.3").unwrap() })),
+                        (format!("input"), Node::End(ConfTree::new("input", serde_yaml::from_str("const 3.3").unwrap()))),
                     ]))),
                     (format!("let newVar1"), Node::Map(IndexMap::from([
-                        (format!("input"), Node::End(ConfTree { key: format!("input"), conf: serde_yaml::from_str("const 1.1").unwrap() })),
+                        (format!("input"), Node::End(ConfTree::new("input", serde_yaml::from_str("const 1.1").unwrap()))),
                     ]))),
                 ]))
             ),
@@ -102,14 +102,14 @@ mod config_tree {
                 "#,
                 Node::Map(IndexMap::from([
                     (format!("let newVar1"), Node::Map(IndexMap::from([
-                        (format!("input2"), Node::End(ConfTree { key: format!("input2"), conf: serde_yaml::from_str("point '/Path/Point.Name/'").unwrap() })),
+                        (format!("input2"), Node::End(ConfTree::new("input2",serde_yaml::from_str("point '/Path/Point.Name/'").unwrap()))),
                         (format!("input3"), Node::Map(IndexMap::from([
                             (format!("fn Count"), Node::Map(IndexMap::from([
-                                (format!("inputConst1"), Node::End(ConfTree { key: format!("inputConst1"), conf: serde_yaml::from_str("const '13.5'").unwrap() })),
-                                (format!("inputConst2"), Node::End(ConfTree { key: format!("inputConst2"), conf: serde_yaml::from_str("newVar1").unwrap() }))
+                                (format!("inputConst1"), Node::End(ConfTree::new("inputConst1",serde_yaml::from_str("const '13.5'").unwrap()))),
+                                (format!("inputConst2"), Node::End(ConfTree::new("inputConst2",serde_yaml::from_str("newVar1").unwrap())))
                             ])))
                         ]))),
-                        (format!("input1"), Node::End(ConfTree { key: format!("input1"), conf: serde_yaml::from_str("const 177.3").unwrap() }))
+                        (format!("input1"), Node::End(ConfTree::new("input1", serde_yaml::from_str("const 177.3").unwrap())))
                     ]))),
                 ]))
             ),
@@ -149,17 +149,17 @@ mod config_tree {
                 "#,
                 Node::Map(IndexMap::from([
                     (format!("serviceCMA"), Node::Map(IndexMap::from([
-                        (format!("nodeType"), Node::End(ConfTree { key: format!("nodeType"), conf: serde_yaml::from_str("API Client").unwrap() })),
-                        (format!("address"), Node::End(ConfTree { key: format!("address"), conf: serde_yaml::from_str("127.0.0.1:8899").unwrap() })),
-                        (format!("cycle"), Node::End(ConfTree { key: format!("cycle"), conf: serde_yaml::from_str("1000").unwrap() })),
+                        (format!("nodeType"), Node::End(ConfTree::new("nodeType", serde_yaml::from_str("API Client").unwrap()))),
+                        (format!("address"), Node::End(ConfTree::new("address", serde_yaml::from_str("127.0.0.1:8899").unwrap()))),
+                        (format!("cycle"), Node::End(ConfTree::new("cycle", serde_yaml::from_str("1000").unwrap()))),
                     ]))),
                     (format!("serviceAPI"), Node::Map(IndexMap::from([
-                        (format!("nodeType"), Node::End(ConfTree { key: format!("nodeType"), conf: serde_yaml::from_str("API Client").unwrap() })),
-                        (format!("address"), Node::End(ConfTree { key: format!("address"), conf: serde_yaml::from_str("127.0.0.1:8899").unwrap() })),
-                        (format!("cycle"), Node::End(ConfTree { key: format!("cycle"), conf: serde_yaml::from_str("2000").unwrap() })),
+                        (format!("nodeType"), Node::End(ConfTree::new("nodeType", serde_yaml::from_str("API Client").unwrap()))),
+                        (format!("address"), Node::End(ConfTree::new("address", serde_yaml::from_str("127.0.0.1:8899").unwrap()))),
+                        (format!("cycle"), Node::End(ConfTree::new("cycle", serde_yaml::from_str("2000").unwrap() ))),
                     ]))),
                     (format!("serviceTask"), Node::Map(IndexMap::from([
-                        (format!("cycle"), Node::End(ConfTree { key: format!("cycle"), conf: serde_yaml::from_str("200").unwrap() }))
+                        (format!("cycle"), Node::End(ConfTree::new("cycle", serde_yaml::from_str("200").unwrap())))
                     ]))),
                 ]))
             ),

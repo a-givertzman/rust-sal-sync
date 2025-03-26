@@ -1,7 +1,11 @@
 use crate::{
     kernel::state::change_notify::ChangeNotify,
     services::{
-        entity::{name::Name, object::Object, point::{point::Point, point_config::PointConfig}}, future::future::{Future, Sink}, retain::{retain_conf::RetainConf, retain_point_id::RetainPointId}, safe_lock::rwlock::SafeLock, service::{link_name::LinkName, service::Service, service_cycle::ServiceCycle, service_handles::ServiceHandles}, subscription::subscription_criteria::SubscriptionCriteria
+        entity::{name::Name, object::Object, point::{point::Point, point_config::PointConfig}},
+        future::future::{Future, Sink}, retain::{retain_conf::RetainConf, retain_point_id::RetainPointId},
+        safe_lock::rwlock::SafeLock,
+        service::{link_name::LinkName, service::Service, service_cycle::ServiceCycle, service_handles::ServiceHandles},
+        subscription::subscription_criteria::SubscriptionCriteria,
     }
 };
 use std::{

@@ -1,6 +1,7 @@
 mod conf;
 mod entity;
 mod future;
+mod multi_queue;
 mod retain;
 mod service;
 mod subscription;

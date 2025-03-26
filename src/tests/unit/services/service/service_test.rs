@@ -143,7 +143,7 @@ mod trait_service {
     //
     //
     impl Service for ServiceTest {
-        fn run(&mut self) -> Result<crate::services::service::service_handles::ServiceHandles<()>, String> {
+        fn run(&mut self) -> Result<ServiceHandles<()>, String> {
             Err("testing".to_owned())
         }
     

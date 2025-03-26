@@ -61,7 +61,7 @@
 pub mod conf;
 pub mod entity;
 pub mod future;
-// pub mod multi_queue;
+pub mod multi_queue;
 pub mod retain;
 pub mod safe_lock;
 pub mod service;

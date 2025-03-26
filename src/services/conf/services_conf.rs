@@ -1,8 +1,7 @@
 use crate::services::{
     entity::{dbg_id::DbgId, name::Name}, retain::retain_conf::RetainConf,
-    // conf::service_conf::ServiceConfig,
 };
-use super::conf_tree::ConfTree;
+use super::conf_tree::{ConfTree, ConfTreeGet};
 ///
 /// Configuration parameters for [Services](https://github.com/a-givertzman/rust-sal-sync/blob/master/src/services/services.rs)
 #[derive(Debug, Clone, PartialEq)]
@@ -16,14 +15,19 @@ impl ServicesConf {
     ///
     /// 
     pub fn new(parent: impl Into<String>, conf: &ConfTree) -> Self {
-        // trace!("ServicesConf.new | confTree: {:?}", conf_tree);
-        let dbg = DbgId::with_parent(parent, format!("ServicesConf({})", conf.key));
-        // let mut self_conf = ServiceConfig::new(&self_id, conf_tree.to_owned());
-        // trace!("{}.new | selfConf: {:?}", self_id, self_conf);
-        let self_name = Name::new(parent, conf.sufix());
-        // debug!("{}.new | name: {:?}", self_id, self_name);
-        // let description = self_conf.get_param_value("description").unwrap().as_str().unwrap().to_owned();
-        // debug!("{}.new | description: {:?}", self_id, description);
-        Self { name: Name::new("parent", "ServicesConf"), retain: RetainConf::default() }
+        // log::trace!("ServicesConf.new | confTree: {:?}", conf_tree);
+        let parent = parent.into();
+        let dbg = DbgId::with_parent(&parent, format!("ServicesConf({})", conf.key));
+        let me = conf.sufix()
+            .map(|s| if s.is_empty() {conf.name().unwrap()} else {s})
+            .unwrap_or(conf.name().unwrap());
+        let name = Name::new(parent, me);
+        log::debug!("{}.new | name: {:?}", dbg, name);
+        let retain = ConfTreeGet::<serde_yaml::Value>::get(conf, "retain");
+        log::debug!("{}.new | retain: {:?}", dbg, retain);
+        Self {
+            name,
+            retain: RetainConf::default(),
+        }
     }
 }

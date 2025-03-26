@@ -1,18 +1,15 @@
 use std::{hash::BuildHasherDefault, str::FromStr, time::Duration};
 use hashers::fx_hash::FxHasher;
 use indexmap::IndexMap;
-use log::{debug, trace, warn};
 use crate::{
-    collections::map::IndexMapFxHasher,
+    collections::map::FxIndexMap,
     services::{
         conf::conf_tree::ConfTree, entity::{name::Name, point::point_config::PointConfig}, subscription::conf_subscribe::ConfSubscribe,
         task::functions::conf::fn_conf_keywd::{FnConfKeywd, FnConfKindName},
     },
 };
 use super::{
-    conf_duration::ConfDuration,
-    conf_keywd::{ConfKeywd},
-    diag_keywd::DiagKeywd,
+    conf_duration::ConfDuration, conf_keywd::ConfKeywd, conf_kind::ConfKind, conf_tree::ConfTreeGet, diag_keywd::DiagKeywd
 };
 ///
 /// Result getting parameter
@@ -66,34 +63,12 @@ impl ServiceConfig {
         }
     }
     ///
-    /// Returns name of ConfKeywd if parsed
-    pub fn name(&self) -> String {
-        match ConfKeywd::from_str(&self.conf.key) {
-            Ok(self_keyword) => {
-                trace!("{}.name | selfKeyword: {:?}", self.id, self_keyword);
-                self_keyword.name()
-            }
-            Err(err) => panic!("{}.name | Keyword error in {:?}\n\tdetales: {:?}", self.id, self.conf.key, err),
-        }
-    }
-    ///
-    /// Returns sufix of ConfKeywd if parsed
-    pub fn sufix(&self) -> String {
-        match ConfKeywd::from_str(&self.conf.key) {
-            Ok(self_keyword) => {
-                trace!("{}.sufix | selfKeyword: {:?}", self.id, self_keyword);
-                self_keyword.sufix()
-            }
-            Err(err) => panic!("{}.sufix | Keyword error in {:?}\n\tdetales: {:?}", self.id, self.conf.key, err),
-        }
-    }
-    ///
     /// Returns serde_yaml::Value by key and removes key
     pub fn get_param_value(&mut self, name: &str) -> Result<serde_yaml::Value, String> {
         match self.remove_key(name) {
             Ok(_) => {
-                match self.conf.get(name) {
-                    Some(conf_tree) => Ok(conf_tree.conf),
+                match ConfTreeGet::<serde_yaml::Value>::get( &self.conf, name) {
+                    Some(val) => Ok(val),
                     None => Err(format!("{}.get_param_value | '{}' - not found in: {:?}", self.id, name, self.conf)),
                 }
             }
@@ -136,12 +111,25 @@ impl ServiceConfig {
         }
     }
     ///
-    /// Returns general parameter by keyword
-    pub fn get_param_by_keyword(&mut self, keyword_prefix: &str, keyword_kind: ConfKind) -> Result<(ConfKeywd, ConfTree), String> {
+    /// Returns general parameter by keyword's `prefix` and `kind`
+    /// - `kind` - a kind of cofiguration entity
+    ///
+    /// Where keyword looks loke
+    /// ```markdown
+    /// | opt        | requir   |  requir     |  opt      |
+    /// | ---------- | -------- | ----------- | --------- |
+    /// | **prefix** | **kind** | Name        | Sufix     |
+    /// |            | task     | Task        | Task1     |
+    /// |            | service  | ApiClient   | ApiClient |
+    /// | in         | queue    | in-queue    |           |
+    /// | out        | queue    | out-queue   |           |
+    /// ```
+    pub fn get_param_by_keyword(&mut self, prefix: &str, kind: impl Into<String>) -> Result<(ConfKeywd, ConfTree), String> {
         let self_conf = self.conf.clone();
+        let kind = kind.into();
         for node in self_conf.sub_nodes().unwrap() {
             if let Ok(keyword) = ConfKeywd::from_str(&node.key) {
-                if keyword.kind() == keyword_kind && keyword.prefix() == keyword_prefix {
+                if keyword.kind() == kind && keyword.prefix() == prefix {
                     match self.remove_key(&node.key) {
                         Ok(_) => return Ok((keyword, node)),
                         Err(err) => return Err(err),
@@ -149,7 +137,7 @@ impl ServiceConfig {
                 }
             };
         };
-        Err(format!("{}.get_param_by_keyword | keyword '{} {:?}' - not found", self.id, keyword_prefix, keyword_kind))
+        Err(format!("{}.get_param_by_keyword | keyword '{} {:?}' - not found", self.id, prefix, kind))
     }
     ///
     /// Returns ConfSubscribe by 'subscribe' key
@@ -169,12 +157,14 @@ impl ServiceConfig {
         match self.get_param_by_keyword(prefix, ConfKind::Queue) {
             Ok((keyword, self_recv_queue)) => {
                 let name = format!("{} {} {}", keyword.prefix(), keyword.kind().to_string(), keyword.name());
-                debug!("{}.get_in_queue | self in-queue params {}: {:?}", self.id, name, self_recv_queue);
-                let max_length = match self_recv_queue.get(sub_param) {
-                    Some(conf_tree) => Ok(conf_tree.conf),
+                log::debug!("{}.get_in_queue | self in-queue params {}: {:?}", self.id, name, self_recv_queue);
+                match ConfTreeGet::<serde_yaml::Value>::get(&self_recv_queue, sub_param) {
+                    Some(val) => match val.as_i64() {
+                        Some(max_length) => Ok((keyword.name(), max_length)),
+                        None => Err(format!("{}.get_in_queue | '{}': '{:?}' - must be an integer, in conf: {:?}", self.id, name, val, self.conf)),
+                    }
                     None => Err(format!("{}.get_in_queue | '{}' - not found in: {:?}", self.id, name, self.conf)),
-                }.unwrap().as_i64().unwrap();
-                Ok((keyword.name(), max_length))
+                }
             }
             Err(err) => Err(format!("{}.get_in_queue | {} queue - not found in: {:#?}\n\terror: {:?}", self.id, prefix, self.conf, err)),
         }
@@ -186,7 +176,7 @@ impl ServiceConfig {
         match self.get_param_by_keyword(prefix, ConfKind::Queue) {
             Ok((keyword, tx_name)) => {
                 let name = format!("{} {} {}", keyword.prefix(), keyword.kind().to_string(), keyword.name());
-                debug!("{}.get_out_queue | self out-queue params {}: {:?}", self.id, name, tx_name);
+                log::debug!("{}.get_out_queue | self out-queue params {}: {:?}", self.id, name, tx_name);
                 Ok(tx_name.conf.as_str().unwrap().to_string())
             }
             Err(err) => Err(format!("{}.get_out_queue | {} queue - not found in: {:#?}\n\terror: {:?}", self.id, prefix, self.conf, err)),
@@ -209,7 +199,7 @@ impl ServiceConfig {
             Ok(conf) => {
                 match conf {
                     serde_yaml::Value::Null => {
-                        warn!("{}.get_send_to_many | Parameter 'send-to' - is empty", self.id);
+                        log::warn!("{}.get_send_to_many | Parameter 'send-to' - is empty", self.id);
                         ConfParam::Ok(vec![])
                     }
                     serde_yaml::Value::Sequence(conf) => {
@@ -230,7 +220,7 @@ impl ServiceConfig {
     }
     ///
     /// Returns diagnosis point configs
-    pub fn get_diagnosis(&mut self, parent: &Name) -> IndexMapFxHasher<DiagKeywd, PointConfig> {
+    pub fn get_diagnosis(&mut self, parent: &Name) -> FxIndexMap<DiagKeywd, PointConfig> {
         let mut points = IndexMap::with_hasher(BuildHasherDefault::<FxHasher>::default());
         match self.get_param_conf("diagnosis") {
             Ok(conf) => {
@@ -240,18 +230,18 @@ impl ServiceConfig {
                     if keyword.kind() == FnConfKindName::Point {
                         let point_name = Name::new(parent, keyword.data()).join();
                         let point_conf = diag_node_conf.get(key).unwrap();
-                        trace!("{}.get_diagnosis | Point '{}'", self.id, point_name);
+                        log::trace!("{}.get_diagnosis | Point '{}'", self.id, point_name);
                         let point = PointConfig::new(parent, &point_conf);
                         let point_name_keywd = DiagKeywd::new(&point.name);
                         points.insert(point_name_keywd, point);
                     } else {
-                        warn!("{}.get_diagnosis | point conf expected, but found: {:?}", self.id, keyword);
+                        log::warn!("{}.get_diagnosis | point conf expected, but found: {:?}", self.id, keyword);
                     }
                 }
 
             }
             Err(err) => {
-                warn!("{}.get_diagnosis | diagnosis - not found in {:#?},\n\terror: {:#?}", self.id, self.conf, err);
+                log::warn!("{}.get_diagnosis | diagnosis - not found in {:#?},\n\terror: {:#?}", self.id, self.conf, err);
             }
         };
         points

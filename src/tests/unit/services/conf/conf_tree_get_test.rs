@@ -100,14 +100,14 @@ mod config_tree_get {
                         Value::Int(2),
                         Value::Int(3),
                     ])),
-                    ("node", Kind::Node(ConfTree {
-                        key: "node".to_owned(),
-                        conf: serde_yaml::from_str(r#"
+                    ("node", Kind::Node(ConfTree::new(
+                        "node",
+                        serde_yaml::from_str(r#"
                             val4: 4
                             val5: 5
                             val6: 6
                         "#).unwrap(),
-                    })),
+                    ))),
                 ])
             ),
         ];
@@ -119,19 +119,19 @@ mod config_tree_get {
             let conf = ConfTree::new_root(conf);
             log::trace!("confTree: {:?}", conf);
             let key = "bool";
-            let result: bool = conf.get(key);
+            let result: bool = conf.get(key).unwrap();
             let target = targets.get(key).unwrap().as_val().as_bool();
             assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
             let key = "f64";
-            let result: f64 = conf.get(key);
+            let result: f64 = conf.get(key).unwrap();
             let target = targets.get(key).unwrap().as_val().as_double();
             assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
             let key = "i64";
-            let result: i64 = conf.get(key);
+            let result: i64 = conf.get(key).unwrap();
             let target = targets.get(key).unwrap().as_val().as_int();
             assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
             let key = "map";
-            let result: serde_yaml::Mapping = conf.get(key);
+            let result: serde_yaml::Mapping = conf.get(key).unwrap();
             let result: IndexMap<String, Value> = result
                 .into_iter()
                 .map(|(key, val)| (
@@ -142,20 +142,20 @@ mod config_tree_get {
             let target = targets.get(key).unwrap().as_map();
             assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
             let key = "vec";
-            let result: Vec<serde_yaml::Value> = conf.get(key);
+            let result: Vec<serde_yaml::Value> = conf.get(key).unwrap();
             let result: Vec<Value> = result.into_iter().map(|item| Value::Int(item.as_i64().unwrap())).collect();
             let target = targets.get(key).unwrap().as_vec();
             assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
             let key = "str";
-            let result: String = conf.get(key);
+            let result: String = conf.get(key).unwrap();
             let target = targets.get(key).unwrap().as_val().as_string();
             assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
             let key = "u64";
-            let result: u64 = conf.get(key);
+            let result: u64 = conf.get(key).unwrap();
             let target = targets.get(key).unwrap().as_val().as_int() as u64;
             assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
             let key = "node";
-            if let Some(result) = conf.get(key) {
+            if let Some(result) = ConfTreeGet::<ConfTree>::get(&conf, key) {
                 let target = targets.get(key).unwrap().as_node();
                 assert!(result == target, "key: {key} \nresult: {:?}\ntarget: {:?}", result, target);
             } else {

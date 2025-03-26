@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use regex::RegexBuilder;
+use sal_core::Error;
 use serde::Deserialize;
-use crate::services::entity::error::str_err::StrErr;
 ///
 /// # Configuration keyword konsists of 4 fields:
 /// ```ignore
@@ -26,7 +26,7 @@ pub struct ConfKeywd {
 // 
 impl ConfKeywd {
     ///
-    /// Returns prefix
+    /// Returns prefix field
     /// ```markdown
     /// | opt        | requir   |  requir     |  opt      |
     /// | ---------- | -------- | ----------- | --------- |
@@ -36,7 +36,7 @@ impl ConfKeywd {
         self.prefix.clone()
     }
     ///
-    /// Returns prefix
+    /// Returns `kind` field
     /// ```markdown
     /// | opt        | requir   |  requir     |  opt      |
     /// | ---------- | -------- | ----------- | --------- |
@@ -46,7 +46,7 @@ impl ConfKeywd {
         self.kind.clone()
     }
     ///
-    /// Returns prefix
+    /// Returns `name` field
     /// ```markdown
     /// | opt        | requir   |  requir     |  opt      |
     /// | ---------- | -------- | ----------- | --------- |
@@ -56,7 +56,7 @@ impl ConfKeywd {
         self.name.clone()
     }
     ///
-    /// Returns prefix
+    /// Returns `sufix` field
     /// ```markdown
     /// | opt        | requir   |  requir     |  opt      |
     /// | ---------- | -------- | ----------- | --------- |
@@ -69,8 +69,8 @@ impl ConfKeywd {
 //
 // 
 impl FromStr for ConfKeywd {
-    type Err = StrErr;
-    fn from_str(input: &str) -> Result<Self, StrErr> {
+    type Err = Error;
+    fn from_str(input: &str) -> Result<Self, Error> {
         log::trace!("ConfKeywd.from_str | input: {}", input);
         let re = r#"(?:(?:(\w+)[ \t])?(task|service|queue|link){1}(?:$|(?:[ \t](\S+)(?:[ \t](\S+))?)))"#;
         let re = RegexBuilder::new(re).multi_line(false).build().unwrap();
@@ -86,11 +86,11 @@ impl FromStr for ConfKeywd {
                 };
                 let kind = match &caps.get(group_kind) {
                     Some(kind) => Ok(kind.as_str().to_owned()),
-                    None => Err(StrErr(format!("ConfKeywd.from_str | Error parsing `kind` from keyword '{}'", &input))),
+                    None => Err(Error::new("ConfKeywd","from_str").err(format!("Error parsing `kind` from keyword '{}'", &input))),
                 }?;
                 let name = match &caps.get(group_name) {
                     Some(arg) => Ok(arg.as_str().to_string()),
-                    None => Err(StrErr(format!("ConfKeywd.from_str | Error parsing `name` from keyword '{}'", &input))),
+                    None => Err(Error::new("ConfKeywd","from_str").err(format!("Error parsing `name` from keyword '{}'", &input))),
                 }?;
                 let sufix = match &caps.get(group_sufix) {
                     Some(first) => String::from(first.as_str()),
@@ -104,7 +104,7 @@ impl FromStr for ConfKeywd {
                 })
             }
             None => {
-                Err(StrErr(format!("ConfKeywd.from_str | Pattern `prefix Kinde Name sufix` - not found in keyword '{}'", &input)))
+                Err(Error::new("ConfKeywd", "from_str").err(format!("Pattern `prefix Kinde Name sufix` - not found in keyword '{}'", &input)))
             }
         }
     }
