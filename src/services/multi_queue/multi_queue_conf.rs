@@ -34,7 +34,7 @@ impl MultiQueueConf {
     ///         ...
     ///         - ServiceN.in-queue
     ///                     ...
-    pub fn new(parent: impl Into<String>, conf: &mut ConfTree) -> MultiQueueConf {
+    pub fn new(parent: impl Into<String>, mut conf: ConfTree) -> MultiQueueConf {
         log::trace!("MultiQueueConfig.new | confTree: {:?}", conf);
         let dbg = format!("MultiQueueConf({})", conf.key);
         log::trace!("{}.new | conf: {:?}", dbg, conf);
@@ -68,7 +68,7 @@ impl MultiQueueConf {
     pub(crate) fn from_yaml(parent: impl Into<String>, value: &serde_yaml::Value) -> MultiQueueConf {
         match value.as_mapping().unwrap().into_iter().next() {
             Some((key, value)) => {
-                Self::new(parent, &mut ConfTree::new(key.as_str().unwrap(), value.clone()))
+                Self::new(parent, ConfTree::new(key.as_str().unwrap(), value.clone()))
             }
             None => {
                 panic!("MultiQueueConfig.from_yaml | Format error or empty conf: {:#?}", value)
