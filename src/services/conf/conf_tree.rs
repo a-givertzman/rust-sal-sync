@@ -1,5 +1,6 @@
 use std::{collections::HashSet, str::FromStr};
 use sal_core::error::Error;
+use serde::de::DeserializeOwned;
 use super::{conf_keywd::ConfKeywd, conf_kind::ConfKind};
 ///
 /// ConfTree holds sede_yaml::Value and it key
@@ -346,6 +347,17 @@ impl ConfTree {
             None => None,
         }
     }
+    ///
+    /// Returns Type by `key`, parsed from serde_yaml
+    pub fn parse<T: DeserializeOwned + std::fmt::Debug>(&self, key: impl AsRef<str>) -> Result<T, Error> {
+        let val = match self.conf.get(key.as_ref()) {
+            Some(val) => serde_yaml::from_value::<T>(val.to_owned())
+                .map_err(|err| Error::new(&self.id, "parse").err(format!("key '{}' - parse error: {:?} in: {:#?}", key.as_ref(), err, self.conf))),
+            None => Err(Error::new(&self.id, "parse").err(format!("key '{}' - not found in: {:#?}", key.as_ref(), self.conf))),
+        };
+        log::trace!("ConfTree.get | {}: {:#?}", key.as_ref(), val);
+        val
+    } 
 }
 
 ///

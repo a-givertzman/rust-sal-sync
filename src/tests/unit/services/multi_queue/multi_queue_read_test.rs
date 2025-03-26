@@ -7,7 +7,10 @@ mod multi_queue {
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
     use crate::{
         services::{
-            conf::{conf_tree::ConfTree, services_conf::ServicesConf}, entity::object::Object, multi_queue::{multi_queue::MultiQueue, multi_queue_conf::MultiQueueConf}, retain::{retain_conf::RetainConf, retain_point_conf::RetainPointConf}, safe_lock::rwlock::SafeLock, service::service::Service, services::Services, task::functions::reset_counter::AtomicReset
+            conf::{conf_tree::ConfTree, services_conf::ServicesConf}, entity::object::Object,
+            multi_queue::{multi_queue::MultiQueue, multi_queue_conf::MultiQueueConf},
+            safe_lock::rwlock::SafeLock, service::service::Service, services::Services,
+            task::functions::reset_counter::AtomicReset
         },
         tests::unit::services::multi_queue::{mock_recv_service::MockRecvService, mock_send_service::{self, MockSendService}},
     };
@@ -77,16 +80,13 @@ mod multi_queue {
         let services = Arc::new(RwLock::new(Services::new(self_id, ServicesConf::new(
             self_id, 
             &ConfTree::new_root(serde_yaml::from_str(r#"
-                retain:
-                    path: assets/testing/retain/
-                    point:
-                        path: point/id.json
+                services:
+                    retain:
+                        path: assets/testing/retain/
+                        point:
+                            path: point/id.json
             "#).unwrap()),
-            // RetainConf::new(
-            //     Some("assets/testing/retain/"),
-            //     Some(RetainPointConf::new("point/id.json", None))
-            // ))
-            ))));
+        ))));
         let mut recv_services = vec![];
         for _ in 0..count {
             let recv_service = Arc::new(RwLock::new(MockRecvService::new(
