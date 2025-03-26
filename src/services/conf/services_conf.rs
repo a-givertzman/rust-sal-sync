@@ -14,7 +14,7 @@ pub struct ServicesConf {
 impl ServicesConf {
     ///
     /// 
-    pub fn new(parent: impl Into<String>, conf: &ConfTree) -> Self {
+    pub fn new(parent: impl Into<String>, mut conf: ConfTree) -> Self {
         // log::trace!("ServicesConf.new | confTree: {:?}", conf_tree);
         let parent = parent.into();
         let dbg = DbgId::with_parent(&parent, format!("ServicesConf({})", conf.key));

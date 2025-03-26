@@ -60,7 +60,7 @@ mod multi_queue {
         debug!("mqConf: {:?}", mq_conf);
         let services = Arc::new(RwLock::new(Services::new(self_id, ServicesConf::new(
             self_id, 
-            &ConfTree::new_root(serde_yaml::from_str(r#""#).unwrap()),
+            ConfTree::new_root(serde_yaml::from_str(r#""#).unwrap()),
         ))));
         let mq_service = Arc::new(RwLock::new(MultiQueue::new(mq_conf, services.clone())));
         services.wlock(self_id).insert(mq_service.clone());

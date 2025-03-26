@@ -79,7 +79,7 @@ mod multi_queue {
         test_duration.run().unwrap();
         let services = Arc::new(RwLock::new(Services::new(self_id, ServicesConf::new(
             self_id, 
-            &ConfTree::new_root(serde_yaml::from_str(r#"
+            ConfTree::new_root(serde_yaml::from_str(r#"
                 retain:
                     path: assets/testing/retain/
                     point:

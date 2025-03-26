@@ -100,12 +100,13 @@ impl ConfTree {
     /// 
     /// Will parsed from self `key` as [ConfKeywd]
     pub fn prefix(&self) -> Result<String, Error> {
+        let error = Error::new(&self.id, "prefix");
         match ConfKeywd::from_str(&self.key) {
             Ok(keywd) => {
                 log::trace!("ConfTree.prefix | Keyword: {:?}", keywd);
                 Ok(keywd.prefix())
             }
-            Err(err) => Err(Error::new("ConfTree", "prefix").err(format!("Error in {:?}: \n\t{:?}", self.key, err))),
+            Err(err) => Err(error.err(format!("Error in {:?}: \n\t{:?}", self.key, err))),
         }
     }
     ///
@@ -118,12 +119,13 @@ impl ConfTree {
     /// 
     /// Will parsed from self `key` as [ConfKeywd]
     pub fn kind(&self) -> Result<String, Error> {
+        let error = Error::new(&self.id, "kind");
         match ConfKeywd::from_str(&self.key) {
             Ok(keywd) => {
                 log::trace!("ConfTree.kind | Keyword: {:?}", keywd);
                 Ok(keywd.kind())
             }
-            Err(err) => Err(Error::new("ConfTree", "prefix").err(format!("Error in {:?}: \n\t{:?}", self.key, err))),
+            Err(err) => Err(error.err(format!("Error in {:?}: \n\t{:?}", self.key, err))),
         }
     }
     ///
@@ -136,12 +138,13 @@ impl ConfTree {
     /// 
     /// Will parsed from self `key` as [ConfKeywd]
     pub fn name(&self) -> Result<String, Error> {
+        let error = Error::new(&self.id, "name");
         match ConfKeywd::from_str(&self.key) {
             Ok(keywd) => {
                 log::trace!("ConfTree.name | Keyword: {:?}", keywd);
                 Ok(keywd.name())
             }
-            Err(err) => Err(Error::new("ConfTree", "prefix").err(format!("Error in {:?}: \n\t{:?}", self.key, err))),
+            Err(err) => Err(error.err(format!("Error in {:?}: \n\t{:?}", self.key, err))),
         }
     }
     ///
@@ -154,110 +157,117 @@ impl ConfTree {
     /// 
     /// Will parsed from self `key` as [ConfKeywd]
     pub fn sufix(&self) -> Result<String, Error> {
+        let error = Error::new(&self.id, "sufix");
         match ConfKeywd::from_str(&self.key) {
             Ok(keywd) => {
                 log::trace!("ConfTree.sufix | Keyword: {:?}", keywd);
                 Ok(keywd.sufix())
             }
-            Err(err) => Err(Error::new("ConfTree", "prefix").err(format!("Error in {:?}: \n\t{:?}", self.key, err))),
+            Err(err) => Err(error.err(format!("Error in {:?}: \n\t{:?}", self.key, err))),
         }
     }
     ///
     /// returns tree node value as bool by it's key if exists
-    pub fn as_bool(&self, key: &str) -> Result<bool, String> {
+    pub fn as_bool(&self, key: &str) -> Result<bool, Error> {
+        let error = Error::new(&self.id, "as_bool");
         if self.conf.is_mapping() {
             match self.conf.as_mapping().unwrap().get(key) {
                 Some(value) => {
                     match value.as_bool() {
                         Some(value) => Ok(value),
-                        None => Err(format!("error getting BOOL by key '{:?}' from node '{:?}'", &key, value)),
+                        None => Err(error.err(format!("error getting BOOL by key '{:?}' from node '{:?}'", &key, value))),
                     }
                 }
-                None => Err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf)),
+                None => Err(error.err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf))),
             }
         } else {
-            Err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf))
+            Err(error.err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf)))
         }
     }
     ///
     /// returns tree node value as bool by it's key if exists
-    pub fn as_i64(&self, key: &str) -> Result<i64, String> {
+    pub fn as_i64(&self, key: &str) -> Result<i64, Error> {
+        let error = Error::new(&self.id, "as_i64");
         if self.conf.is_mapping() {
             match self.conf.as_mapping().unwrap().get(key) {
                 Some(value) => {
                     match value.as_i64() {
                         Some(value) => Ok(value),
-                        None => Err(format!("error getting INT by key '{:?}' from node '{:?}'", &key, value)),
+                        None => Err(error.err(format!("error getting INT by key '{:?}' from node '{:?}'", &key, value))),
                     }
                 }
-                None => Err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf)),
+                None => Err(error.err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf))),
             }
         } else {
-            Err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf))
+            Err(error.err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf)))
         }
     }
     ///
     /// returns tree node value as f32 by it's key if exists
-    pub fn as_f32(&self, key: &str) -> Result<f32, String> {
+    pub fn as_f32(&self, key: &str) -> Result<f32, Error> {
+        let error = Error::new(&self.id, "as_f32");
         if self.conf.is_mapping() {
             match self.conf.as_mapping().unwrap().get(key) {
                 Some(value) => {
                     match value.as_f64() {
                         Some(value) => Ok(value as f32),
-                        None => Err(format!("error getting REAL by key '{:?}' from node '{:?}'", &key, value)),
+                        None => Err(error.err(format!("error getting REAL by key '{:?}' from node '{:?}'", &key, value))),
                     }
                 }
-                None => Err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf)),
+                None => Err(error.err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf))),
             }
         } else {
-            Err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf))
+            Err(error.err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf)))
         }
     }
     ///
     /// returns tree node value as f64 by it's key if exists
-    pub fn as_f64(&self, key: &str) -> Result<f64, String> {
+    pub fn as_f64(&self, key: &str) -> Result<f64, Error> {
+        let error = Error::new(&self.id, "as_f64");
         if self.conf.is_mapping() {
             match self.conf.as_mapping().unwrap().get(key) {
                 Some(value) => {
                     match value.as_f64() {
                         Some(value) => Ok(value),
-                        None => Err(format!("error getting DOUBLE by key '{:?}' from node '{:?}'", &key, value)),
+                        None => Err(error.err(format!("error getting DOUBLE by key '{:?}' from node '{:?}'", &key, value))),
                     }
                 }
-                None => Err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf)),
+                None => Err(error.err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf))),
             }
         } else {
-            Err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf))
+            Err(error.err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf)))
         }
     }
     ///
     /// returns tree node value as str by it's key if exists
-    pub fn as_str(&self, key: &str) -> Result<&str, String> {
+    pub fn as_str(&self, key: &str) -> Result<&str, Error> {
+        let error = Error::new(&self.id, "as_str");
         if self.conf.is_mapping() {
             match self.conf.as_mapping().unwrap().get(key) {
                 Some(value) => {
                     match value.as_str() {
                         Some(value) => Ok(value),
-                        None => Err(format!("Error getting STRING by key '{:?}' from node '{:?}'", &key, value)),
+                        None => Err(error.err(format!("Error getting STRING by key '{:?}' from node '{:?}'", &key, value))),
                     }
                 }
-                None => Err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf)),
+                None => Err(error.err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf))),
             }
         } else {
-            Err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf))
+            Err(error.err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf)))
         }
     }
     ///
     /// removes node by it's key if exists
     /// returns Result<&Self>
-    pub fn remove(&mut self, key: &str) -> Result<serde_yaml::Value, String> {
+    pub fn remove(&mut self, key: &str) -> Result<serde_yaml::Value, Error> {
+        let error = Error::new(&self.id, "remove");
         if self.conf.is_mapping() {
             match self.conf.as_mapping_mut().unwrap().remove(key) {
                 Some(value) => Ok(value),
-                None => Err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf)),
+                None => Err(error.err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf))),
             }
         } else {
-            Err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf))
+            Err(error.err(format!("Key '{:?}' not found in the node '{:?}'", &key, &self.conf)))
         }
     }
     ///
@@ -277,6 +287,7 @@ impl ConfTree {
     pub fn get_by_keyword(&mut self, prefix: &str, kind: impl Into<String>) -> Result<(ConfKeywd, ConfTree), Error> {
         let self_conf = self.clone();
         let kind = kind.into();
+        let error = Error::new(&self.id, "get_by_keyword");
         for node in self_conf.sub_nodes().unwrap() {
             if let Ok(keyword) = ConfKeywd::from_str(&node.key) {
                 if keyword.kind() == kind && keyword.prefix() == prefix {
@@ -285,13 +296,14 @@ impl ConfTree {
                 }
             }
         }
-        Err(Error::new(&self.id, "get_by_keyword").err(format!("keyword '{} {:?}' - not found", prefix, kind)))
+        Err(error.err(format!("keyword '{} {:?}' - not found", prefix, kind)))
     }
     ///
     /// Returns `in queue` name
-    pub fn get_in_queue(&mut self) -> Result<(String, i64), String> {
+    pub fn get_in_queue(&mut self) -> Result<(String, i64), Error> {
         let prefix = "in";
         let sub_param = "max-length";
+        let error = Error::new(&self.id, "get_in_queue");
         match self.get_by_keyword(prefix, ConfKind::Queue) {
             Ok((keyword, self_recv_queue)) => {
                 let name = format!("{} {} {}", keyword.prefix(), keyword.kind().to_string(), keyword.name());
@@ -299,23 +311,24 @@ impl ConfTree {
                 match ConfTreeGet::<serde_yaml::Value>::get(&self_recv_queue, sub_param) {
                     Some(val) => match val.as_i64() {
                         Some(max_length) => Ok((keyword.name(), max_length)),
-                        None => Err(format!("{}.get_in_queue | '{}': '{:?}' - must be an integer, in conf: {:?}", self.id, name, val, self.conf)),
+                        None => Err(error.err(format!("'{}': '{:?}' - must be an integer, in conf: {:?}", name, val, self.conf))),
                     }
-                    None => Err(format!("{}.get_in_queue | '{}' - not found in: {:?}", self.id, name, self.conf)),
+                    None => Err(error.err(format!("'{}' - not found in: {:?}", name, self.conf))),
                 }
             }
-            Err(err) => Err(format!("{}.get_in_queue | {} queue - not found in: {:#?}\n\terror: {:?}", self.id, prefix, self.conf, err)),
+            Err(err) => Err(error.pass_with(format!("{} queue - not found in: {:#?}\n\terror: {:?}", prefix, self.conf, err), err)),
         }
     }
     ///
     /// Returns `value` by 'send-to' key
     pub fn get_send_to(&mut self) -> Result<String, Error> {
+        let error = Error::new(&self.id, "get_send_to");
         match ConfTreeGet::<serde_yaml::Value>::get(self, "send-to") {
             Some(conf) => {
                 self.requested.insert("send-to".into());
                 Ok(conf.as_str().unwrap().to_string())
             }
-            None => Err(Error::new(&self.id, "get_send_to").err(format!("'send-to' - not found in: {:#?}", self.conf))),
+            None => Err(error.err(format!("'send-to' - not found in: {:#?}", self.conf))),
         }
     }
     ///
@@ -325,10 +338,12 @@ impl ConfTree {
             Some(conf) => {
                 match conf {
                     serde_yaml::Value::Null => {
+                        self.requested.insert("send-to".into());
                         log::warn!("{}.get_send_to_many | Parameter 'send-to' - is empty", self.id);
                         None
                     }
                     serde_yaml::Value::Sequence(conf) => {
+                        self.requested.insert("send-to".into());
                         let mut items = vec![];
                         for item in conf.iter() {
                             match item.as_str() {
@@ -349,12 +364,14 @@ impl ConfTree {
     }
     ///
     /// Returns Type by `key`, parsed from serde_yaml
-    pub fn parse<T: DeserializeOwned + std::fmt::Debug>(&self, key: impl AsRef<str>) -> Result<T, Error> {
-        let val = match self.conf.get(key.as_ref()) {
-            Some(val) => serde_yaml::from_value::<T>(val.to_owned())
-                .map_err(|err| Error::new(&self.id, "parse").err(format!("key '{}' - parse error: {:?} in: {:#?}", key.as_ref(), err, self.conf))),
-            None => Err(Error::new(&self.id, "parse").err(format!("key '{}' - not found in: {:#?}", key.as_ref(), self.conf))),
-        };
+    pub fn parse<T: DeserializeOwned + std::fmt::Debug>(&mut self, key: impl AsRef<str>) -> Result<T, Error> {
+        let error = Error::new(&self.id, "parse");
+        let val = self.conf
+            .get(key.as_ref())
+            .ok_or(error.err(format!("key '{}' - not found in: {:#?}", key.as_ref(), self.conf)))?;
+        self.requested.insert("send-to".into());
+        let val = serde_yaml::from_value::<T>(val.to_owned())
+        .map_err(|err| error.err(format!("key '{}' - parse error: {:?} in: {:#?}", key.as_ref(), err, self.conf)));
         log::trace!("ConfTree.get | {}: {:#?}", key.as_ref(), val);
         val
     } 
