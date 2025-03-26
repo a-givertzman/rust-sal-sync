@@ -1,7 +1,7 @@
-use std::{collections::HashSet, str::FromStr};
+use std::{collections::HashSet, str::FromStr, time::Duration};
 use sal_core::error::Error;
 use serde::de::DeserializeOwned;
-use super::{conf_keywd::ConfKeywd, conf_kind::ConfKind};
+use super::{conf_duration::ConfDuration, conf_keywd::ConfKeywd, conf_kind::ConfKind};
 ///
 /// ConfTree holds sede_yaml::Value and it key
 /// for root key = ""
@@ -374,7 +374,31 @@ impl ConfTree {
         .map_err(|err| error.err(format!("key '{}' - parse error: {:?} in: {:#?}", key.as_ref(), err, self.conf)));
         log::trace!("ConfTree.get | {}: {:#?}", key.as_ref(), val);
         val
-    } 
+    }
+    ///
+    /// Retuirns duration conf by key or None
+    pub fn get_duration(&mut self, key: impl AsRef<str>) -> Result<Duration, Error> {
+        let error = Error::new(&self.id, "parse");
+        match self.get(key.as_ref()) {
+            Some(value) => {
+                let value: serde_yaml::Value = value;
+                let value = if value.is_u64() {
+                    value.as_u64().unwrap().to_string()
+                } else if value.is_string() {
+                    value.as_str().unwrap().to_string()
+                } else {
+                    return Err(error.err(format!("Invalid {} duration format: {:?} \n\tin: {:?}", key.as_ref(), &value, self.conf)));
+                };
+                match ConfDuration::from_str(&value) {
+                    Ok(conf_duration) => {
+                        Ok(conf_duration.toDuration())
+                    }
+                    Err(err) => Err(error.err(format!("Parse {} duration '{}' error: {:?}", key.as_ref(), &value, err))),
+                }
+            }
+            None => Err(error.err(format!("Key {} - not found in: {:#?}", key.as_ref(), self.conf))),
+        }
+    }
 }
 
 ///
