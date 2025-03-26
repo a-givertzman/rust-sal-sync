@@ -1,6 +1,5 @@
 use std::{thread::{self}, time::{Duration, Instant}};
-use sal_core::Error;
-
+use sal_core::error::Error;
 use crate::thread_pool::scheduler::Scheduler;
 ///
 /// If maximum test turation will be exceeded - the panics throwed

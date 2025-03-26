@@ -1,4 +1,4 @@
-use sal_core::Error;
+use sal_core::error::Error;
 use super::job::Job;
 ///
 /// Provides schedule task to be executed on the [ThreadPool]

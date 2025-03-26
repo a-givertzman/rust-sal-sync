@@ -1,6 +1,6 @@
 use std::str::FromStr;
 use regex::RegexBuilder;
-use sal_core::Error;
+use sal_core::error::Error;
 use serde::Deserialize;
 ///
 /// # Configuration keyword konsists of 4 fields:

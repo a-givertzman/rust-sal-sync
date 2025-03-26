@@ -1,5 +1,5 @@
 use std::{collections::HashSet, str::FromStr};
-use sal_core::Error;
+use sal_core::error::Error;
 use super::{conf_keywd::ConfKeywd, conf_kind::ConfKind};
 ///
 /// ConfTree holds sede_yaml::Value and it key
