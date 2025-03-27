@@ -70,9 +70,23 @@ impl ConfKeywd {
 // 
 impl FromStr for ConfKeywd {
     type Err = Error;
+    ///
+    /// Returns [ConfKeywd] from fields
+    /// ```ignore
+    /// | prefix |  kind  |  name     | sufix     |
+    /// |        |        |           |           |
+    /// |--------|--------|-----------|-----------|
+    /// | opt    | requir |  requir   |  opt      |
+    /// |--------|--------|-----------|-----------|
+    /// |        | task   | Task      | Task1     |
+    /// |        | service| ApiClient | ApiClient |
+    /// | in     | queue  | in-queue  |           |
+    /// | out    | queue  | out-queue |           |
+    /// ```
     fn from_str(input: &str) -> Result<Self, Error> {
+        let error = Error::new("ConfKeywd", "from_str");
         log::trace!("ConfKeywd.from_str | input: {}", input);
-        let re = r#"(?:(?:(\w+)[ \t])?(task|service|queue|link){1}(?:$|(?:[ \t](\S+)(?:[ \t](\S+))?)))"#;
+        let re = r#"(?:(?:(\w+)[ \t])?(task|service|queue|link)(?:$|(?:[ \t](\S+)(?:[ \t](\S+))?)))"#;
         let re = RegexBuilder::new(re).multi_line(false).build().unwrap();
         let group_prefix = 1;
         let group_kind = 2;
@@ -86,11 +100,11 @@ impl FromStr for ConfKeywd {
                 };
                 let kind = match &caps.get(group_kind) {
                     Some(kind) => Ok(kind.as_str().to_owned()),
-                    None => Err(Error::new("ConfKeywd","from_str").err(format!("Error parsing `kind` from keyword '{}'", &input))),
+                    None => Err(error.err(format!("Error parsing required `kind` from keyword '{}'", &input))),
                 }?;
                 let name = match &caps.get(group_name) {
                     Some(arg) => Ok(arg.as_str().to_string()),
-                    None => Err(Error::new("ConfKeywd","from_str").err(format!("Error parsing `name` from keyword '{}'", &input))),
+                    None => Err(error.err(format!("Error parsing required `name` from keyword '{}'", &input))),
                 }?;
                 let sufix = match &caps.get(group_sufix) {
                     Some(first) => String::from(first.as_str()),
@@ -104,7 +118,7 @@ impl FromStr for ConfKeywd {
                 })
             }
             None => {
-                Err(Error::new("ConfKeywd", "from_str").err(format!("Pattern `prefix Kinde Name sufix` - not found in keyword '{}'", &input)))
+                Err(error.err(format!("Pattern `prefix Kinde Name sufix` - not found in keyword '{}'", &input)))
             }
         }
     }

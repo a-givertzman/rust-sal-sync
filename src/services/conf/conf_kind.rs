@@ -21,7 +21,7 @@ use sal_core::error::Error;
 /// | in     | queue  | in-queue  |           |
 /// | out    | queue  | out-queue |           |
 /// ````
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ConfKind {
     Task,
     Service,
