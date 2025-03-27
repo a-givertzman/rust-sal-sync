@@ -20,6 +20,7 @@ pub enum ConfParam<T, E> {
 }
 ///
 /// Common configuration used in the custom service config 
+#[deprecated(note = "Use sal_core::services::conf::ConfTree instead")]
 #[derive(Debug, PartialEq, Clone)]
 pub struct ServiceConfig {
     id: String,
