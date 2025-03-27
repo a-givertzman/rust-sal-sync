@@ -1,7 +1,9 @@
 use std::{collections::HashSet, str::FromStr, time::Duration};
 use sal_core::error::Error;
 use serde::de::DeserializeOwned;
-use super::{conf_duration::ConfDuration, conf_keywd::ConfKeywd, conf_kind::ConfKind};
+use crate::{collections::map::FxIndexMap, services::{entity::{name::Name, point::point_config::PointConfig}, task::functions::conf::fn_conf_keywd::{FnConfKeywd, FnConfKindName}}};
+
+use super::{conf_duration::ConfDuration, conf_keywd::ConfKeywd, conf_kind::ConfKind, diag_keywd::DiagKeywd};
 ///
 /// ConfTree holds sede_yaml::Value and it key
 /// for root key = ""
@@ -369,19 +371,25 @@ impl ConfTree {
         let val = self.conf
             .get(key.as_ref())
             .ok_or(error.err(format!("key '{}' - not found in: {:#?}", key.as_ref(), self.conf)))?;
-        self.requested.insert("send-to".into());
+        self.requested.insert(key.as_ref().to_owned());
         let val = serde_yaml::from_value::<T>(val.to_owned())
         .map_err(|err| error.err(format!("key '{}' - parse error: {:?} in: {:#?}", key.as_ref(), err, self.conf)));
         log::trace!("ConfTree.get | {}: {:#?}", key.as_ref(), val);
         val
     }
     ///
-    /// Retuirns duration conf by key or None
+    /// Retuirns duration conf by key or Error
+    /// 
+    /// ```yaml
+    /// duration: 10ms      # 10 milliseconds
+    /// interval: 100us     # 100 microseconds
+    /// timeout: 3s         # 3 seconds
+    /// ```
     pub fn get_duration(&mut self, key: impl AsRef<str>) -> Result<Duration, Error> {
-        let error = Error::new(&self.id, "parse");
-        match self.get(key.as_ref()) {
+        let error = Error::new(&self.id, "get_duration");
+        match ConfTreeGet::<serde_yaml::Value>::get(self, key.as_ref()) {
             Some(value) => {
-                let value: serde_yaml::Value = value;
+                self.requested.insert(key.as_ref().to_owned());
                 let value = if value.is_u64() {
                     value.as_u64().unwrap().to_string()
                 } else if value.is_string() {
@@ -398,6 +406,45 @@ impl ConfTree {
             }
             None => Err(error.err(format!("Key {} - not found in: {:#?}", key.as_ref(), self.conf))),
         }
+    }
+    ///
+    /// Returns diagnosis point config's
+    /// 
+    /// ```yaml
+    /// diagnosis:                          # internal diagnosis
+    ///     point Status:                   # Ok(0) / Invalid(10)
+    ///         type: 'Int'
+    ///         # history: r                # r / rw - activates history
+    ///     point Connection:               # Ok(0) / Invalid(10)
+    ///         type: 'Int'
+    ///         # history: r                # r / rw - activates history
+    /// ```
+    pub fn get_diagnosis(&mut self, parent: impl Into<String>) -> FxIndexMap<DiagKeywd, PointConfig> {
+        let mut points = FxIndexMap::default();
+        let parent = parent.into();
+        match ConfTreeGet::<ConfTree>::get(self, "diagnosis") {
+            Some(conf) => {
+                self.requested.insert("diagnosis".to_owned());
+                for key in conf.keys() {
+                    let keyword = FnConfKeywd::from_str(&key).unwrap();
+                    if keyword.kind() == FnConfKindName::Point {
+                        let point_name = Name::new(&parent, keyword.data()).join();
+                        let point_conf = conf.get(key).unwrap();
+                        log::trace!("{}.get_diagnosis | Point '{}'", self.id, point_name);
+                        let point = PointConfig::new(&parent, &point_conf);
+                        let point_name_keywd = DiagKeywd::new(&point.name);
+                        points.insert(point_name_keywd, point);
+                    } else {
+                        log::warn!("{}.get_diagnosis | point conf expected, but found: {:?}", self.id, keyword);
+                    }
+                }
+
+            }
+            None => {
+                log::warn!("{}.get_diagnosis | diagnosis - not found in {:#?}", self.id, self.conf);
+            }
+        };
+        points
     }
 }
 
