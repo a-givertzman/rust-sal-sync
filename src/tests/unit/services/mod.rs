@@ -4,6 +4,7 @@ mod future;
 mod multi_queue;
 mod retain;
 mod service;
+mod services;
 mod subscription;
 mod task;
 mod types;
