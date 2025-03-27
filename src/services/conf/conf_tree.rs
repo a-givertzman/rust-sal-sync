@@ -399,7 +399,7 @@ impl ConfTree {
                 };
                 match ConfDuration::from_str(&value) {
                     Ok(conf_duration) => {
-                        Ok(conf_duration.toDuration())
+                        Ok(conf_duration.to_duration())
                     }
                     Err(err) => Err(error.err(format!("Parse {} duration '{}' error: {:?}", key.as_ref(), &value, err))),
                 }

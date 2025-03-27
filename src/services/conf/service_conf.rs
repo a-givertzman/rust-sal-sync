@@ -103,7 +103,7 @@ impl ServiceConfig {
                 };
                 match ConfDuration::from_str(&value) {
                     Ok(conf_duration) => {
-                        Some(conf_duration.toDuration())
+                        Some(conf_duration.to_duration())
                     }
                     Err(err) => panic!("{}.get_duration | Parse {} duration '{}' error: {:?}", self.id, &name, &value, err),
                 }
