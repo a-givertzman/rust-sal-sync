@@ -286,10 +286,10 @@ impl ConfTree {
     /// | in         | queue    | in-queue    |           |
     /// | out        | queue    | out-queue   |           |
     /// ```
-    pub fn get_by_keyword(&mut self, prefix: &str, kind: impl Into<String>) -> Result<(ConfKeywd, ConfTree), Error> {
+    pub fn get_by_keywd(&mut self, prefix: &str, kind: impl Into<String>) -> Result<(ConfKeywd, ConfTree), Error> {
         let self_conf = self.clone();
         let kind = kind.into();
-        let error = Error::new(&self.id, "get_by_keyword");
+        let error = Error::new(&self.id, "get_by_keywd");
         for node in self_conf.sub_nodes().unwrap() {
             if let Ok(keyword) = ConfKeywd::from_str(&node.key) {
                 if keyword.kind() == kind && keyword.prefix() == prefix {
@@ -306,7 +306,7 @@ impl ConfTree {
         let prefix = "in";
         let sub_param = "max-length";
         let error = Error::new(&self.id, "get_in_queue");
-        match self.get_by_keyword(prefix, ConfKind::Queue) {
+        match self.get_by_keywd(prefix, ConfKind::Queue) {
             Ok((keyword, self_recv_queue)) => {
                 let name = format!("{} {} {}", keyword.prefix(), keyword.kind().to_string(), keyword.name());
                 log::debug!("{}.get_in_queue | self in-queue params {}: {:?}", self.id, name, self_recv_queue);

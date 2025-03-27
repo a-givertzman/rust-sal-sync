@@ -53,7 +53,7 @@ impl MultiQueueConf {
             }
         };
         log::debug!("{}.new | 'send-to': {:?}", dbg, send_to);
-        if let Ok((_, _)) = conf.get_by_keyword("out", ConfKind::Queue) {
+        if let Ok((_, _)) = conf.get_by_keywd("out", ConfKind::Queue) {
             log::error!("{}.new | Parameter 'out queue' - deprecated, use 'send-to' instead in conf: {:#?}", dbg, conf)
         }
         MultiQueueConf {
