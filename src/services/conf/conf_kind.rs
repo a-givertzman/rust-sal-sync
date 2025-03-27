@@ -1,3 +1,5 @@
+use sal_core::error::Error;
+
 ///
 /// General kinds of configuration entities 
 /// 
@@ -30,12 +32,7 @@ pub enum ConfKind {
 //
 impl From<ConfKind> for String {
     fn from(kind: ConfKind) -> Self {
-        String::from(match kind {
-            ConfKind::Task => "task",
-            ConfKind::Service => "service",
-            ConfKind::Queue => "queue",
-            ConfKind::Link => "link",
-        })
+        Into::<&str>::into(kind).to_owned()
     }
 }
 //
@@ -47,6 +44,21 @@ impl From<ConfKind> for &str {
             ConfKind::Service => "service",
             ConfKind::Queue => "queue",
             ConfKind::Link => "link",
+        }
+    }
+}
+//
+//
+impl TryFrom<String> for ConfKind {
+    type Error = Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.to_lowercase().as_str() {
+            "task" => Ok(ConfKind::Task),
+            "service" => Ok(ConfKind::Service),
+            "queue" => Ok(ConfKind::Queue),
+            "link" => Ok(ConfKind::Link),
+            _ => Err(Error::new("ConfKind", "try_from").err(format!("Unknown variant: `{}`", value)))
         }
     }
 }
