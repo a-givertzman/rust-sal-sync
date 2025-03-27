@@ -322,6 +322,22 @@ impl ConfTree {
         }
     }
     ///
+    /// Returns out queue name
+    #[deprecated(note = "Use ConfTree::get_send_to instead")]
+    pub fn get_out_queue(&mut self) -> Result<String, Error> {
+        let prefix = "out";
+        let error = Error::new(&self.id, "get_out_queue");
+        match self.get_by_keywd(prefix, ConfKind::Queue) {
+            Ok((keyword, tx_name)) => {
+                let name = format!("{} {} {}", keyword.prefix(), keyword.kind().to_string(), keyword.name());
+                log::debug!("{}.get_out_queue | self out-queue params {}: {:?}", self.id, name, tx_name);
+                Ok(tx_name.conf.as_str().unwrap().to_string())
+            }
+            Err(err) => Err(error.err(format!("{} queue - not found in: {:#?}\n\terror: {:?}", prefix, self.conf, err))),
+        }
+    }
+
+    ///
     /// Returns `value` by 'send-to' key
     pub fn get_send_to(&mut self) -> Result<String, Error> {
         let error = Error::new(&self.id, "get_send_to");
