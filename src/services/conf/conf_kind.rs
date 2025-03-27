@@ -30,6 +30,25 @@ pub enum ConfKind {
 }
 //
 //
+impl From<&ConfKind> for &str {
+    fn from(kind: &ConfKind) -> Self {
+        match kind {
+            ConfKind::Task => "task",
+            ConfKind::Service => "service",
+            ConfKind::Queue => "queue",
+            ConfKind::Link => "link",
+        }
+    }
+}
+//
+//
+impl From<ConfKind> for &str {
+    fn from(kind: ConfKind) -> Self {
+        (&kind).into()
+    }
+}
+//
+//
 impl From<ConfKind> for String {
     fn from(kind: ConfKind) -> Self {
         Into::<&str>::into(kind).to_owned()
@@ -37,14 +56,9 @@ impl From<ConfKind> for String {
 }
 //
 //
-impl From<ConfKind> for &str {
-    fn from(kind: ConfKind) -> Self {
-        match kind {
-            ConfKind::Task => "task",
-            ConfKind::Service => "service",
-            ConfKind::Queue => "queue",
-            ConfKind::Link => "link",
-        }
+impl From<&ConfKind> for String {
+    fn from(kind: &ConfKind) -> Self {
+        Into::<&str>::into(kind).to_owned()
     }
 }
 //
@@ -60,5 +74,12 @@ impl TryFrom<String> for ConfKind {
             "link" => Ok(ConfKind::Link),
             _ => Err(Error::new("ConfKind", "try_from").err(format!("Unknown variant: `{}`", value)))
         }
+    }
+}
+//
+//
+impl ToString for ConfKind {
+    fn to_string(&self) -> String {
+        self.into()
     }
 }
