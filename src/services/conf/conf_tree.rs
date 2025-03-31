@@ -76,12 +76,14 @@ impl ConfTree {
         }
     }
     ///
-    /// Returns keys, which has not requested yet
-    pub fn keys(&self) -> Vec<String> {
+    /// Returns keys, excluding specified
+    /// - `exclude` - list of keys to be filtered
+    pub fn keys(&self, exclude: &[impl AsRef<str>]) -> Vec<String> {
+        let exclude: Vec<&str> = exclude.iter().map(|key| key.as_ref()).collect();
         self.conf.as_mapping().map(|nodes| {
             nodes.keys().filter_map(|key| {
                 match key.as_str() {
-                    Some(key) => if self.requested.contains(key) {
+                    Some(key) => if exclude.contains(&key) {
                         None
                     } else {
                         Some(key.to_owned())
@@ -441,7 +443,7 @@ impl ConfTree {
         match ConfTreeGet::<ConfTree>::get(self, "diagnosis") {
             Some(conf) => {
                 self.requested.insert("diagnosis".to_owned());
-                for key in conf.keys() {
+                for key in conf.keys(&[] as &[&str]) {
                     let keyword = FnConfKeywd::from_str(&key).unwrap();
                     if keyword.kind() == FnConfKindName::Point {
                         let point_name = Name::new(&parent, keyword.data()).join();
