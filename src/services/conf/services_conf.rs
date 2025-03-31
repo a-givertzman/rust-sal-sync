@@ -4,6 +4,19 @@ use crate::services::{
 use super::conf_tree::ConfTree;
 ///
 /// Configuration parameters for [Services](https://github.com/a-givertzman/rust-sal-sync/blob/master/src/services/services.rs)
+/// 
+/// **Example**
+/// ```yaml
+/// services:
+///     retain:
+///         path: assets/retain/
+///         point:
+///             path: point/id.json
+///             api:
+///                 table: public.tags
+///                 address: 0.0.0.0:8080
+///                 auth_token: 123!@#
+///                 database: crane_data_server
 #[derive(Debug, Clone, PartialEq)]
 pub struct ServicesConf {
     pub name: Name,
