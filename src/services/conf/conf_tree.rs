@@ -82,9 +82,9 @@ impl ConfTree {
             nodes.keys().filter_map(|key| {
                 match key.as_str() {
                     Some(key) => if self.requested.contains(key) {
-                        Some(key.to_owned())
-                    } else {
                         None
+                    } else {
+                        Some(key.to_owned())
                     }
                     None => None,
                 }
