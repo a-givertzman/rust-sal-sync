@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod config_tree {
-    use log::{debug, info};
     use std::sync::Once;
     use indexmap::IndexMap;
     use testing::entities::test_value::Value;
@@ -42,7 +41,7 @@ mod config_tree {
         DebugSession::init(LogLevel::Info, Backtrace::Short);
         init_once();
         init_each();
-        info!("test_config_tree_valid");
+        log::info!("test_config_tree_valid");
         // let (initial, switches) = init_each();
         let test_data: Vec<(&str, Node)> = vec![
             // (
@@ -81,13 +80,13 @@ mod config_tree {
                 "#,
                 Node::Map(IndexMap::from([
                     (format!("let newVar2"), Node::Map(IndexMap::from([
-                        (format!("input"), Node::End(ConfTree { key: format!("input"), conf: serde_yaml::from_str("const 2.2").unwrap() })),
+                        (format!("input"), Node::End(ConfTree::new("input", serde_yaml::from_str("const 2.2").unwrap()))),
                     ]))),
                     (format!("let newVar3"), Node::Map(IndexMap::from([
-                        (format!("input"), Node::End(ConfTree { key: format!("input"), conf: serde_yaml::from_str("const 3.3").unwrap() })),
+                        (format!("input"), Node::End(ConfTree::new("input", serde_yaml::from_str("const 3.3").unwrap()))),
                     ]))),
                     (format!("let newVar1"), Node::Map(IndexMap::from([
-                        (format!("input"), Node::End(ConfTree { key: format!("input"), conf: serde_yaml::from_str("const 1.1").unwrap() })),
+                        (format!("input"), Node::End(ConfTree::new("input", serde_yaml::from_str("const 1.1").unwrap()))),
                     ]))),
                 ]))
             ),
@@ -103,14 +102,14 @@ mod config_tree {
                 "#,
                 Node::Map(IndexMap::from([
                     (format!("let newVar1"), Node::Map(IndexMap::from([
-                        (format!("input2"), Node::End(ConfTree { key: format!("input2"), conf: serde_yaml::from_str("point '/Path/Point.Name/'").unwrap() })),
+                        (format!("input2"), Node::End(ConfTree::new("input2",serde_yaml::from_str("point '/Path/Point.Name/'").unwrap()))),
                         (format!("input3"), Node::Map(IndexMap::from([
                             (format!("fn Count"), Node::Map(IndexMap::from([
-                                (format!("inputConst1"), Node::End(ConfTree { key: format!("inputConst1"), conf: serde_yaml::from_str("const '13.5'").unwrap() })),
-                                (format!("inputConst2"), Node::End(ConfTree { key: format!("inputConst2"), conf: serde_yaml::from_str("newVar1").unwrap() }))
+                                (format!("inputConst1"), Node::End(ConfTree::new("inputConst1",serde_yaml::from_str("const '13.5'").unwrap()))),
+                                (format!("inputConst2"), Node::End(ConfTree::new("inputConst2",serde_yaml::from_str("newVar1").unwrap())))
                             ])))
                         ]))),
-                        (format!("input1"), Node::End(ConfTree { key: format!("input1"), conf: serde_yaml::from_str("const 177.3").unwrap() }))
+                        (format!("input1"), Node::End(ConfTree::new("input1", serde_yaml::from_str("const 177.3").unwrap())))
                     ]))),
                 ]))
             ),
@@ -150,36 +149,35 @@ mod config_tree {
                 "#,
                 Node::Map(IndexMap::from([
                     (format!("serviceCMA"), Node::Map(IndexMap::from([
-                        (format!("nodeType"), Node::End(ConfTree { key: format!("nodeType"), conf: serde_yaml::from_str("API Client").unwrap() })),
-                        (format!("address"), Node::End(ConfTree { key: format!("address"), conf: serde_yaml::from_str("127.0.0.1:8899").unwrap() })),
-                        (format!("cycle"), Node::End(ConfTree { key: format!("cycle"), conf: serde_yaml::from_str("1000").unwrap() })),
+                        (format!("nodeType"), Node::End(ConfTree::new("nodeType", serde_yaml::from_str("API Client").unwrap()))),
+                        (format!("address"), Node::End(ConfTree::new("address", serde_yaml::from_str("127.0.0.1:8899").unwrap()))),
+                        (format!("cycle"), Node::End(ConfTree::new("cycle", serde_yaml::from_str("1000").unwrap()))),
                     ]))),
                     (format!("serviceAPI"), Node::Map(IndexMap::from([
-                        (format!("nodeType"), Node::End(ConfTree { key: format!("nodeType"), conf: serde_yaml::from_str("API Client").unwrap() })),
-                        (format!("address"), Node::End(ConfTree { key: format!("address"), conf: serde_yaml::from_str("127.0.0.1:8899").unwrap() })),
-                        (format!("cycle"), Node::End(ConfTree { key: format!("cycle"), conf: serde_yaml::from_str("2000").unwrap() })),
+                        (format!("nodeType"), Node::End(ConfTree::new("nodeType", serde_yaml::from_str("API Client").unwrap()))),
+                        (format!("address"), Node::End(ConfTree::new("address", serde_yaml::from_str("127.0.0.1:8899").unwrap()))),
+                        (format!("cycle"), Node::End(ConfTree::new("cycle", serde_yaml::from_str("2000").unwrap() ))),
                     ]))),
                     (format!("serviceTask"), Node::Map(IndexMap::from([
-                        (format!("cycle"), Node::End(ConfTree { key: format!("cycle"), conf: serde_yaml::from_str("200").unwrap() }))
+                        (format!("cycle"), Node::End(ConfTree::new("cycle", serde_yaml::from_str("200").unwrap())))
                     ]))),
                 ]))
             ),
         ];
         for (value, target) in test_data {
-            // debug!("test value: {:?}", value);
+            // log::debug!("test value: {:?}", value);
             let conf: serde_yaml::Value = serde_yaml::from_str(value).unwrap();
-            debug!("test conf: {:?}", conf);
+            log::debug!("test conf: {:?}", conf);
             // let conf = test_data.get("/").unwrap();
             let conf_tree = ConfTree::new_root(conf);
-            debug!("confTree: {:?}", conf_tree);
-            let res = inputs(&conf_tree);
-            debug!("result: {:?}", res);
-            println!();
-            assert_eq!(res, target);
-            let mut target = target.as_map().iter();
-            for (_name, node) in res.as_map() {
-                let (_, target_node) = target.next().unwrap();
-                assert_eq!(node, target_node);
+            log::debug!("confTree: {:?}", conf_tree);
+            let result = inputs(&conf_tree);
+            log::debug!("result: {:?}", result);
+            assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
+            let mut targets = target.as_map().iter();
+            for (_name, result) in result.as_map() {
+                let (_, target) = targets.next().unwrap();
+                assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
             }
         }
     }
@@ -189,7 +187,7 @@ mod config_tree {
             Some(nodes) => {
                 let mut res: IndexMap<String, Node> = IndexMap::new();
                 for node in nodes {
-                    debug!("key: {:?}\t|\tnode: {:?}", &node.key, &node.conf);
+                    log::debug!("key: {:?}\t|\tnode: {:?}", &node.key, &node.conf);
                     let sub_res = inputs(&node);
                     res.insert(node.key.clone(), sub_res);
                 }
@@ -207,7 +205,7 @@ mod config_tree {
         DebugSession::init(LogLevel::Info, Backtrace::Short);
         init_once();
         init_each();
-        info!("test_config_tree_valid");
+        log::info!("test_config_tree_valid");
         // let (initial, switches) = init_each();
         let test_data: Vec<(&str, IndexMap<&str, Value>)> = vec![
             (
@@ -241,17 +239,17 @@ mod config_tree {
 
         ];
         for (value, targets) in test_data {
-            // debug!("test value: {:?}", value);
+            // log::debug!("test value: {:?}", value);
             let conf: serde_yaml::Value = serde_yaml::from_str(value).unwrap();
-            debug!("test conf: {:?}", conf);
-            let conf_tree = ConfTree::new_root(conf);
+            log::debug!("test conf: {:?}", conf);
+            let conf = ConfTree::new_root(conf);
             for (key, target) in targets {
                 match target {
-                    Value::Bool(target_value) => assert_eq!(conf_tree.as_bool(key).unwrap(), target_value),
-                    Value::Int(target_value) => assert_eq!(conf_tree.as_i64(key).unwrap(), target_value),
-                    Value::Real(target_value) => assert_eq!(conf_tree.as_f32(key).unwrap(), target_value),
-                    Value::Double(target_value) => assert_eq!(conf_tree.as_f64(key).unwrap(), target_value),
-                    Value::String(target_value) => assert_eq!(conf_tree.as_str(key).unwrap(), target_value),
+                    Value::Bool(target) => assert!(conf.as_bool(key).unwrap() == target, "\nresult: {:?}\ntarget: {:?}", conf.as_bool(key).unwrap(), target),
+                    Value::Int(target) => assert!(conf.as_i64(key).unwrap() == target, "\nresult: {:?}\ntarget: {:?}", conf.as_i64(key).unwrap(), target),
+                    Value::Real(target) => assert!(conf.as_f32(key).unwrap() == target, "\nresult: {:?}\ntarget: {:?}", conf.as_f32(key).unwrap(), target),
+                    Value::Double(target) => assert!(conf.as_f64(key).unwrap() == target, "\nresult: {:?}\ntarget: {:?}", conf.as_f64(key).unwrap(), target),
+                    Value::String(target) => assert!(conf.as_str(key).unwrap() == target, "\nresult: {:?}\ntarget: {:?}", conf.as_str(key).unwrap(), target),
                 }
             }
         }

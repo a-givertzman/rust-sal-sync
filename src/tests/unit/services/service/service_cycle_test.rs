@@ -64,7 +64,7 @@ mod service_cycle {
             info!("elapsed for max load: {:?}", t.elapsed());
             let mut cycle = ServiceCycle::new(self_id, Duration::from_millis(target_cycle_interval));
             for _ in 0..test_cycles {
-                let num = rand::thread_rng().gen_range(1..max);
+                let num = rand::rng().random_range(1..max);
                 debug!("load: {}", num);
                 cycle.start();
                 let t = Instant::now();
