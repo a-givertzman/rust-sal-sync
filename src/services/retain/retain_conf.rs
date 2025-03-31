@@ -5,6 +5,18 @@ use super::{retain_point_api::RetainPointConfApi, retain_point_conf::RetainPoint
 /// Retain configuration parameters and tools
 /// - `path` - location of the retained values, something like assets/retain/
 /// - `point` - store / load Point Id
+/// 
+/// **Example**
+/// ```yaml
+/// retain:
+///     path: assets/retain/
+///     point:
+///         path: point/id.json
+///         api:
+///             table: public.tags
+///             address: 0.0.0.0:8080
+///             auth_token: 123!@#
+///             database: crane_data_server
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RetainConf {
     pub path: Option<PathBuf>,
