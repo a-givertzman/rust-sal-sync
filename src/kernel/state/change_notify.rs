@@ -13,9 +13,6 @@ impl<S: Clone + std::cmp::PartialEq + std::cmp::Eq + std::hash::Hash + std::fmt:
     //
     //
     pub fn new(parent: impl Into<String>, initial: S, states: Vec<(S, Box<dyn Fn(T)>)>) -> Self {
-        // fn callback<T>(c: impl Fn(T) + 'static) -> Box<dyn Fn(T)> {
-        //     Box::new(c)
-        // }
         let states = FxIndexMap::from_iter(states);
         Self {
             id: format!("{}/ChangeNotify<{}>", parent.into(), std::any::type_name::<S>()),

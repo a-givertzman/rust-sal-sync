@@ -6,7 +6,7 @@ use crate::{
         safe_lock::rwlock::SafeLock,
         service::{link_name::LinkName, service::Service, service_cycle::ServiceCycle, service_handles::ServiceHandles},
         subscription::subscription_criteria::SubscriptionCriteria,
-    }
+    },
 };
 use std::{
     collections::HashMap, fmt::Debug,

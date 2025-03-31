@@ -5,9 +5,9 @@ use std::sync::{atomic::{AtomicBool, Ordering}, Arc};
 /// - If [exit] is true, service exits main thread
 /// - Rase [exit_pair] to true when partner service must exit main thread
 pub struct ExitNotify {
+    id: String,
     exit: Arc<AtomicBool>,
     exit_pair: Arc<AtomicBool>,
-    id: String,
 }
 //
 //
