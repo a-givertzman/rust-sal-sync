@@ -41,7 +41,8 @@ impl MultiQueueConf {
         let me = conf.sufix()
             .map(|s| if s.is_empty() {conf.name().unwrap()} else {s})
             .unwrap_or(conf.name().unwrap());
-        let self_name = Name::new(parent, me);
+        let self_name = Name::new(parent, &me);
+        let dbg = format!("MultiQueueConf({})", me);
         log::debug!("{}.new | self_name: {:?}", dbg, self_name);
         let (rx, rx_max_length) = conf.get_in_queue().unwrap();
         log::debug!("{}.new | 'in queue': {},\tmax-length: {}", dbg, rx, rx_max_length);
