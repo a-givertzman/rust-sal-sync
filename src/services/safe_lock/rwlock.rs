@@ -33,7 +33,7 @@ static SERVICES_LOCK_COUNT: AtomicUsize = AtomicUsize::new(0);
 impl SafeLock<dyn Service> for Arc<RwLock<dyn Service>> {
     fn rlock<'a>(&'a self, parent: impl Into<String>) -> RwLockReadGuard<'a, (dyn Service + 'static)> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
-        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000));
+        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000), None);
         lock_timer.run().unwrap();
         log::info!("SafeLock.rlock | Lock from '{}' on '{}'...", parent.into(), self_id);
         let rwlock_guard = self.read().unwrap();
@@ -43,7 +43,7 @@ impl SafeLock<dyn Service> for Arc<RwLock<dyn Service>> {
     }
     fn wlock<'a>(&'a self, parent: impl Into<String>) -> RwLockWriteGuard<'a, (dyn Service + 'static)> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
-        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000));
+        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000), None);
         lock_timer.run().unwrap();
         log::info!("SafeLock.wlock | Lock from '{}' on '{}'...", parent.into(), self_id);
         let mutax_guard = self.write().unwrap();
@@ -57,7 +57,7 @@ impl SafeLock<dyn Service> for Arc<RwLock<dyn Service>> {
 impl SafeLock<dyn Service + Send> for Arc<RwLock<dyn Service + Send>> {
     fn rlock<'a>(&'a self, parent: impl Into<String>) -> RwLockReadGuard<'a, (dyn Service + Send + 'static)> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
-        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000));
+        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000), None);
         lock_timer.run().unwrap();
         log::info!("SafeLock.rlock | Lock from '{}' on '{}'...", parent.into(), self_id);
         let rwlock_guard = self.read().unwrap();
@@ -67,7 +67,7 @@ impl SafeLock<dyn Service + Send> for Arc<RwLock<dyn Service + Send>> {
     }
     fn wlock<'a>(&'a self, parent: impl Into<String>) -> RwLockWriteGuard<'a, (dyn Service + Send + 'static)> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
-        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000));
+        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000), None);
         lock_timer.run().unwrap();
         log::info!("SafeLock.wlock | Lock from '{}' on '{}'...", parent.into(), self_id);
         let mutax_guard = self.write().unwrap();
@@ -81,7 +81,7 @@ impl SafeLock<dyn Service + Send> for Arc<RwLock<dyn Service + Send>> {
 impl SafeLock<Services> for Arc<RwLock<Services>> {
     fn rlock<'a>(&'a self, parent: impl Into<String>) -> RwLockReadGuard<'a, Services> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
-        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000));
+        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000), None);
         lock_timer.run().unwrap();
         SERVICES_LOCK_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let count = SERVICES_LOCK_COUNT.load(std::sync::atomic::Ordering::SeqCst);
@@ -94,7 +94,7 @@ impl SafeLock<Services> for Arc<RwLock<Services>> {
     }
     fn wlock<'a>(&'a self, parent: impl Into<String>) -> RwLockWriteGuard<'a, Services> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
-        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000));
+        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000), None);
         lock_timer.run().unwrap();
         SERVICES_LOCK_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let count = SERVICES_LOCK_COUNT.load(std::sync::atomic::Ordering::SeqCst);
@@ -111,7 +111,7 @@ impl SafeLock<Services> for Arc<RwLock<Services>> {
 impl SafeLock<Subscriptions> for Arc<RwLock<Subscriptions>> {
     fn rlock<'a>(&'a self, parent: impl Into<String>) -> RwLockReadGuard<'a, Subscriptions> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
-        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100));
+        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100), None);
         lock_timer.run().unwrap();
         log::trace!("SafeLock.rlock | Lock from '{}' on {:?}...", parent.into(), self_id);
         let mutax_guard = self.read().unwrap();
@@ -121,7 +121,7 @@ impl SafeLock<Subscriptions> for Arc<RwLock<Subscriptions>> {
     }
     fn wlock<'a>(&'a self, parent: impl Into<String>) -> RwLockWriteGuard<'a, Subscriptions> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
-        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100));
+        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100), None);
         lock_timer.run().unwrap();
         log::trace!("SafeLock.wlock | Lock from '{}' on {:?}...", parent.into(), self_id);
         let mutax_guard = self.write().unwrap();
@@ -159,7 +159,7 @@ impl SafeLock<Subscriptions> for Arc<RwLock<Subscriptions>> {
 impl SafeLock<Receiver<bool>> for Arc<RwLock<Receiver<bool>>> {
     fn rlock<'a>(&'a self, parent: impl Into<String>) -> RwLockReadGuard<'a, Receiver<bool>> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
-        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100));
+        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100), None);
         lock_timer.run().unwrap();
         log::info!("SafeLock.rlock | Lock from '{}' on '{:?}'...", parent.into(), self_id);
         let mutax_guard = self.read().unwrap();
@@ -169,7 +169,7 @@ impl SafeLock<Receiver<bool>> for Arc<RwLock<Receiver<bool>>> {
     }
     fn wlock<'a>(&'a self, parent: impl Into<String>) -> RwLockWriteGuard<'a, Receiver<bool>> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
-        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100));
+        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100), None);
         lock_timer.run().unwrap();
         log::info!("SafeLock.wlock | Lock from '{}' on '{:?}'...", parent.into(), self_id);
         let mutax_guard = self.write().unwrap();
@@ -183,7 +183,7 @@ impl SafeLock<Receiver<bool>> for Arc<RwLock<Receiver<bool>>> {
 impl SafeLock<Vec<TcpStream>> for Arc<RwLock<Vec<TcpStream>>> {
     fn rlock<'a>(&'a self, parent: impl Into<String>) -> RwLockReadGuard<'a, Vec<TcpStream>> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
-        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100));
+        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100), None);
         lock_timer.run().unwrap();
         log::info!("SafeLock.rlock | Lock from '{}' on '{:?}'...", parent.into(), self_id);
         let mutax_guard = self.read().unwrap();
@@ -193,7 +193,7 @@ impl SafeLock<Vec<TcpStream>> for Arc<RwLock<Vec<TcpStream>>> {
     }
     fn wlock<'a>(&'a self, parent: impl Into<String>) -> RwLockWriteGuard<'a, Vec<TcpStream>> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
-        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100));
+        let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100), None);
         lock_timer.run().unwrap();
         log::info!("SafeLock.wlock | Lock from '{}' on '{:?}'...", parent.into(), self_id);
         let mutax_guard = self.write().unwrap();

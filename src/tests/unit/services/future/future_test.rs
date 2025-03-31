@@ -70,8 +70,8 @@ mod future {
     fn calc(value: f64) -> Future<Result<f64, String>> {
         let (future, sink) = Future::<Result<f64, String>>::new();
         thread::spawn(move || {
-            let mut rng = rand::thread_rng();
-            let millis = rng.gen_range(10u64..100);
+            let mut rng = rand::rng();
+            let millis = rng.random_range(10u64..100);
             thread::sleep(Duration::from_millis(millis));
             sink.add(Ok(value * 2.0));
             

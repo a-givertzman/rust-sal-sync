@@ -1,7 +1,21 @@
 use serde::{Serialize, Deserialize};
-
 ///
-/// 
+/// Represents a list of [Point] configuration types
+/// - Bool
+/// - Int
+/// - Real
+/// - Double
+/// - String
+/// - Json
+pub type PointType = PointConfigType;
+///
+/// Represents a list of [Point] configuration types
+/// - Bool
+/// - Int
+/// - Real
+/// - Double
+/// - String
+/// - Json
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum PointConfigType {
     #[serde(rename = "Bool")]

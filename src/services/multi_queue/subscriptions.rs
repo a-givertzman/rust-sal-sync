@@ -1,7 +1,7 @@
 use log::{warn, trace};
 use std::{collections::HashMap, fmt::Debug, hash::BuildHasherDefault, sync::mpsc::Sender};
 use hashers::fx_hash::FxHasher;
-use crate::core_::{point::point_type::PointType, types::map::HashMapFxHasher};
+use crate::{collections::map::FxHashMap, services::entity::point::point_config_type::PointType};
 ///
 /// Unique id of the service receiving the Point's by the subscription
 /// This id used to identify the service produced the Points. 
@@ -17,9 +17,9 @@ type PointDest = String;
 #[derive(Clone)]
 pub struct Subscriptions {
     id: String,
-    multicast: HashMapFxHasher<PointDest, HashMapFxHasher<ReceiverId, Sender<PointType>>>,
-    broadcast: HashMapFxHasher<ReceiverId, Sender<PointType>>,
-    empty: HashMapFxHasher<ReceiverId, Sender<PointType>>,
+    multicast: FxHashMap<PointDest, FxHashMap<ReceiverId, Sender<PointType>>>,
+    broadcast: FxHashMap<ReceiverId, Sender<PointType>>,
+    empty: FxHashMap<ReceiverId, Sender<PointType>>,
 }
 //
 // 
@@ -29,9 +29,9 @@ impl Subscriptions {
     pub fn new(parent: impl Into<String>, ) -> Self {
         Self {
             id: format!("{}/Subscriptions", parent.into()),
-            multicast: HashMap::with_hasher(BuildHasherDefault::<FxHasher>::default()),
-            broadcast: HashMap::with_hasher(BuildHasherDefault::<FxHasher>::default()),
-            empty: HashMap::with_hasher(BuildHasherDefault::<FxHasher>::default()),
+            multicast: FxHashMap::default(),
+            broadcast: FxHashMap::default(),
+            empty: FxHashMap::default(),
         }
     }
     ///
