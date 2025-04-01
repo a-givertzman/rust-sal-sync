@@ -338,45 +338,32 @@ impl ConfTree {
             Err(err) => Err(error.err(format!("{} queue - not found in: {:#?}\n\terror: {:?}", prefix, self.conf, err))),
         }
     }
-
-    ///
-    /// Returns `value` by 'send-to' key
-    pub fn get_send_to(&mut self) -> Result<String, Error> {
-        let error = Error::new(&self.id, "get_send_to");
-        match ConfTreeGet::<serde_yaml::Value>::get(self, "send-to") {
-            Some(conf) => {
-                Ok(conf.as_str().unwrap().to_string())
-            }
-            None => Err(error.err(format!("'send-to' - not found in: {:#?}", self.conf))),
-        }
-    }
     ///
     /// Returns vec of names of the 'send-to' queue
-    pub fn get_send_to_many(&mut self) -> Option<Vec<String>> {
+    pub fn get_send_to_many(&mut self) -> Result<Vec<String>, Error> {
+        let error = Error::new(&self.id, "get_send_to_many");
         match ConfTreeGet::<serde_yaml::Value>::get(self, "send-to") {
             Some(conf) => {
                 match conf {
                     serde_yaml::Value::Null => {
-                        log::warn!("{}.get_send_to_many | Parameter 'send-to' - is empty", self.id);
-                        None
+                        Err(error.err("Parameter 'send-to' - is empty"))
                     }
                     serde_yaml::Value::Sequence(conf) => {
                         let mut items = vec![];
                         for item in conf.iter() {
                             match item.as_str() {
                                 Some(item) => items.push(item.to_owned()),
-                                None => log::warn!("{}.get_send_to_many | Array<String> expected in 'send-to', but found: {:#?}", self.id, conf),
+                                None => log::warn!("{}.get_send_to_many | In parameter 'send-to' String's expected , but found: {:#?}", self.id, item),
                             }
                         }
-                        Some(items)
+                        Ok(items)
                     }
                     _ => {
-                        log::warn!("{}.get_send_to_many | Array<String> expected in 'send-to', but found: {:#?}", self.id, conf);
-                        None
+                        Err(error.err(format!("In parameter 'send-to' expected Array of String, but found: {:#?}", conf)))
                     }
                 }
             }
-            None => None,
+            None => Err(error.err("Parameter 'send-to' - is not found")),
         }
     }
     ///

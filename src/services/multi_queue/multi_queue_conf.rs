@@ -47,9 +47,9 @@ impl MultiQueueConf {
         let (rx, rx_max_length) = conf.get_in_queue().unwrap();
         log::debug!("{}.new | 'in queue': {},\tmax-length: {}", dbg, rx, rx_max_length);
         let send_to = match conf.get_send_to_many() {
-            Some(send_to) => send_to.into_iter().map(|send_to|LinkName::from_str(&send_to).unwrap()).collect(),
-            None => {
-                log::warn!("{}.new | 'send-to' - not found, empty or wrong values, Array<String> expected in config: {:#?}", dbg, conf);
+            Ok(send_to) => send_to.into_iter().map(|send_to|LinkName::from_str(&send_to).unwrap()).collect(),
+            Err(err) => {
+                log::warn!("{}.new | Error: {:#?}", dbg, err);
                 vec![]
             }
         };
