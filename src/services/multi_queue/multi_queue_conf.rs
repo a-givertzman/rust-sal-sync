@@ -34,13 +34,10 @@ impl MultiQueueConf {
     ///         ...
     ///         - ServiceN.in-queue
     ///                     ...
-    pub fn new(parent: impl Into<String>, mut conf: ConfTree) -> MultiQueueConf {
-        log::trace!("MultiQueueConfig.new | confTree: {:?}", conf);
-        let dbg = format!("MultiQueueConf({})", conf.key);
+    pub fn new(parent: impl Into<String>, conf: ConfTree) -> MultiQueueConf {
+        let me = conf.sufix_or(conf.name().unwrap());
+        let dbg = format!("MultiQueueConf({})", me);
         log::trace!("{}.new | conf: {:?}", dbg, conf);
-        let me = conf.sufix()
-            .map(|s| if s.is_empty() {conf.name().unwrap()} else {s})
-            .unwrap_or(conf.name().unwrap());
         let self_name = Name::new(parent, &me);
         let dbg = format!("MultiQueueConf({})", self_name);
         log::debug!("{}.new | self_name: {:?}", dbg, self_name);

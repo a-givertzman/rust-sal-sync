@@ -28,13 +28,11 @@ pub struct ServicesConf {
 impl ServicesConf {
     ///
     /// 
-    pub fn new(parent: impl Into<String>, mut conf: ConfTree) -> Self {
-        // log::trace!("ServicesConf.new | confTree: {:?}", conf_tree);
+    pub fn new(parent: impl Into<String>, conf: ConfTree) -> Self {
         let parent = parent.into();
-        let dbg = Dbg::new(&parent, format!("ServicesConf({})", conf.key));
-        let me = conf.sufix()
-            .map(|s| if s.is_empty() {conf.name().unwrap()} else {s})
-            .unwrap_or(conf.name().unwrap_or(format!("ServicesConf")));
+        let me = conf.sufix_or(conf.name().unwrap_or("ServicesConf".to_owned()));
+        let dbg = Dbg::new(&parent, &me);
+        log::trace!("{}.new | conf: {:?}", dbg, conf);
         let name = Name::new(parent, me);
         log::debug!("{}.new | name: {:?}", dbg, name);
         let retain: RetainConf = match conf.parse("retain") {
