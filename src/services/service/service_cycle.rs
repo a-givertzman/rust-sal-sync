@@ -1,5 +1,4 @@
 use std::{time::{Duration, Instant}, thread};
-use log::{error, trace};
 ///
 /// ServiceCycle - provides exact time interval in ms / us (future posible implementation)
 ///  - creates with Duration of interval
@@ -11,6 +10,8 @@ pub struct ServiceCycle {
     id: String,
     instant: Instant,
     interval: Duration,
+    warn_exceed: Duration,
+    err_exceed: Duration,
 }
 //
 // 
@@ -22,6 +23,8 @@ impl ServiceCycle {
             id: format!("{}/ServiceCycle", parent),
             instant: Instant::now(),
             interval,
+            warn_exceed: interval / 10,
+            err_exceed: interval / 4,
         }
     }
     ///
@@ -43,10 +46,21 @@ impl ServiceCycle {
         let elapsed = self.instant.elapsed();
         if elapsed <= self.interval {
             let remainder = self.interval - elapsed;
-            trace!("{}.wait | waiting: {:?}", self.id, remainder);
+            log::trace!("{}.wait | waiting: {:?}", self.id, remainder);
             thread::sleep(remainder);
         } else {
-            error!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.id, self.interval, elapsed - self.interval, elapsed);
+            let exceed = elapsed - self.interval;
+            match exceed {
+                e if e >= self.err_exceed => {
+                    log::error!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.id, self.interval, elapsed - self.interval, elapsed);
+                }
+                e if e >= self.warn_exceed => {
+                    log::warn!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.id, self.interval, elapsed - self.interval, elapsed);
+                }
+                _ => {
+                    log::debug!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.id, self.interval, elapsed - self.interval, elapsed);
+                }
+            }
         }
     }
     ///
