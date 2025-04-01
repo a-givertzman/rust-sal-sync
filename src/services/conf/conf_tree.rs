@@ -172,6 +172,25 @@ impl ConfTree {
         }
     }
     ///
+    /// Returns `sufix` field if exists and not empty or default
+    /// ```markdown
+    /// | opt        | requir   |  requir     |  opt      |
+    /// | ---------- | -------- | ----------- | --------- |
+    /// | prefix     | kind     | Name        | **Sufix** |
+    /// ```
+    /// 
+    /// Will parsed from self `key` as [ConfKeywd]
+    pub fn sufix_or(&self, default: impl Into<String>) -> Result<String, Error> {
+        match self.sufix() {
+            Ok(sufix) => if sufix.is_empty() {
+                Ok(default.into())
+            } else {
+                Ok(sufix)
+            }
+            Err(_) => Ok(default.into()),
+        }
+    }
+    ///
     /// returns tree node value as bool by it's key if exists
     pub fn as_bool(&self, key: &str) -> Result<bool, Error> {
         let error = Error::new(&self.id, "as_bool");
