@@ -1,4 +1,5 @@
 use std::sync::mpsc::{Sender, Receiver};
+use sal_core::error::Error;
 use crate::services::{
     entity::{object::Object, point::{point::Point, point_config::PointConfig}},
     subscription::subscription_criteria::SubscriptionCriteria,
@@ -26,18 +27,18 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
     ///
     /// Extends the sucessfully with additiuonal points
     #[allow(unused_variables)]
-    fn extend_subscription(&mut self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), String> {
+    fn extend_subscription(&mut self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
         panic!("{}.extend_subscription | Does not supported", self.id())
     }
     ///
     /// Canceling the subsciption
     #[allow(unused_variables)]
-    fn unsubscribe(&mut self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), String> {
+    fn unsubscribe(&mut self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
         panic!("{}.unsubscribe | Does not supported", self.id())
     }
     ///
     /// Starts service's main loop in the individual thread
-    fn run(&mut self) -> Result<ServiceHandles<()>, String>;
+    fn run(&mut self) -> Result<ServiceHandles<()>, Error>;
     ///
     /// Returns list of configurations of the defined points
     fn points(&self) -> Vec<PointConfig> {

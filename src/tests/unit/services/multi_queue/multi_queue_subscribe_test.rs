@@ -1,5 +1,6 @@
 use std::{fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc, RwLock}, thread, time::Duration};
 use log::{info, trace, warn};
+use sal_core::error::Error;
 use crate::services::{entity::{name::Name, object::Object, point::point::Point}, safe_lock::rwlock::SafeLock, service::{service::Service, service_handles::ServiceHandles}, services::Services};
 #[cfg(test)]
 
@@ -201,7 +202,7 @@ impl Debug for MockReceiver {
 impl Service for MockReceiver {
     //
     //
-    fn run(&mut self) -> Result<ServiceHandles<()>, String> {
+    fn run(&mut self) -> Result<ServiceHandles<()>, Error> {
         let self_id = self.id.clone();
         let exit = self.exit.clone();
         let recv_limit = self.recv_limit;
@@ -258,7 +259,7 @@ impl Service for MockReceiver {
             Err(err) => {
                 let message = format!("{}.run | Start failed: {:#?}", self.id, err);
                 warn!("{}", message);
-                Err(message)
+                Err(Error::new(&self.id, "run").err(message))
             }
         }
     }

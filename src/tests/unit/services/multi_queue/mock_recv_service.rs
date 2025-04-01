@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{self, Receiver, Sender}, Arc, Mutex, RwLock}, thread};
 use log::{info, trace, warn};
+use sal_core::error::Error;
 use crate::services::{
     entity::{name::Name, object::Object, point::point::Point},
     service::{service::Service, service_handles::ServiceHandles, RECV_TIMEOUT},
@@ -78,7 +79,7 @@ impl Service for MockRecvService {
     }
     //
     //
-    fn run(&mut self) -> Result<ServiceHandles<()>, String> {
+    fn run(&mut self) -> Result<ServiceHandles<()>, Error> {
         info!("{}.run | Starting...", self.id);
         let self_id = self.id.clone();
         let exit = self.exit.clone();
@@ -137,7 +138,7 @@ impl Service for MockRecvService {
             Err(err) => {
                 let message = format!("{}.run | Start failed: {:#?}", self.id, err);
                 warn!("{}", message);
-                Err(message)
+                Err(Error::new(&self.id, "run").err(message))
             }
         }        
     }

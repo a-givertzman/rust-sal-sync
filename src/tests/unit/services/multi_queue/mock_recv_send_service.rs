@@ -1,4 +1,5 @@
 use log::{info, warn, trace};
+use sal_core::error::Error;
 use std::{collections::HashMap, fmt::Debug, str::FromStr, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{self, Receiver, Sender}, Arc, Mutex, RwLock}, thread};
 use testing::entities::test_value::Value;
 use crate::services::{
@@ -85,7 +86,7 @@ impl Service for MockRecvSendService {
     }
     //
     //
-    fn run(&mut self) -> Result<ServiceHandles<()>, String> {
+    fn run(&mut self) -> Result<ServiceHandles<()>, Error> {
         info!("{}.run | Starting...", self.id);
         let self_id = self.id.clone();
         let exit = self.exit.clone();
@@ -162,10 +163,10 @@ impl Service for MockRecvSendService {
                 (format!("{}/write", self.id), handle_send),
                 ])),
             // TODO Exit 'write if read returns error'
-            (Ok(_handle_recv), Err(err)) => Err(format!("{}.run | Error starting inner thread 'recv': {:#?}", self.id, err)),
+            (Ok(_handle_recv), Err(err)) => Err(Error::new(&self.id, "run").err(format!("Error starting inner thread 'recv': {:#?}", err))),
             // TODO Exit 'read if write returns error'
-            (Err(err), Ok(_handle_send)) => Err(format!("{}.run | Error starting inner thread 'send': {:#?}", self.id, err)),
-            (Err(read_err), Err(write_err)) => Err(format!("{}.run | Error starting inner thread: \n\t  recv: {:#?}\n\t send: {:#?}", self.id, read_err, write_err)),
+            (Err(err), Ok(_handle_send)) => Err(Error::new(&self.id, "run").err(format!("Error starting inner thread 'send': {:#?}", err))),
+            (Err(read_err), Err(write_err)) => Err(Error::new(&self.id, "run").err(format!("Error starting inner thread: \n\t  recv: {:#?}\n\t send: {:#?}", read_err, write_err))),
         }
     }
     //

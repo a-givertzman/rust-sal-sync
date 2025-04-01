@@ -4,6 +4,7 @@ use std::{
     thread,
 };
 use concat_string::concat_string;
+use sal_core::error::Error;
 use crate::services::{
     entity::{name::Name, object::Object, point::{point::Point, point_tx_id::PointTxId}}, safe_lock::rwlock::SafeLock, service::{link_name::LinkName, service::Service, service_handles::ServiceHandles, RECV_TIMEOUT}, services::Services, subscription::{subscription_criteria::SubscriptionCriteria, subscriptions::Subscriptions}
 };
@@ -141,12 +142,13 @@ impl Service for MultiQueue {
     }
     //
     //
-    fn extend_subscription(&mut self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), String> {
+    fn extend_subscription(&mut self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
+        let error = Error::new(&self.id, "extend_subscription");
         let receiver_hash = PointTxId::from_str(receiver_name);
         if points.is_empty() {
             let message = format!("{}.extend_subscription | Broadcast subscription can't be extended, receiver: {} ({})", self.id, receiver_name, receiver_hash);
             log::warn!("{}", message);
-            Err(message)
+            Err(error.err(message))
         } else {
             let mut message = String::new();
             for subscription_criteria in points {
@@ -163,14 +165,15 @@ impl Service for MultiQueue {
             } else {
                 log::debug!("{}.extend_subscription | Multicast subscription extended, receiver: {} ({}) \n\t with errors: {:?}", self.id, receiver_name, receiver_hash, message);
                 self.subscriptions_changed.store(true, Ordering::SeqCst);
-                Err(message)
+                Err(error.err(message))
             }
         }
     }
     //
     //
-    fn unsubscribe(&mut self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), String> {
+    fn unsubscribe(&mut self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
         let mut changed = false;
+        let error = Error::new(&self.id, "unsubscribe");
         let receiver_hash = PointTxId::from_str(receiver_name);
         if points.is_empty() {
             match self.subscriptions.wlock(&self.id).remove_all(&receiver_hash) {
@@ -180,7 +183,7 @@ impl Service for MultiQueue {
                     log::debug!("{}.unsubscribe | Broadcast subscription removed, receiver: {} ({})", self.id, receiver_name, receiver_hash);
                 }
                 Err(err) => {
-                    return Err(err)
+                    return Err(error.pass(err))
                 }
             }
         } else {
@@ -192,7 +195,7 @@ impl Service for MultiQueue {
                         log::debug!("{}.unsubscribe | Multicat subscription '{}' removed, receiver: {} ({})", self.id, subscription_criteria.destination(), receiver_name, receiver_hash);
                     }
                     Err(err) => {
-                        return Err(err)
+                        return Err(error.pass(err))
                     }
                 }
             }
@@ -204,7 +207,7 @@ impl Service for MultiQueue {
     }
     //
     //
-    fn run(&mut self) -> Result<ServiceHandles<()>, String> {
+    fn run(&mut self) -> Result<ServiceHandles<()>, Error> {
         log::info!("{}.run | Starting...", self.id);
         let self_id = self.id.clone();
         let self_name = self.name.clone();
@@ -267,7 +270,7 @@ impl Service for MultiQueue {
             Err(err) => {
                 let message = format!("{}.run | Start failed: {:#?}", self.id, err);
                 log::warn!("{}", message);
-                Err(message)
+                Err(Error::new(&self.id, "run").err(message))
             }
         }
     }

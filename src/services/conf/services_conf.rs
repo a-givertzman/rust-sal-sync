@@ -1,5 +1,6 @@
+use sal_core::dbg::Dbg;
 use crate::services::{
-    entity::{dbg_id::DbgId, name::Name}, retain::retain_conf::RetainConf,
+    entity::name::Name, retain::retain_conf::RetainConf,
 };
 use super::conf_tree::ConfTree;
 ///
@@ -30,7 +31,7 @@ impl ServicesConf {
     pub fn new(parent: impl Into<String>, mut conf: ConfTree) -> Self {
         // log::trace!("ServicesConf.new | confTree: {:?}", conf_tree);
         let parent = parent.into();
-        let dbg = DbgId::with_parent(&parent, format!("ServicesConf({})", conf.key));
+        let dbg = Dbg::new(&parent, format!("ServicesConf({})", conf.key));
         let me = conf.sufix()
             .map(|s| if s.is_empty() {conf.name().unwrap()} else {s})
             .unwrap_or(conf.name().unwrap_or(format!("ServicesConf")));

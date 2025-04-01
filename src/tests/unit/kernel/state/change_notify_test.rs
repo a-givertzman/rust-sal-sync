@@ -3,7 +3,8 @@
 mod change_notify {
     use std::{cell::RefCell, rc::Rc, sync::Once};
     use debugging::session::debug_session::{Backtrace, DebugSession, LogLevel};
-    use crate::{kernel::state::change_notify::ChangeNotify, services::entity::dbg_id::DbgId};
+    use sal_core::dbg::Dbg;
+    use crate::kernel::state::change_notify::ChangeNotify;
     ///
     ///
     #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
@@ -36,7 +37,7 @@ mod change_notify {
         DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
         init_each();
-        let dbg = DbgId("change_notify.add".into());
+        let dbg = Dbg::own("change_notify.add");
         log::info!("{}", dbg);
         let test_data = vec![
             (3, NotifyState::Stop,    None),

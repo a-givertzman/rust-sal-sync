@@ -18,7 +18,7 @@ pub struct ServiceCycle {
 impl ServiceCycle {
     ///
     /// Creates ServiceCycle with Duration of interval
-    pub fn new(parent: &str, interval: Duration) ->Self {
+    pub fn new(parent: &str, interval: Duration) -> Self {
         Self {
             id: format!("{}/ServiceCycle", parent),
             instant: Instant::now(),
@@ -65,7 +65,7 @@ impl ServiceCycle {
     }
     ///
     /// Returns current elapsed time
-    pub fn elapsed(&mut self) ->Duration {
+    pub fn elapsed(&mut self) -> Duration {
         self.instant.elapsed()
     }
 }

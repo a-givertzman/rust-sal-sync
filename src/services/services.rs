@@ -15,6 +15,7 @@ use std::{
 };
 use log::{debug, error, info, warn};
 use concat_string::concat_string;
+use sal_core::error::Error;
 use super::conf::services_conf::ServicesConf;
 ///
 /// Holds a map of the all services in app by there names
@@ -96,7 +97,7 @@ impl Services {
     }
     ///
     /// Main loop of the Services
-    pub fn run(&mut self) -> Result<ServiceHandles<()>, String> {
+    pub fn run(&mut self) -> Result<ServiceHandles<()>, Error> {
         info!("{}.run | Starting...", self.id);
         let self_id = self.id.clone();
         let points_requested = self.points_requested.clone();
@@ -183,7 +184,7 @@ impl Services {
             Err(err) => {
                 let message = format!("{}.run | Start failed: {:#?}", self.id, err);
                 warn!("{}", message);
-                Err(message)
+                Err(Error::new(&self.id, "run").err(message))
             }
         }
 
@@ -233,11 +234,11 @@ impl Services {
     }
     ///
     /// Returns copy of the Sender - service's incoming queue by service link name (Service.link)
-    pub fn get_link(&self, name: &LinkName) -> Result<Sender<Point>, String> {
+    pub fn get_link(&self, name: &LinkName) -> Result<Sender<Point>, Error> {
         let (service, queue) = name.split();
         match self.get(&service) {
             Some(srvc) => Ok(srvc.wlock(&self.id).get_link(&queue)),
-            None => Err(format!("{}.get_link | service '{:?}' - not found", self.id, name)),
+            None => Err(Error::new(&self.id, "get_link").err(format!("service '{:?}' - not found", name))),
         }
     }
     ///
@@ -255,7 +256,7 @@ impl Services {
     ///
     /// Returns ok if subscription extended sucessfully
     /// - service - the name of the service to extend subscribtion on
-    pub fn extend_subscription(&mut self, service: &str, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), String> {
+    pub fn extend_subscription(&mut self, service: &str, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
         // panic!("{}.extend_subscription | Not implemented yet", self.id);
         match self.get(service) {
             Some(srvc) => {
@@ -268,7 +269,7 @@ impl Services {
     ///
     /// Returns ok if subscription removed sucessfully
     /// - service - the name of the service to unsubscribe on
-    pub fn unsubscribe(&mut self, service: &str, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), String> {
+    pub fn unsubscribe(&mut self, service: &str, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
         match self.get(service) {
             Some(srvc) => {
                 let r = srvc.wlock(&self.id).unsubscribe(receiver_name, points);

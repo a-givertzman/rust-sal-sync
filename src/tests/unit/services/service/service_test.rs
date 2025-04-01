@@ -2,6 +2,7 @@
 
 mod trait_service {
     use log::debug;
+    use sal_core::{dbg::Dbg, error::Error};
     use std::{sync::Once, time::Duration};
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
@@ -28,14 +29,14 @@ mod trait_service {
         DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
         init_each();
-        let self_id = "test";
-        debug!("\n{}", self_id);
-        let test_duration = TestDuration::new(self_id, Duration::from_secs(10));
+        let self_id = Dbg::own("test");
+        log::debug!("\n{}", self_id);
+        let test_duration = TestDuration::new(&self_id, Duration::from_secs(10));
         test_duration.run().unwrap();
-        let name = Name::new(self_id, "ServiceTest");
+        let name = Name::new(&self_id, "ServiceTest");
         let mut service_test = ServiceTest { id: name.join(), name  };
         let result = service_test.run();
-        let target: Result<ServiceHandles<()>, String> = Err("testing".to_owned());
+        let target: Result<ServiceHandles<()>, Error> = Err(Error::new("ServiceTest", "run").err("testing"));
         match result {
             Ok(_) => panic!(""),
             Err(result) => {
@@ -143,8 +144,8 @@ mod trait_service {
     //
     //
     impl Service for ServiceTest {
-        fn run(&mut self) -> Result<ServiceHandles<()>, String> {
-            Err("testing".to_owned())
+        fn run(&mut self) -> Result<ServiceHandles<()>, Error> {
+            Err(Error::new("ServiceTest", "run").err("testing"))
         }
     
         fn exit(&self) {

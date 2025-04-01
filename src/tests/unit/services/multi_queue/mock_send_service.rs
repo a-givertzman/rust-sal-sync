@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 use std::{fmt::Debug, str::FromStr, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc, RwLock}, thread, time::Duration};
 use log::{info, warn, trace};
+use sal_core::error::Error;
 use testing::entities::test_value::Value;
 use crate::services::{
     entity::{name::Name, object::Object, point::point::{Point, ToPoint}},
@@ -79,7 +80,7 @@ impl Service for MockSendService {
     }
     //
     //
-    fn run(&mut self) -> Result<ServiceHandles<()>, String> {
+    fn run(&mut self) -> Result<ServiceHandles<()>, Error> {
         info!("{}.run | Starting...", self.id);
         let self_id = self.id.clone();
         let exit = self.exit.clone();
@@ -121,7 +122,7 @@ impl Service for MockSendService {
             Err(err) => {
                 let message = format!("{}.run | Start failed: {:#?}", self.id, err);
                 warn!("{}", message);
-                Err(message)
+                Err(Error::new(&self.id, "run").err(message))
             }
         }
     }
