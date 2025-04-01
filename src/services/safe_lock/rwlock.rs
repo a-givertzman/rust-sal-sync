@@ -35,9 +35,9 @@ impl SafeLock<dyn Service> for Arc<RwLock<dyn Service>> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000), None);
         lock_timer.run().unwrap();
-        log::debug!("SafeLock.rlock | Lock from '{}' on '{}'...", parent.into(), self_id);
+        log::trace!("SafeLock.rlock | Lock from '{}' on '{}'...", parent.into(), self_id);
         let rwlock_guard = self.read().unwrap();
-        log::debug!("SafeLock.rlock | Lock '{}' - ok", self_id);
+        log::trace!("SafeLock.rlock | Lock '{}' - ok", self_id);
         lock_timer.exit();
         rwlock_guard
     }
@@ -45,9 +45,9 @@ impl SafeLock<dyn Service> for Arc<RwLock<dyn Service>> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000), None);
         lock_timer.run().unwrap();
-        log::debug!("SafeLock.wlock | Lock from '{}' on '{}'...", parent.into(), self_id);
+        log::trace!("SafeLock.wlock | Lock from '{}' on '{}'...", parent.into(), self_id);
         let mutax_guard = self.write().unwrap();
-        log::debug!("SafeLock.wlock | Lock '{}' - ok", self_id);
+        log::trace!("SafeLock.wlock | Lock '{}' - ok", self_id);
         lock_timer.exit();
         mutax_guard
     }
@@ -59,9 +59,9 @@ impl SafeLock<dyn Service + Send> for Arc<RwLock<dyn Service + Send>> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000), None);
         lock_timer.run().unwrap();
-        log::debug!("SafeLock.rlock | Lock from '{}' on '{}'...", parent.into(), self_id);
+        log::trace!("SafeLock.rlock | Lock from '{}' on '{}'...", parent.into(), self_id);
         let rwlock_guard = self.read().unwrap();
-        log::debug!("SafeLock.rlock | Lock '{}' - ok", self_id);
+        log::trace!("SafeLock.rlock | Lock '{}' - ok", self_id);
         lock_timer.exit();
         rwlock_guard
     }
@@ -69,9 +69,9 @@ impl SafeLock<dyn Service + Send> for Arc<RwLock<dyn Service + Send>> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(10_000), None);
         lock_timer.run().unwrap();
-        log::debug!("SafeLock.wlock | Lock from '{}' on '{}'...", parent.into(), self_id);
+        log::trace!("SafeLock.wlock | Lock from '{}' on '{}'...", parent.into(), self_id);
         let mutax_guard = self.write().unwrap();
-        log::debug!("SafeLock.wlock | Lock '{}' - ok", self_id);
+        log::trace!("SafeLock.wlock | Lock '{}' - ok", self_id);
         lock_timer.exit();
         mutax_guard
     }
@@ -85,9 +85,9 @@ impl SafeLock<Services> for Arc<RwLock<Services>> {
         lock_timer.run().unwrap();
         SERVICES_LOCK_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let count = SERVICES_LOCK_COUNT.load(std::sync::atomic::Ordering::SeqCst);
-        log::debug!("SafeLock.rlock | Lock ({}) from '{}' on {:?}...", count, parent.into(), self_id);
+        log::trace!("SafeLock.rlock | Lock ({}) from '{}' on {:?}...", count, parent.into(), self_id);
         let mutax_guard = self.read().unwrap();
-        log::debug!("SafeLock.rlock | Lock {:?} - ok", self_id);
+        log::trace!("SafeLock.rlock | Lock {:?} - ok", self_id);
         SERVICES_LOCK_COUNT.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
         lock_timer.exit();
         mutax_guard
@@ -98,9 +98,9 @@ impl SafeLock<Services> for Arc<RwLock<Services>> {
         lock_timer.run().unwrap();
         SERVICES_LOCK_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let count = SERVICES_LOCK_COUNT.load(std::sync::atomic::Ordering::SeqCst);
-        log::debug!("SafeLock.wlock | Lock ({}) from '{}' on {:?}...", count, parent.into(), self_id);
+        log::trace!("SafeLock.wlock | Lock ({}) from '{}' on {:?}...", count, parent.into(), self_id);
         let mutax_guard = self.write().unwrap();
-        log::debug!("SafeLock.wlock | Lock {:?} - ok", self_id);
+        log::trace!("SafeLock.wlock | Lock {:?} - ok", self_id);
         SERVICES_LOCK_COUNT.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
         lock_timer.exit();
         mutax_guard
@@ -137,9 +137,9 @@ impl SafeLock<Subscriptions> for Arc<RwLock<Subscriptions>> {
 //         let self_id = format!("{:?}/SafeLock", self.type_of());
 //         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100));
 //         lock_timer.run().unwrap();
-//         log::info!("SafeLock.rlock | Lock from '{}' on {:?}...", parent.into(), self_id);
+//         log::trace!("SafeLock.rlock | Lock from '{}' on {:?}...", parent.into(), self_id);
 //         let mutax_guard = self.read().unwrap();
-//         log::info!("SafeLock.rlock | Lock {:?} - ok", self_id);
+//         log::trace!("SafeLock.rlock | Lock {:?} - ok", self_id);
 //         lock_timer.exit();
 //         mutax_guard
 //     }
@@ -147,9 +147,9 @@ impl SafeLock<Subscriptions> for Arc<RwLock<Subscriptions>> {
 //         let self_id = format!("{:?}/SafeLock", self.type_of());
 //         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100));
 //         lock_timer.run().unwrap();
-//         log::info!("SafeLock.wlock | Lock from '{}' on {:?}...", parent.into(), self_id);
+//         log::trace!("SafeLock.wlock | Lock from '{}' on {:?}...", parent.into(), self_id);
 //         let mutax_guard = self.write().unwrap();
-//         log::info!("SafeLock.wlock | Lock {:?} - ok", self_id);
+//         log::trace!("SafeLock.wlock | Lock {:?} - ok", self_id);
 //         lock_timer.exit();
 //         mutax_guard
 //     }
@@ -161,9 +161,9 @@ impl SafeLock<Receiver<bool>> for Arc<RwLock<Receiver<bool>>> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100), None);
         lock_timer.run().unwrap();
-        log::debug!("SafeLock.rlock | Lock from '{}' on '{:?}'...", parent.into(), self_id);
+        log::trace!("SafeLock.rlock | Lock from '{}' on '{:?}'...", parent.into(), self_id);
         let mutax_guard = self.read().unwrap();
-        log::debug!("SafeLock.rlock | Lock: '{:?}' - ok", self_id);
+        log::trace!("SafeLock.rlock | Lock: '{:?}' - ok", self_id);
         lock_timer.exit();
         mutax_guard
     }
@@ -171,9 +171,9 @@ impl SafeLock<Receiver<bool>> for Arc<RwLock<Receiver<bool>>> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100), None);
         lock_timer.run().unwrap();
-        log::debug!("SafeLock.wlock | Lock from '{}' on '{:?}'...", parent.into(), self_id);
+        log::trace!("SafeLock.wlock | Lock from '{}' on '{:?}'...", parent.into(), self_id);
         let mutax_guard = self.write().unwrap();
-        log::debug!("SafeLock.wlock | Lock: '{:?}' - ok", self_id);
+        log::trace!("SafeLock.wlock | Lock: '{:?}' - ok", self_id);
         lock_timer.exit();
         mutax_guard
     }
@@ -185,9 +185,9 @@ impl SafeLock<Vec<TcpStream>> for Arc<RwLock<Vec<TcpStream>>> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100), None);
         lock_timer.run().unwrap();
-        log::debug!("SafeLock.rlock | Lock from '{}' on '{:?}'...", parent.into(), self_id);
+        log::trace!("SafeLock.rlock | Lock from '{}' on '{:?}'...", parent.into(), self_id);
         let mutax_guard = self.read().unwrap();
-        log::debug!("SafeLock.rlock | Lock: '{:?}' - ok", self_id);
+        log::trace!("SafeLock.rlock | Lock: '{:?}' - ok", self_id);
         lock_timer.exit();
         mutax_guard
     }
@@ -195,9 +195,9 @@ impl SafeLock<Vec<TcpStream>> for Arc<RwLock<Vec<TcpStream>>> {
         let self_id = format!("{:?}/SafeLock", self.type_of());
         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100), None);
         lock_timer.run().unwrap();
-        log::debug!("SafeLock.wlock | Lock from '{}' on '{:?}'...", parent.into(), self_id);
+        log::trace!("SafeLock.wlock | Lock from '{}' on '{:?}'...", parent.into(), self_id);
         let mutax_guard = self.write().unwrap();
-        log::debug!("SafeLock.wlock | Lock: '{:?}' - ok", self_id);
+        log::trace!("SafeLock.wlock | Lock: '{:?}' - ok", self_id);
         lock_timer.exit();
         mutax_guard
     }
@@ -209,9 +209,9 @@ impl SafeLock<Vec<TcpStream>> for Arc<RwLock<Vec<TcpStream>>> {
 //         let self_id = format!("{:?}/SafeLock", self.type_of());
 //         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100));
 //         lock_timer.run().unwrap();
-//         log::info!("SafeLock.rlock | Lock from '{}' on {:?}...", parent.into(), self_id);
+//         log::trace!("SafeLock.rlock | Lock from '{}' on {:?}...", parent.into(), self_id);
 //         let mutax_guard = self.read().unwrap();
-//         log::info!("SafeLock.rlock | Lock {:?} - ok", self_id);
+//         log::trace!("SafeLock.rlock | Lock {:?} - ok", self_id);
 //         lock_timer.exit();
 //         mutax_guard
 //     }
@@ -219,9 +219,9 @@ impl SafeLock<Vec<TcpStream>> for Arc<RwLock<Vec<TcpStream>>> {
 //         let self_id = format!("{:?}/SafeLock", self.type_of());
 //         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100));
 //         lock_timer.run().unwrap();
-//         log::info!("SafeLock.wlock | Lock from '{}' on {:?}...", parent.into(), self_id);
+//         log::trace!("SafeLock.wlock | Lock from '{}' on {:?}...", parent.into(), self_id);
 //         let mutax_guard = self.write().unwrap();
-//         log::info!("SafeLock.wlock | Lock {:?} - ok", self_id);
+//         log::trace!("SafeLock.wlock | Lock {:?} - ok", self_id);
 //         lock_timer.exit();
 //         mutax_guard
 //     }
@@ -233,9 +233,9 @@ impl SafeLock<Vec<TcpStream>> for Arc<RwLock<Vec<TcpStream>>> {
 //         let self_id = format!("{:?}/SafeLock", self.type_of());
 //         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100));
 //         lock_timer.run().unwrap();
-//         log::info!("SafeLock.rlock | Lock from '{}' on {:?}...", parent.into(), self_id);
+//         log::trace!("SafeLock.rlock | Lock from '{}' on {:?}...", parent.into(), self_id);
 //         let mutax_guard = self.read().unwrap();
-//         log::info!("SafeLock.rlock | Lock {:?} - ok", self_id);
+//         log::trace!("SafeLock.rlock | Lock {:?} - ok", self_id);
 //         lock_timer.exit();
 //         mutax_guard
 //     }
@@ -243,9 +243,9 @@ impl SafeLock<Vec<TcpStream>> for Arc<RwLock<Vec<TcpStream>>> {
 //         let self_id = format!("{:?}/SafeLock", self.type_of());
 //         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100));
 //         lock_timer.run().unwrap();
-//         log::info!("SafeLock.wlock | Lock from '{}' on {:?}...", parent.into(), self_id);
+//         log::trace!("SafeLock.wlock | Lock from '{}' on {:?}...", parent.into(), self_id);
 //         let mutax_guard = self.write().unwrap();
-//         log::info!("SafeLock.wlock | Lock {:?} - ok", self_id);
+//         log::trace!("SafeLock.wlock | Lock {:?} - ok", self_id);
 //         lock_timer.exit();
 //         mutax_guard
 //     }
@@ -257,9 +257,9 @@ impl SafeLock<Vec<TcpStream>> for Arc<RwLock<Vec<TcpStream>>> {
 //         let self_id = format!("{:?}/SafeLock", self.type_of());
 //         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100));
 //         lock_timer.run().unwrap();
-//         log::info!("SafeLock.rlock | Lock from '{}' on {:?}...", parent.into(), self_id);
+//         log::trace!("SafeLock.rlock | Lock from '{}' on {:?}...", parent.into(), self_id);
 //         let mutax_guard = self.read().unwrap();
-//         log::info!("SafeLock.rlock | Lock {:?} - ok", self_id);
+//         log::trace!("SafeLock.rlock | Lock {:?} - ok", self_id);
 //         lock_timer.exit();
 //         mutax_guard
 //     }
@@ -267,9 +267,9 @@ impl SafeLock<Vec<TcpStream>> for Arc<RwLock<Vec<TcpStream>>> {
 //         let self_id = format!("{:?}/SafeLock", self.type_of());
 //         let lock_timer = LockTimer::new(&self_id, self.type_of(), Duration::from_millis(100));
 //         lock_timer.run().unwrap();
-//         log::info!("SafeLock.wlock | Lock from '{}' on {:?}...", parent.into(), self_id);
+//         log::trace!("SafeLock.wlock | Lock from '{}' on {:?}...", parent.into(), self_id);
 //         let mutax_guard = self.write().unwrap();
-//         log::info!("SafeLock.wlock | Lock {:?} - ok", self_id);
+//         log::trace!("SafeLock.wlock | Lock {:?} - ok", self_id);
 //         lock_timer.exit();
 //         mutax_guard
 //     }
