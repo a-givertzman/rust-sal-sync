@@ -1,8 +1,13 @@
-use std::{collections::HashSet, str::FromStr, time::Duration};
+use std::{str::FromStr, time::Duration};
 use sal_core::error::Error;
 use serde::de::DeserializeOwned;
-use crate::{collections::map::FxIndexMap, services::{entity::{name::Name, point::point_config::PointConfig}, task::functions::conf::fn_conf_keywd::{FnConfKeywd, FnConfKindName}}};
-
+use crate::{
+    collections::map::FxIndexMap,
+    services::{
+        entity::{name::Name, point::point_config::PointConfig},
+        task::functions::conf::fn_conf_keywd::{FnConfKeywd, FnConfKindName},
+    },
+};
 use super::{conf_duration::ConfDuration, conf_keywd::ConfKeywd, conf_kind::ConfKind, diag_keywd::DiagKeywd};
 ///
 /// ConfTree holds sede_yaml::Value and it key
@@ -13,8 +18,6 @@ pub struct ConfTree {
     id: String,
     pub key: String,
     pub conf: serde_yaml::Value,
-    /// keys of nodes of current conf, which was olready requested
-    requested: HashSet<String>,
 }
 //
 // 
@@ -26,7 +29,6 @@ impl ConfTree {
             id: String::from("ConfTree"),
             key: String::new(),
             conf,
-            requested: HashSet::new()
         }
     }
     ///
@@ -36,7 +38,6 @@ impl ConfTree {
             id: String::from("ConfTree"),
             key: key.into(),
             conf,
-            requested: HashSet::new()
         }
     }
     ///
@@ -295,7 +296,6 @@ impl ConfTree {
         for node in self_conf.sub_nodes().unwrap() {
             if let Ok(keyword) = ConfKeywd::from_str(&node.key) {
                 if keyword.kind() == kind && keyword.prefix() == prefix {
-                    self.requested.insert(node.key.clone());
                     return Ok((keyword, node))
                 }
             }
@@ -311,7 +311,7 @@ impl ConfTree {
         match self.get_by_keywd(prefix, ConfKind::Queue) {
             Ok((keyword, self_recv_queue)) => {
                 let name = format!("{} {} {}", keyword.prefix(), keyword.kind().to_string(), keyword.name());
-                log::debug!("{}.get_in_queue | self in-queue params {}: {:?}", self.id, name, self_recv_queue);
+                log::trace!("{}.get_in_queue | self in-queue params {}: {:?}", self.id, name, self_recv_queue);
                 match ConfTreeGet::<serde_yaml::Value>::get(&self_recv_queue, sub_param) {
                     Some(val) => match val.as_i64() {
                         Some(max_length) => Ok((keyword.name(), max_length)),
@@ -332,7 +332,7 @@ impl ConfTree {
         match self.get_by_keywd(prefix, ConfKind::Queue) {
             Ok((keyword, tx_name)) => {
                 let name = format!("{} {} {}", keyword.prefix(), keyword.kind().to_string(), keyword.name());
-                log::debug!("{}.get_out_queue | self out-queue params {}: {:?}", self.id, name, tx_name);
+                log::trace!("{}.get_out_queue | self out-queue params {}: {:?}", self.id, name, tx_name);
                 Ok(tx_name.conf.as_str().unwrap().to_string())
             }
             Err(err) => Err(error.err(format!("{} queue - not found in: {:#?}\n\terror: {:?}", prefix, self.conf, err))),
@@ -345,7 +345,6 @@ impl ConfTree {
         let error = Error::new(&self.id, "get_send_to");
         match ConfTreeGet::<serde_yaml::Value>::get(self, "send-to") {
             Some(conf) => {
-                self.requested.insert("send-to".into());
                 Ok(conf.as_str().unwrap().to_string())
             }
             None => Err(error.err(format!("'send-to' - not found in: {:#?}", self.conf))),
@@ -358,12 +357,10 @@ impl ConfTree {
             Some(conf) => {
                 match conf {
                     serde_yaml::Value::Null => {
-                        self.requested.insert("send-to".into());
                         log::warn!("{}.get_send_to_many | Parameter 'send-to' - is empty", self.id);
                         None
                     }
                     serde_yaml::Value::Sequence(conf) => {
-                        self.requested.insert("send-to".into());
                         let mut items = vec![];
                         for item in conf.iter() {
                             match item.as_str() {
@@ -389,7 +386,6 @@ impl ConfTree {
         let val = self.conf
             .get(key.as_ref())
             .ok_or(error.err(format!("key '{}' - not found in: {:#?}", key.as_ref(), self.conf)))?;
-        self.requested.insert(key.as_ref().to_owned());
         let val = serde_yaml::from_value::<T>(val.to_owned())
         .map_err(|err| error.err(format!("key '{}' - parse error: {:?} in: {:#?}", key.as_ref(), err, self.conf)));
         log::trace!("ConfTree.get | {}: {:#?}", key.as_ref(), val);
@@ -407,7 +403,6 @@ impl ConfTree {
         let error = Error::new(&self.id, "get_duration");
         match ConfTreeGet::<serde_yaml::Value>::get(self, key.as_ref()) {
             Some(value) => {
-                self.requested.insert(key.as_ref().to_owned());
                 let value = if value.is_u64() {
                     value.as_u64().unwrap().to_string()
                 } else if value.is_string() {
@@ -442,7 +437,6 @@ impl ConfTree {
         let parent = parent.into();
         match ConfTreeGet::<ConfTree>::get(self, "diagnosis") {
             Some(conf) => {
-                self.requested.insert("diagnosis".to_owned());
                 for key in conf.keys(&[] as &[&str]) {
                     let keyword = FnConfKeywd::from_str(&key).unwrap();
                     if keyword.kind() == FnConfKindName::Point {
@@ -489,7 +483,6 @@ impl ConfTreeGet<ConfTree> for ConfTree {
                 id: String::from("ConfTree"),
                 key: key.as_ref().to_owned(),
                 conf: value.clone(),
-                requested: HashSet::new(),
             })
         } else {
             None
@@ -501,7 +494,7 @@ impl ConfTreeGet<ConfTree> for ConfTree {
 impl ConfTreeGet<serde_yaml::Value> for ConfTree {
     fn get(&self, key: impl AsRef<str>) -> Option<serde_yaml::Value> {
         let val = self.conf.get(key.as_ref()).map(|val| val.to_owned());
-        log::debug!("ConfTree.get | {}: {:#?}", key.as_ref(), val);
+        log::trace!("ConfTree.get | {}: {:#?}", key.as_ref(), val);
         val
     }
 }
@@ -513,7 +506,7 @@ impl ConfTreeGet<bool> for ConfTree {
             Some(val) => val.as_bool(),
             None => None,
         };
-        log::debug!("ConfTree.get | {}: {:?}", key.as_ref(), val);
+        log::trace!("ConfTree.get | {}: {:?}", key.as_ref(), val);
         val
     }
 }
@@ -525,7 +518,7 @@ impl ConfTreeGet<f64> for ConfTree {
             Some(val) => val.as_f64(),
             None => None,
         };
-        log::debug!("ConfTree.get | {}: {:?}", key.as_ref(), val);
+        log::trace!("ConfTree.get | {}: {:?}", key.as_ref(), val);
         val
     }
 }
@@ -537,7 +530,7 @@ impl ConfTreeGet<i64> for ConfTree {
             Some(val) => val.as_i64(),
             None => None,
         };
-        log::debug!("ConfTree.get | {}: {:?}", key.as_ref(), val);
+        log::trace!("ConfTree.get | {}: {:?}", key.as_ref(), val);
         val
     }
 }
@@ -549,7 +542,7 @@ impl ConfTreeGet<serde_yaml::Mapping> for ConfTree {
             Some(val) => val.as_mapping().map(|val| val.to_owned()),
             None => None,
         };
-        log::debug!("ConfTree.get | {}: {:#?}", key.as_ref(), val);
+        log::trace!("ConfTree.get | {}: {:#?}", key.as_ref(), val);
         val
     }
 }
@@ -561,7 +554,7 @@ impl ConfTreeGet<Vec<serde_yaml::Value>> for ConfTree {
             Some(val) => val.as_sequence().map(|val| val.to_owned()),
             None => None,
         };
-        log::debug!("ConfTree.get | {}: {:#?}", key.as_ref(), val);
+        log::trace!("ConfTree.get | {}: {:#?}", key.as_ref(), val);
         val
     }
 }
@@ -573,7 +566,7 @@ impl ConfTreeGet<String> for ConfTree {
             Some(val) => val.as_str().map(|val| val.to_owned()),
             None => None,
         };
-        log::debug!("ConfTree.get | {}: {:?}", key.as_ref(), val);
+        log::trace!("ConfTree.get | {}: {:?}", key.as_ref(), val);
         val
     }
 }
@@ -585,7 +578,7 @@ impl ConfTreeGet<u64> for ConfTree {
             Some(val) => val.as_u64(),
             None => None,
         };
-        log::debug!("ConfTree.get | {}: {:?}", key.as_ref(), val);
+        log::trace!("ConfTree.get | {}: {:?}", key.as_ref(), val);
         val
     }
 }
