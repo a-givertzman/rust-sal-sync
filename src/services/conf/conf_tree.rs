@@ -308,7 +308,7 @@ impl ConfTree {
     /// | in         | queue    | in-queue    |           |
     /// | out        | queue    | out-queue   |           |
     /// ```
-    pub fn get_by_keywd(&mut self, prefix: &str, kind: impl Into<String>) -> Result<(ConfKeywd, ConfTree), Error> {
+    pub fn get_by_keywd(&self, prefix: &str, kind: impl Into<String>) -> Result<(ConfKeywd, ConfTree), Error> {
         let self_conf = self.clone();
         let kind = kind.into();
         let error = Error::new(&self.id, "get_by_keywd");
@@ -323,7 +323,7 @@ impl ConfTree {
     }
     ///
     /// Returns `in queue` name
-    pub fn get_in_queue(&mut self) -> Result<(String, i64), Error> {
+    pub fn get_in_queue(&self) -> Result<(String, i64), Error> {
         let prefix = "in";
         let sub_param = "max-length";
         let error = Error::new(&self.id, "get_in_queue");
@@ -345,7 +345,7 @@ impl ConfTree {
     ///
     /// Returns out queue name
     #[deprecated(note = "Use ConfTree::get_send_to instead")]
-    pub fn get_out_queue(&mut self) -> Result<String, Error> {
+    pub fn get_out_queue(&self) -> Result<String, Error> {
         let prefix = "out";
         let error = Error::new(&self.id, "get_out_queue");
         match self.get_by_keywd(prefix, ConfKind::Queue) {
@@ -359,7 +359,7 @@ impl ConfTree {
     }
     ///
     /// Returns vec of names of the 'send-to' queue
-    pub fn get_send_to_many(&mut self) -> Result<Vec<String>, Error> {
+    pub fn get_send_to_many(&self) -> Result<Vec<String>, Error> {
         let error = Error::new(&self.id, "get_send_to_many");
         match ConfTreeGet::<serde_yaml::Value>::get(self, "send-to") {
             Some(conf) => {
@@ -387,14 +387,14 @@ impl ConfTree {
     }
     ///
     /// Returns Type by `key`, parsed from serde_yaml
-    pub fn parse<T: DeserializeOwned + std::fmt::Debug>(&mut self, key: impl AsRef<str>) -> Result<T, Error> {
+    pub fn parse<T: DeserializeOwned + std::fmt::Debug>(&self, key: impl AsRef<str>) -> Result<T, Error> {
         let error = Error::new(&self.id, "parse");
         let val = self.conf
             .get(key.as_ref())
             .ok_or(error.err(format!("key '{}' - not found in: {:#?}", key.as_ref(), self.conf)))?;
         let val = serde_yaml::from_value::<T>(val.to_owned())
         .map_err(|err| error.err(format!("key '{}' - parse error: {:?} in: {:#?}", key.as_ref(), err, self.conf)));
-        log::trace!("ConfTree.get | {}: {:#?}", key.as_ref(), val);
+        log::trace!("ConfTree.parse | {}: {:#?}", key.as_ref(), val);
         val
     }
     ///
@@ -405,7 +405,7 @@ impl ConfTree {
     /// interval: 100us     # 100 microseconds
     /// timeout: 3s         # 3 seconds
     /// ```
-    pub fn get_duration(&mut self, key: impl AsRef<str>) -> Result<Duration, Error> {
+    pub fn get_duration(&self, key: impl AsRef<str>) -> Result<Duration, Error> {
         let error = Error::new(&self.id, "get_duration");
         match ConfTreeGet::<serde_yaml::Value>::get(self, key.as_ref()) {
             Some(value) => {
@@ -438,7 +438,7 @@ impl ConfTree {
     ///         type: 'Int'
     ///         # history: r                # r / rw - activates history
     /// ```
-    pub fn get_diagnosis(&mut self, parent: impl Into<String>) -> FxIndexMap<DiagKeywd, PointConfig> {
+    pub fn get_diagnosis(&self, parent: impl Into<String>) -> FxIndexMap<DiagKeywd, PointConfig> {
         let mut points = FxIndexMap::default();
         let parent = parent.into();
         match ConfTreeGet::<ConfTree>::get(self, "diagnosis") {
