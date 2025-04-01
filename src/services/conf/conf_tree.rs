@@ -180,14 +180,14 @@ impl ConfTree {
     /// ```
     /// 
     /// Will parsed from self `key` as [ConfKeywd]
-    pub fn sufix_or(&self, default: impl Into<String>) -> Result<String, Error> {
+    pub fn sufix_or(&self, default: impl Into<String>) -> String {
         match self.sufix() {
             Ok(sufix) => if sufix.is_empty() {
-                Ok(default.into())
+                default.into()
             } else {
-                Ok(sufix)
+                sufix
             }
-            Err(_) => Ok(default.into()),
+            Err(_) => default.into(),
         }
     }
     ///
