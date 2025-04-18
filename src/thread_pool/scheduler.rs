@@ -21,15 +21,14 @@ impl Scheduler {
     /// Spawns a new task to be scheduled on the [ThreadPool]
     pub fn spawn<F>(&self, f: F) -> Result<(), Error>
     where
-    F: FnOnce() + Send + 'static,
-    // where
-    //     F: FnOnce() -> Result<(), Box<dyn std::error::Error>> + Send + 'static,
-    {
-        // We create a new Job::Task, wrapping our closure 'f'
+        F: FnOnce() + Send + 'static {
+        // Create a new Job::Task, wrapping a closure `f`
         let job = Box::new(f);
-        self.send.send(job);
-        match self.recv.recv() {
-            Ok(_) => Ok(()),
+        match self.send.send(job) {
+            Ok(_) => match self.recv.recv() {
+                Ok(_) => Ok(()),
+                Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
+            }
             Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
         }
     }
