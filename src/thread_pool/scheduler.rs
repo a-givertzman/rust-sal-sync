@@ -21,7 +21,7 @@ impl Scheduler {
     /// Spawns a new task to be scheduled on the [ThreadPool]
     pub fn spawn<F>(&self, f: F) -> Result<(), Error>
     where
-        F: FnOnce() + Send + 'static {
+        F: FnOnce() -> Result<(), Error> + Send + 'static {
         // Create a new Job::Task, wrapping a closure `f`
         let job = Box::new(f);
         match self.send.send(job) {

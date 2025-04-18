@@ -1,5 +1,6 @@
 use std::sync::{Arc, Mutex};
 use crossbeam_skiplist::SkipMap;
+use sal_core::error::Error;
 use super::{job::Job, scheduler::Scheduler, worker::Worker};
 ///
 /// 
@@ -40,7 +41,7 @@ impl ThreadPool {
     /// Spawns a new task to be scheduled on the [ThreadPool]
     pub fn spawn<F>(&self, f: F)
     where
-        F: FnOnce() + Send + 'static,
+        F: FnOnce() -> Result<(), Error> + Send + 'static,
     {
         let job = Box::new(f);
         self.sender.send(job).unwrap();
