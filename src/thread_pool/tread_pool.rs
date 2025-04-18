@@ -1,13 +1,16 @@
 use std::sync::{Arc, Mutex};
+use coco::Stack;
 use crossbeam_skiplist::SkipMap;
 use sal_core::error::Error;
 use super::{job::Job, scheduler::Scheduler, worker::Worker};
 ///
 /// 
 pub struct ThreadPool {
-    workers: Vec<Worker>,
+    workers: Stack<Worker>,
     sender: kanal::Sender<Job>,
     link: SkipMap<usize, (kanal::Sender<()>, kanal::Receiver<Job>)>,
+    capacity: usize,
+    size: usize,
 }
 //
 //
@@ -15,18 +18,28 @@ impl ThreadPool {
     ///
     /// Returns [ThreadPool] new instance
     pub fn new(size: Option<usize>) -> Self {
-        let size = size.unwrap_or(64);
-        assert!(size > 0, "ThreadPool.new | Size of th ThreadPool cant be Zero");
+        let default_capacity = 64;
+        let capacity = match size {
+            Some(capacity) => {
+                if capacity == 0 {
+                    log::warn!("ThreadPool.new | Size of th ThreadPool cant be zero, used default size {default_capacity}");
+                    default_capacity
+                } else {
+                    capacity
+                }
+            }
+            None => default_capacity,
+        };
         let (sender, receiver) = kanal::unbounded();
         let receiver = Arc::new(Mutex::new(receiver));
-        let mut workers = Vec::with_capacity(size);
-        for id in 0..size {
-            workers.push(Worker::new(id, Arc::clone(&receiver)));
-        }
+        let workers = Stack::new();
+        workers.push(Worker::new(0, Arc::clone(&receiver)));
         ThreadPool {
             workers,
             sender,
             link: SkipMap::new(),
+            capacity,
+            size: 1,
         }
     }
     ///
