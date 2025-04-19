@@ -1,6 +1,6 @@
 #[cfg(test)]
 
-mod thread_pool {
+mod scheduler {
     use std::{sync::{atomic::{AtomicUsize, Ordering}, Arc, Once}, time::{Duration, Instant}};
     use sal_core::dbg::Dbg;
     use testing::stuff::max_test_duration::TestDuration;
@@ -34,13 +34,14 @@ mod thread_pool {
         test_duration.run().unwrap();
         let threads = 10;
         let thread_pool = ThreadPool::new(Some(1));
+        let scheduler = thread_pool.scheduler();
         let time = Instant::now();
         let result = Arc::new(AtomicUsize::new(0));
         let load = 50;
         for i in 0..threads {
             let dbg_ = Dbg::new(&dbg, format!("thread{i}"));
             let result = result.clone();
-            thread_pool.spawn(move || {
+            scheduler.spawn(move || {
                 log::debug!("{dbg_}", );
                 std::thread::sleep(Duration::from_millis(load));
                 result.fetch_add(1, Ordering::SeqCst);
@@ -69,12 +70,13 @@ mod thread_pool {
         test_duration.run().unwrap();
         let threads = 100;
         let thread_pool = ThreadPool::new(Some(threads + threads / 3));
+        let scheduler = thread_pool.scheduler();
         let time = Instant::now();
         let result = Arc::new(AtomicUsize::new(0));
         for i in 0..threads {
             let dbg_ = Dbg::new(&dbg, format!("thread{i}"));
             let result = result.clone();
-            thread_pool.spawn(move || {
+            scheduler.spawn(move || {
                 log::debug!("{dbg_}", );
                 std::thread::sleep(Duration::from_secs(1));
                 result.fetch_add(1, Ordering::SeqCst);

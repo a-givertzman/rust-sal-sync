@@ -56,11 +56,14 @@ impl ThreadPool {
     }
     ///
     /// Spawns a new task to be scheduled on the [ThreadPool]
-    pub fn spawn<F>(&self, f: F)
+    pub fn spawn<F>(&self, f: F) -> Result<(), Error>
     where
         F: FnOnce() -> Result<(), Error> + Send + 'static {
-        self.sender.send(Job::Task(Box::new(f))).unwrap();
-    }
+            match self.sender.send(Job::Task(Box::new(f))) {
+                Ok(_) => Ok(()),
+                Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
+            }
+        }
     fn pop_workers(&self) -> Vec<Worker> {
         let mut workers = vec![];
         while !self.workers.is_empty() {
