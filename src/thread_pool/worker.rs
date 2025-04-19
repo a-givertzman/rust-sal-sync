@@ -1,9 +1,16 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{atomic::AtomicUsize, Arc, Mutex};
+use coco::Stack;
+
 use super::job::Job;
 ///
-/// Picks up code to be executed in the Worker’s thread on the [ThreadPool]
+/// Picks up code to be executed in the [Worker]’s thread on the `ThreadPool`
 pub struct Worker {
     id: usize,
+    /// Current total number of [Worker]'s in the `ThreadPool`
+    size: Arc<AtomicUsize>,
+    /// Not busy [Worker]'s in the `ThreadPool`
+    free: Arc<AtomicUsize>,
+    workers: Arc<Stack<Worker>>,
     thread: std::thread::JoinHandle<()>,
 }
 //
@@ -11,7 +18,7 @@ pub struct Worker {
 impl Worker {
     ///
     /// Returns [Worker] new instance
-    pub fn new(id: usize, receiver: Arc<Mutex<kanal::Receiver<Job>>>) -> Worker {
+    pub fn new(id: usize, receiver: Arc<Mutex<kanal::Receiver<Job>>>, size: Arc<AtomicUsize>, free: Arc<AtomicUsize>, workers: Arc<Stack<Worker>>) -> Worker {
         let thread = std::thread::spawn(move || loop {
             // let error = Error::new("Worker", "new");
             match receiver.lock() {
@@ -30,7 +37,7 @@ impl Worker {
                 }
             }
         });
-        Worker { id, thread }
+        Worker { id, size, free, workers, thread }
     }
     ///
     /// Waits for the associated thread to finish.

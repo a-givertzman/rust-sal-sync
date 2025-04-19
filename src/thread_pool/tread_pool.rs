@@ -1,15 +1,19 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{atomic::AtomicUsize, Arc, Mutex};
 use coco::Stack;
 use sal_core::error::Error;
 use super::{job::Job, scheduler::Scheduler, worker::Worker};
 ///
 /// 
 pub struct ThreadPool {
-    workers: Stack<Worker>,
+    workers: Arc<Stack<Worker>>,
     sender: kanal::Sender<Job>,
     // link: SkipMap<usize, (kanal::Sender<()>, kanal::Receiver<Job>)>,
+    /// Maximum possible number of [Worker]'s
     capacity: usize,
-    size: usize,
+    /// Current total number of [Worker]'s
+    size: Arc<AtomicUsize>,
+    /// not busy [Worker]'s
+    free: Arc<AtomicUsize>,
 }
 //
 //
@@ -29,15 +33,21 @@ impl ThreadPool {
             }
             None => default_capacity,
         };
+        let size = Arc::new(AtomicUsize::new(0));
+        let free = Arc::new(AtomicUsize::new(0));
         let (sender, receiver) = kanal::unbounded();
         let receiver = Arc::new(Mutex::new(receiver));
-        let workers = Stack::new();
-        workers.push(Worker::new(0, Arc::clone(&receiver)));
+        let workers = Arc::new(Stack::new());
+        for id in 0..1 {
+            workers.push(Worker::new(id, Arc::clone(&receiver), size.clone(), free.clone(), workers.clone()));
+
+        }
         ThreadPool {
             workers,
             sender,
             capacity,
-            size: 1,
+            size,
+            free,
         }
     }
     ///
