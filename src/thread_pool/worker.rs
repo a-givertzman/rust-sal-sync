@@ -1,5 +1,4 @@
 use std::sync::{Arc, Mutex};
-
 use super::job::Job;
 ///
 /// Picks up code to be executed in the Worker’s thread on the [ThreadPool]

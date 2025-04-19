@@ -8,7 +8,7 @@ use super::{job::Job, scheduler::Scheduler, worker::Worker};
 pub struct ThreadPool {
     workers: Stack<Worker>,
     sender: kanal::Sender<Job>,
-    link: SkipMap<usize, (kanal::Sender<()>, kanal::Receiver<Job>)>,
+    // link: SkipMap<usize, (kanal::Sender<()>, kanal::Receiver<Job>)>,
     capacity: usize,
     size: usize,
 }
@@ -37,7 +37,6 @@ impl ThreadPool {
         ThreadPool {
             workers,
             sender,
-            link: SkipMap::new(),
             capacity,
             size: 1,
         }
@@ -45,17 +44,13 @@ impl ThreadPool {
     ///
     /// Returns [Scheduler] linked to the current [TreadPool]
     pub fn scheduler(&self) -> Scheduler {
-        let (loc_send, rem_recv) = kanal::bounded(100);
-        let (rem_send, loc_recv) = kanal::bounded(100);
-        self.link.insert(self.link.len() + 1, (loc_send, loc_recv));
-        Scheduler::new(rem_send, rem_recv)
+        Scheduler::new(self.sender.clone())
     }
     ///
     /// Spawns a new task to be scheduled on the [ThreadPool]
     pub fn spawn<F>(&self, f: F)
     where
-        F: FnOnce() -> Result<(), Error> + Send + 'static,
-    {
+        F: FnOnce() -> Result<(), Error> + Send + 'static {
         let job = Box::new(f);
         self.sender.send(job).unwrap();
     }

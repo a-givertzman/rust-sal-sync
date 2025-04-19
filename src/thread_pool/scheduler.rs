@@ -4,17 +4,20 @@ use super::job::Job;
 /// Provides schedule task to be executed on the [ThreadPool]
 pub struct Scheduler {
     send: kanal::Sender<Job>,
-    recv: kanal::Receiver<()>,
+    // recv: kanal::Receiver<()>,
 }
 //
 //
 impl Scheduler {
     ///
     ///
-    pub fn new(send: kanal::Sender<Job>, recv: kanal::Receiver<()>) -> Self {
+    pub fn new(
+        send: kanal::Sender<Job>,
+        // recv: kanal::Receiver<()>,
+    ) -> Self {
         Self {
             send,
-            recv,
+            // recv,
         }
     }
     ///
@@ -25,10 +28,7 @@ impl Scheduler {
         // Create a new Job::Task, wrapping a closure `f`
         let job = Box::new(f);
         match self.send.send(job) {
-            Ok(_) => match self.recv.recv() {
-                Ok(_) => Ok(()),
-                Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
-            }
+            Ok(_) => Ok(()),
             Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
         }
     }

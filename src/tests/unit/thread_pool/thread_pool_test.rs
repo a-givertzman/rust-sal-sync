@@ -1,10 +1,12 @@
 #[cfg(test)]
 
-mod subject {
+mod thread_pool {
     use std::{sync::Once, time::{Duration, Instant}};
     use sal_core::dbg::Dbg;
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
+
+    use crate::thread_pool::tread_pool::ThreadPool;
     ///
     ///
     static INIT: Once = Once::new();
@@ -22,15 +24,25 @@ mod subject {
     ///
     /// Testing such functionality / behavior
     #[test]
-    fn method() {
+    fn functionality() {
         DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
         init_each();
-        let dbg = Dbg::own("subject_method");
+        let dbg = Dbg::own("thread_pool_method");
         log::debug!("\n{}", dbg);
-        let test_duration = TestDuration::new(dbg, Duration::from_secs(10));
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
+        let thread_pool = ThreadPool::new(Some(10));
+        let threads = 10;
+        for i in 0..threads {
+            let dbg_ = Dbg::new(&dbg, "thread1");
+            thread_pool.spawn(move || {
+                log::debug!("{dbg_}", );
+                Ok(())
+            });
+        }
+
         test_duration.run().unwrap();
-        assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+        // assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
         test_duration.exit();
     }
 }
