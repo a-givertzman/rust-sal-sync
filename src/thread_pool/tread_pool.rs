@@ -1,6 +1,5 @@
 use std::sync::{Arc, Mutex};
 use coco::Stack;
-use crossbeam_skiplist::SkipMap;
 use sal_core::error::Error;
 use super::{job::Job, scheduler::Scheduler, worker::Worker};
 ///
@@ -53,5 +52,29 @@ impl ThreadPool {
         F: FnOnce() -> Result<(), Error> + Send + 'static {
         let job = Box::new(f);
         self.sender.send(job).unwrap();
+    }
+    ///
+    /// 
+    pub fn join(&self) -> Result<(), Error> {
+        let error = Error::new("ThreadPool", "join");
+        let mut errors = vec![];
+        while !self.workers.is_empty() {
+            match self.workers.pop() {
+                Some(th) => if let Err(err) = th.join() {
+                    let err = error.pass(format!("{:?}", err));
+                    log::warn!("{}", err);
+                    errors.push(err);
+                }
+                None => break,
+            }
+        }
+        if !errors.is_empty() {
+            return Err(error.err(
+                errors.iter().fold(String::new(), |acc, err| {
+                    format!("{}\n{:?}", acc, err)
+                })
+            ));
+        }
+        Ok(())
     }
 }
