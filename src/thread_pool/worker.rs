@@ -64,7 +64,7 @@ impl Worker {
                 Some(job) => {
                     log::debug!("Worker({id}).new | Executing job...");
                     free.fetch_sub(1, Ordering::SeqCst);
-                    job();
+                    let _ = job();
                     log::debug!("Worker({id}).new | Done job...");
                 }
                 None => {}

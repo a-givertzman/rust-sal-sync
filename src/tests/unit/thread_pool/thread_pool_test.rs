@@ -59,7 +59,7 @@ mod thread_pool {
         let dbg = Dbg::own("spawn");
         log::debug!("\n{}", dbg);
         let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
-        let threads = 10;
+        let threads = 100;
         let thread_pool = ThreadPool::new(Some(threads + threads / 3));
         let time = Instant::now();
         for i in 0..threads {
@@ -71,6 +71,7 @@ mod thread_pool {
             });
         }
         log::debug!("Jobs sheduled: {threads} in: {:?}", time.elapsed());
+        std::thread::sleep(Duration::from_millis(100));
         thread_pool.join().unwrap();
         log::debug!("All Jobs done ({threads})");
         log::debug!("Total elapsed: {:?}", time.elapsed());

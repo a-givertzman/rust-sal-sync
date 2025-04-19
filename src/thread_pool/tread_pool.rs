@@ -7,13 +7,12 @@ use super::{job::Job, scheduler::Scheduler, worker::Worker};
 pub struct ThreadPool {
     workers: Arc<Stack<Worker>>,
     sender: kanal::Sender<Job>,
-    // link: SkipMap<usize, (kanal::Sender<()>, kanal::Receiver<Job>)>,
-    /// Maximum possible number of [Worker]'s
-    capacity: Arc<AtomicUsize>,
-    /// Current total number of [Worker]'s
-    size: Arc<AtomicUsize>,
-    /// not busy [Worker]'s
-    free: Arc<AtomicUsize>,
+    // /// Maximum possible number of [Worker]'s
+    // capacity: Arc<AtomicUsize>,
+    // /// Current total number of [Worker]'s
+    // size: Arc<AtomicUsize>,
+    // /// not busy [Worker]'s
+    // free: Arc<AtomicUsize>,
 }
 //
 //
@@ -45,9 +44,9 @@ impl ThreadPool {
         ThreadPool {
             workers,
             sender,
-            capacity,
-            size,
-            free,
+            // capacity,
+            // size,
+            // free,
         }
     }
     ///
@@ -62,11 +61,7 @@ impl ThreadPool {
         F: FnOnce() -> Result<(), Error> + Send + 'static {
         self.sender.send(Job::Task(Box::new(f))).unwrap();
     }
-    ///
-    /// 
-    pub fn shutdown(&self) -> Result<(), Error> {
-        let error = Error::new("ThreadPool", "shutdown");
-        let mut errors = vec![];
+    fn pop_workers(&self) -> Vec<Worker> {
         let mut workers = vec![];
         while !self.workers.is_empty() {
             match self.workers.pop() {
@@ -79,12 +74,28 @@ impl ThreadPool {
                 None => break,
             }
         }
-        for worker in workers {
-            if let Err(err) = worker.join() {
-                let err = error.pass(format!("{:?}", err));
-                log::warn!("{}", err);
-                errors.push(err);
+        workers
+    }
+    ///
+    /// 
+    pub fn shutdown(&self) -> Result<(), Error> {
+        let error = Error::new("ThreadPool", "shutdown");
+        let mut errors = vec![];
+        let mut workers = self.pop_workers();
+        log::debug!("ThreadPool.shutdown | Worker notified to 'Shutdown' {}", workers.len());
+        while !workers.is_empty() {
+            match workers.pop() {
+                Some(worker) => {
+                    log::debug!("ThreadPool.shutdown | Wait for worker {}", worker.id);
+                    if let Err(err) = worker.join() {
+                        let err = error.pass(format!("{:?}", err));
+                        log::warn!("{}", err);
+                        errors.push(err);
+                    }
+                }
+                None => {}
             }
+            workers.append(&mut self.pop_workers());
         }
         if !errors.is_empty() {
             return Err(error.err(
@@ -105,6 +116,8 @@ impl ThreadPool {
 //
 impl Drop for ThreadPool {
     fn drop(&mut self) {
-        let _ = self.shutdown();
+        if !self.workers.is_empty() {
+            let _ = self.shutdown();
+        }
     }
 }
