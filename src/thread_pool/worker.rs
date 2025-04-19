@@ -1,4 +1,4 @@
-use std::sync::{atomic::AtomicUsize, Arc, Mutex};
+use std::sync::{atomic::{AtomicUsize, Ordering}, Arc, Mutex};
 use coco::Stack;
 
 use super::job::Job;
@@ -7,10 +7,10 @@ use super::job::Job;
 pub struct Worker {
     id: usize,
     /// Current total number of [Worker]'s in the `ThreadPool`
-    size: Arc<AtomicUsize>,
+    // size: Arc<AtomicUsize>,
     /// Not busy [Worker]'s in the `ThreadPool`
-    free: Arc<AtomicUsize>,
-    workers: Arc<Stack<Worker>>,
+    // free: Arc<AtomicUsize>,
+    // workers: Arc<Stack<Worker>>,
     thread: std::thread::JoinHandle<()>,
 }
 //
@@ -18,9 +18,18 @@ pub struct Worker {
 impl Worker {
     ///
     /// Returns [Worker] new instance
-    pub fn new(id: usize, receiver: Arc<Mutex<kanal::Receiver<Job>>>, size: Arc<AtomicUsize>, free: Arc<AtomicUsize>, workers: Arc<Stack<Worker>>) -> Worker {
+    pub fn new(id: usize, receiver: Arc<Mutex<kanal::Receiver<Job>>>, capacity: Arc<AtomicUsize>, size: Arc<AtomicUsize>, free: Arc<AtomicUsize>, workers: Arc<Stack<Worker>>) -> Worker {
         let thread = std::thread::spawn(move || loop {
             // let error = Error::new("Worker", "new");
+            if free.load(Ordering::SeqCst) < 2 {
+                for id in 0..1 {
+                    if size.load(Ordering::SeqCst) < capacity.load(Ordering::SeqCst) {
+                        workers.push(Worker::new(id, Arc::clone(&receiver), capacity.clone(), size.clone(), free.clone(), workers.clone()));
+                        size.fetch_add(1, Ordering::SeqCst);
+                        free.fetch_add(1, Ordering::SeqCst);
+                    }
+                }
+            }
             match receiver.lock() {
                 Ok(receiver) => match receiver.recv() {
                     Ok(job) => {
@@ -37,7 +46,7 @@ impl Worker {
                 }
             }
         });
-        Worker { id, size, free, workers, thread }
+        Worker { id, thread }
     }
     ///
     /// Waits for the associated thread to finish.

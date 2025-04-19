@@ -1,4 +1,4 @@
-use std::sync::{atomic::AtomicUsize, Arc, Mutex};
+use std::sync::{atomic::{AtomicUsize, Ordering}, Arc, Mutex};
 use coco::Stack;
 use sal_core::error::Error;
 use super::{job::Job, scheduler::Scheduler, worker::Worker};
@@ -9,7 +9,7 @@ pub struct ThreadPool {
     sender: kanal::Sender<Job>,
     // link: SkipMap<usize, (kanal::Sender<()>, kanal::Receiver<Job>)>,
     /// Maximum possible number of [Worker]'s
-    capacity: usize,
+    capacity: Arc<AtomicUsize>,
     /// Current total number of [Worker]'s
     size: Arc<AtomicUsize>,
     /// not busy [Worker]'s
@@ -33,14 +33,16 @@ impl ThreadPool {
             }
             None => default_capacity,
         };
+        let capacity = Arc::new(AtomicUsize::new(0));
         let size = Arc::new(AtomicUsize::new(0));
         let free = Arc::new(AtomicUsize::new(0));
         let (sender, receiver) = kanal::unbounded();
         let receiver = Arc::new(Mutex::new(receiver));
         let workers = Arc::new(Stack::new());
         for id in 0..1 {
-            workers.push(Worker::new(id, Arc::clone(&receiver), size.clone(), free.clone(), workers.clone()));
-
+            workers.push(Worker::new(id, Arc::clone(&receiver), capacity.clone(), size.clone(), free.clone(), workers.clone()));
+            size.fetch_add(1, Ordering::SeqCst);
+            free.fetch_add(1, Ordering::SeqCst);
         }
         ThreadPool {
             workers,
