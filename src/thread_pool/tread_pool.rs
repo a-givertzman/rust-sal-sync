@@ -33,7 +33,7 @@ impl ThreadPool {
             }
             None => default_capacity,
         };
-        let capacity = Arc::new(AtomicUsize::new(0));
+        let capacity = Arc::new(AtomicUsize::new(capacity));
         let size = Arc::new(AtomicUsize::new(0));
         let free = Arc::new(AtomicUsize::new(0));
         let (sender, receiver) = kanal::unbounded();

@@ -19,31 +19,50 @@ impl Worker {
     ///
     /// Returns [Worker] new instance
     pub fn new(id: usize, receiver: Arc<Mutex<kanal::Receiver<Job>>>, capacity: Arc<AtomicUsize>, size: Arc<AtomicUsize>, free: Arc<AtomicUsize>, workers: Arc<Stack<Worker>>) -> Worker {
+        log::debug!("Worker({id}).new | New one created, catacity: {}, size: {}, free: {}", capacity.load(Ordering::SeqCst), size.load(Ordering::SeqCst), free.load(Ordering::SeqCst));
         let thread = std::thread::spawn(move || loop {
             // let error = Error::new("Worker", "new");
             if free.load(Ordering::SeqCst) < 2 {
-                for id in 0..1 {
+                let new_workers = size.load(Ordering::SeqCst) * 2;
+                log::debug!("Worker({id}).new | Creating {new_workers} new workers...");
+                for _ in 0..new_workers {
                     if size.load(Ordering::SeqCst) < capacity.load(Ordering::SeqCst) {
+                        let id = size.load(Ordering::SeqCst);
                         workers.push(Worker::new(id, Arc::clone(&receiver), capacity.clone(), size.clone(), free.clone(), workers.clone()));
                         size.fetch_add(1, Ordering::SeqCst);
                         free.fetch_add(1, Ordering::SeqCst);
                     }
                 }
             }
-            match receiver.lock() {
-                Ok(receiver) => match receiver.recv() {
-                    Ok(job) => {
-                        // let job = receiver.lock().unwrap().recv().unwrap();
-                        log::debug!("Worker({id}).new | Got a job; executing...");
-                        job();
-                    }
-                    Err(err) => {
-                        log::trace!("Worker({id}).new | Recv error, channel closed, details: \n\t{:?}", err);
+            let receiver_lock = receiver.lock();
+            let job = match receiver_lock {
+                Ok(receiver) => {
+                    let job = receiver.recv();
+                    match job {
+                        Ok(job) => {
+                            // let job = receiver.lock().unwrap().recv().unwrap();
+                            Some(job)
+                        }
+                        Err(err) => {
+                            log::error!("Worker({id}).new | Recv error, channel closed, details: \n\t{:?}", err);
+                            break;
+                        }
                     }
                 }
                 Err(err) => {
                     log::error!("Worker({id}).new | Lock error: {:?}", err);
+                    None
                 }
+            };
+            match job {
+                Some(job) => {
+                    log::debug!("Worker({id}).new | Executing job...");
+                    free.fetch_sub(1, Ordering::SeqCst);
+                    job();
+                    free.fetch_add(1, Ordering::SeqCst);
+                    log::debug!("Worker({id}).new | Done job...");
+                }
+                None => {}
             }
         });
         Worker { id, thread }
