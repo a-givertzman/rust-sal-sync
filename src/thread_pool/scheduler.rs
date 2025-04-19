@@ -26,8 +26,7 @@ impl Scheduler {
     where
         F: FnOnce() -> Result<(), Error> + Send + 'static {
         // Create a new Job::Task, wrapping a closure `f`
-        let job = Box::new(f);
-        match self.send.send(job) {
+        match self.send.send(Job::Task(Box::new(f))) {
             Ok(_) => Ok(()),
             Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
         }

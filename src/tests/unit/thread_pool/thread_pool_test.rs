@@ -22,17 +22,17 @@ mod thread_pool {
     ///  - ...
     fn init_each() -> () {}
     ///
-    /// Testing such functionality / behavior
+    /// Testing spawn with capacity = 1
     #[test]
-    fn functionality() {
+    fn single_capacity() {
         DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
         init_each();
-        let dbg = Dbg::own("thread_pool_method");
+        let dbg = Dbg::own("single_capacity");
         log::debug!("\n{}", dbg);
         let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
-        let thread_pool = ThreadPool::new(Some(10));
         let threads = 10;
+        let thread_pool = ThreadPool::new(Some(1));
         let time = Instant::now();
         for i in 0..threads {
             let dbg_ = Dbg::new(&dbg, format!("thread{i}"));
@@ -44,6 +44,35 @@ mod thread_pool {
         }
         log::debug!("Jobs sheduled: {threads} in: {:?}", time.elapsed());
         thread_pool.join().unwrap();
+        log::debug!("Total elapsed: {:?}", time.elapsed());
+        test_duration.run().unwrap();
+        // assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
+        test_duration.exit();
+    }
+    ///
+    /// Testing spawn with capacity = jobs + 30 %
+    #[test]
+    fn spawn() {
+        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        init_once();
+        init_each();
+        let dbg = Dbg::own("spawn");
+        log::debug!("\n{}", dbg);
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
+        let threads = 10;
+        let thread_pool = ThreadPool::new(Some(threads + threads / 3));
+        let time = Instant::now();
+        for i in 0..threads {
+            let dbg_ = Dbg::new(&dbg, format!("thread{i}"));
+            thread_pool.spawn(move || {
+                log::debug!("{dbg_}", );
+                std::thread::sleep(Duration::from_secs(1));
+                Ok(())
+            });
+        }
+        log::debug!("Jobs sheduled: {threads} in: {:?}", time.elapsed());
+        thread_pool.join().unwrap();
+        log::debug!("All Jobs done ({threads})");
         log::debug!("Total elapsed: {:?}", time.elapsed());
         test_duration.run().unwrap();
         // assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);

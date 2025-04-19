@@ -1,36 +1,39 @@
-use std::sync::{atomic::{AtomicUsize, Ordering}, Arc, Mutex};
+use std::sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc, Mutex};
 use coco::Stack;
 
 use super::job::Job;
 ///
 /// Picks up code to be executed in the [Worker]’s thread on the `ThreadPool`
 pub struct Worker {
-    id: usize,
+    pub id: usize,
     /// Current total number of [Worker]'s in the `ThreadPool`
     // size: Arc<AtomicUsize>,
     /// Not busy [Worker]'s in the `ThreadPool`
     // free: Arc<AtomicUsize>,
     // workers: Arc<Stack<Worker>>,
     thread: std::thread::JoinHandle<()>,
+    exit: Arc<AtomicBool>,
 }
 //
 //
 impl Worker {
     ///
     /// Returns [Worker] new instance
-    pub fn new(id: usize, receiver: Arc<Mutex<kanal::Receiver<Job>>>, capacity: Arc<AtomicUsize>, size: Arc<AtomicUsize>, free: Arc<AtomicUsize>, workers: Arc<Stack<Worker>>) -> Worker {
-        log::debug!("Worker({id}).new | New one created, catacity: {}, size: {}, free: {}", capacity.load(Ordering::SeqCst), size.load(Ordering::SeqCst), free.load(Ordering::SeqCst));
+    pub fn new(receiver: Arc<Mutex<kanal::Receiver<Job>>>, capacity: Arc<AtomicUsize>, size: Arc<AtomicUsize>, free: Arc<AtomicUsize>, workers: Arc<Stack<Worker>>) -> Worker {
+        let id = size.load(Ordering::SeqCst);
+        size.fetch_add(1, Ordering::SeqCst);
+        let exit = Arc::new(AtomicBool::new(false));
+        let exit_clone = exit.clone();
+        log::debug!("Worker({id}).new | New one created, catacity: {}, size: {}, free: {}", capacity.load(Ordering::SeqCst), size.load(Ordering::SeqCst), 1 + free.load(Ordering::SeqCst));
         let thread = std::thread::spawn(move || loop {
             // let error = Error::new("Worker", "new");
+            free.fetch_add(1, Ordering::SeqCst);
             if free.load(Ordering::SeqCst) < 2 {
                 let new_workers = size.load(Ordering::SeqCst) * 2;
                 log::debug!("Worker({id}).new | Creating {new_workers} new workers...");
                 for _ in 0..new_workers {
                     if size.load(Ordering::SeqCst) < capacity.load(Ordering::SeqCst) {
-                        let id = size.load(Ordering::SeqCst);
-                        workers.push(Worker::new(id, Arc::clone(&receiver), capacity.clone(), size.clone(), free.clone(), workers.clone()));
-                        size.fetch_add(1, Ordering::SeqCst);
-                        free.fetch_add(1, Ordering::SeqCst);
+                        workers.push(Worker::new(Arc::clone(&receiver), capacity.clone(), size.clone(), free.clone(), workers.clone()));
                     }
                 }
             }
@@ -39,9 +42,12 @@ impl Worker {
                 Ok(receiver) => {
                     let job = receiver.recv();
                     match job {
-                        Ok(job) => {
-                            // let job = receiver.lock().unwrap().recv().unwrap();
-                            Some(job)
+                        Ok(job) => match job {
+                            Job::Task(job) => {
+                                // let job = receiver.lock().unwrap().recv().unwrap();
+                                Some(job)
+                            }
+                            Job::Shutdown => break,
                         }
                         Err(err) => {
                             log::error!("Worker({id}).new | Recv error, channel closed, details: \n\t{:?}", err);
@@ -59,13 +65,15 @@ impl Worker {
                     log::debug!("Worker({id}).new | Executing job...");
                     free.fetch_sub(1, Ordering::SeqCst);
                     job();
-                    free.fetch_add(1, Ordering::SeqCst);
                     log::debug!("Worker({id}).new | Done job...");
                 }
                 None => {}
             }
+            if exit.load(Ordering::SeqCst) {
+                break;
+            }
         });
-        Worker { id, thread }
+        Worker { id, thread, exit: exit_clone }
     }
     ///
     /// Waits for the associated thread to finish.
@@ -79,6 +87,7 @@ impl Worker {
     /// Panics
     /// This function may panic on some platforms if a thread attempts to join itself or otherwise may create a deadlock with joining threads.
     pub fn join(self) -> Result<(), Box<dyn std::any::Any + Send + 'static>> {
+        self.exit.store(true, Ordering::SeqCst);
         self.thread.join()
     }
 }
