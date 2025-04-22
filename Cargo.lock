@@ -1024,7 +1024,7 @@ dependencies = [
 
 [[package]]
 name = "sal-sync"
-version = "0.0.4"
+version = "0.1.0"
 dependencies = [
  "api-tools",
  "chrono",
