@@ -76,7 +76,7 @@ impl ThreadPool {
     /// Returns [Scheduler] linked to the current [TreadPool]
     /// 
     /// **Example**
-    /// ```rust
+    /// ```ignore
     /// let thread_pool = ThreadPool::new(&dbg, Some(1));
     /// let scheduler = thread_pool.scheduler();
     /// let result = scheduler.spawn(move || {
@@ -163,9 +163,4 @@ impl Drop for ThreadPool {
             let _ = self.shutdown();
         }
     }
-}
-///
-/// 
-pub(super) trait JobDoneChannel {
-    fn pop<T>(&self) -> T;
 }

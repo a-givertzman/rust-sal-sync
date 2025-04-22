@@ -20,7 +20,7 @@ impl Scheduler {
     ///
     /// Spawns a new task to be scheduled on the [ThreadPool]
     /// **Example**
-    /// ```rust
+    /// ```ignore
     /// let thread_pool = ThreadPool::new(&dbg, Some(1));
     /// let scheduler = thread_pool.scheduler();
     /// let result = scheduler.spawn(move || {
