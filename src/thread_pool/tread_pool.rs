@@ -1,7 +1,7 @@
 use std::sync::{atomic::{AtomicUsize, Ordering}, Arc, Mutex};
 use coco::Stack;
 use sal_core::{dbg::Dbg, error::Error};
-use super::{job::Job, scheduler::Scheduler, worker::Worker};
+use super::{job::Job, scheduler::Scheduler, worker::Worker, JoinHandle};
 ///
 /// 
 pub struct ThreadPool {
@@ -74,19 +74,36 @@ impl ThreadPool {
     }
     ///
     /// Returns [Scheduler] linked to the current [TreadPool]
+    /// 
+    /// **Example**
+    /// ```rust
+    /// let thread_pool = ThreadPool::new(&dbg, Some(1));
+    /// let scheduler = thread_pool.scheduler();
+    /// let result = scheduler.spawn(move || {
+    ///     std::thread::sleep(Duration::from_millis(load));
+    ///     result.fetch_add(1, Ordering::SeqCst);
+    ///     Ok(())
+    /// }).unwrap();
+    /// assert!(result.join().unwrap() == ());
+    /// thread_pool.join().unwrap();
+    /// ```
     pub fn scheduler(&self) -> Scheduler {
         Scheduler::new(self.sender.clone())
     }
     ///
     /// Spawns a new task to be scheduled on the [ThreadPool]
-    pub fn spawn<F>(&self, f: F) -> Result<(), Error>
+    pub fn spawn<F>(&self, f: F) -> Result<JoinHandle<()>, Error>
     where
-        F: FnOnce() -> Result<(), Error> + Send + 'static {
-            match self.sender.send(Job::Task(Box::new(f))) {
-                Ok(_) => Ok(()),
-                Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
-            }
+        F: FnOnce() -> Result<(), Error> + Send + 'static
+    {
+        let (send, recv) = kanal::bounded(1);
+        match self.sender.send(Job::Task((Box::new(f), send))) {
+            Ok(_) => Ok(JoinHandle::new(recv)),
+            Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
         }
+    }
+    ///
+    /// Returns all workers from self.workers
     fn pop_workers(&self) -> Vec<Worker> {
         let mut workers = vec![];
         while !self.workers.is_empty() {
@@ -146,4 +163,9 @@ impl Drop for ThreadPool {
             let _ = self.shutdown();
         }
     }
+}
+///
+/// 
+pub(super) trait JobDoneChannel {
+    fn pop<T>(&self) -> T;
 }

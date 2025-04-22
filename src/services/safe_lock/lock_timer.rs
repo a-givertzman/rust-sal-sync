@@ -37,10 +37,16 @@ impl LockTimer {
         let exit = self.exit_r.clone();
         let duration = self.duration;
         match &self.scheduler {
-            Some(scheduler) => scheduler.spawn(move || {
-                Self::wait(&dbg, &type_, duration, exit);
-                Ok(())
-            }),
+            Some(scheduler) => {
+                let result = scheduler.spawn(move || {
+                    Self::wait(&dbg, &type_, duration, exit);
+                    Ok(())
+                });
+                match result {
+                    Ok(_) => Ok(()),
+                    Err(err) => Err(err)
+                }
+            }
             None => {
                 thread::Builder::new().name(format!("{}.run", dbg)).spawn(move || {
                     Self::wait(&dbg, &type_, duration, exit);

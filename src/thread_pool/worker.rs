@@ -1,7 +1,6 @@
 use std::sync::{atomic::{AtomicUsize, Ordering}, Arc, Mutex};
 use coco::Stack;
-use sal_core::dbg::Dbg;
-
+use sal_core::{dbg::Dbg, error::Error};
 use super::job::Job;
 ///
 /// Picks up code to be executed in the [Worker]’s thread on the `ThreadPool`
@@ -51,22 +50,25 @@ impl Worker {
                             Job::Shutdown => break,
                         }
                         Err(err) => {
-                            log::error!("Worker({dbg}).new | Recv error, channel closed, details: \n\t{:?}", err);
+                            log::error!("{dbg}.new | Recv error, channel closed, details: \n\t{:?}", err);
                             break;
                         }
                     }
                 }
                 Err(err) => {
-                    log::error!("Worker({dbg}).new | Lock error: {:?}", err);
+                    log::error!("{dbg}.new | Lock error: {:?}", err);
                     None
                 }
             };
             match job {
-                Some(job) => {
-                    log::debug!("Worker({dbg}).new | Executing job...");
+                Some((job, done)) => {
+                    log::debug!("{dbg}.new | Executing job...");
                     free.fetch_sub(1, Ordering::SeqCst);
                     let _ = job();
-                    log::debug!("Worker({dbg}).new | Done job...");
+                    if let Err(err) = done.send(()) {
+                        log::trace!("{dbg}.new | Send 'Done' error: {:?}", err);
+                    }
+                    log::debug!("{dbg}.new | Done job...");
                 }
                 None => {}
             }
@@ -109,9 +111,11 @@ impl Worker {
     /// 
     /// If the associated thread panics, [Err] is returned with the parameter given to panic (though see the Notes below).
     /// 
-    /// Panics
+    /// ## Panics
     /// This function may panic on some platforms if a thread attempts to join itself or otherwise may create a deadlock with joining threads.
-    pub fn join(self) -> Result<(), Box<dyn std::any::Any + Send + 'static>> {
-        self.thread.join()
+    pub fn join(self) -> Result<(), Error> {
+        self.thread
+            .join()
+            .map_err(|err| Error::new(format!("Worker({})", self.id), "join").pass(format!("{:?}", err)))
     }
 }
