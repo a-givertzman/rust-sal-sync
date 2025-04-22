@@ -33,7 +33,7 @@ mod scheduler {
         let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
         let threads = 10;
-        let thread_pool = ThreadPool::new(Some(1));
+        let thread_pool = ThreadPool::new(&dbg, Some(1));
         let scheduler = thread_pool.scheduler();
         let time = Instant::now();
         let result = Arc::new(AtomicUsize::new(0));
@@ -69,7 +69,7 @@ mod scheduler {
         let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
         let threads = 100;
-        let thread_pool = ThreadPool::new(Some(threads + threads / 3));
+        let thread_pool = ThreadPool::new(&dbg, Some(threads + threads / 3));
         let scheduler = thread_pool.scheduler();
         let time = Instant::now();
         let result = Arc::new(AtomicUsize::new(0));

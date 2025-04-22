@@ -1,30 +1,31 @@
 use std::sync::{atomic::{AtomicUsize, Ordering}, Arc, Mutex};
 use coco::Stack;
-use sal_core::error::Error;
+use sal_core::{dbg::Dbg, error::Error};
 use super::{job::Job, scheduler::Scheduler, worker::Worker};
 ///
 /// 
 pub struct ThreadPool {
     workers: Arc<Stack<Worker>>,
     sender: kanal::Sender<Job>,
-    // /// Maximum possible number of [Worker]'s
-    // capacity: Arc<AtomicUsize>,
-    // /// Current total number of [Worker]'s
-    // size: Arc<AtomicUsize>,
-    // /// not busy [Worker]'s
-    // free: Arc<AtomicUsize>,
+    /// Maximum possible number of [Worker]'s
+    capacity: Arc<AtomicUsize>,
+    /// Current number of [Worker]'s
+    size: Arc<AtomicUsize>,
+    /// Not busy [Worker]'s
+    free: Arc<AtomicUsize>,
 }
 //
 //
 impl ThreadPool {
     ///
     /// Returns [ThreadPool] new instance
-    pub fn new(size: Option<usize>) -> Self {
+    pub fn new(parent: impl Into<String>, capacity: Option<usize>) -> Self {
+        let dbg = Dbg::new(parent, "ThreadPool");
         let default_capacity = 64;
-        let capacity = match size {
+        let capacity = match capacity {
             Some(capacity) => {
                 if capacity == 0 {
-                    log::warn!("ThreadPool.new | Size of th ThreadPool cant be zero, used default size {default_capacity}");
+                    log::warn!("{dbg} | Capacity of th ThreadPool cant be zero, used default {default_capacity}");
                     default_capacity
                 } else {
                     capacity
@@ -39,15 +40,37 @@ impl ThreadPool {
         let receiver = Arc::new(Mutex::new(receiver));
         let workers = Arc::new(Stack::new());
         for _ in 0..if capacity.load(Ordering::SeqCst) > 1 { 2 } else { 1 } {
-            workers.push(Worker::new(Arc::clone(&receiver), capacity.clone(), size.clone(), free.clone(), workers.clone()));
+            workers.push(Worker::new(
+                &dbg,
+                receiver.clone(),
+                capacity.clone(),
+                size.clone(),
+                free.clone(),
+                workers.clone(),
+            ));
         }
         ThreadPool {
             workers,
             sender,
-            // capacity,
-            // size,
-            // free,
+            capacity,
+            size,
+            free,
         }
+    }
+    ///
+    /// Maximum avalible number of [Worker]'s
+    pub fn capacity(&self) -> usize {
+        self.capacity.load(Ordering::SeqCst)
+    }
+    ///
+    /// Current number of [Worker]'s
+    pub fn size(&self) -> usize {
+        self.size.load(Ordering::SeqCst)
+    }
+    ///
+    /// Current not a busy [Worker]'s
+    pub fn free(&self) -> usize {
+        self.free.load(Ordering::SeqCst)
     }
     ///
     /// Returns [Scheduler] linked to the current [TreadPool]
