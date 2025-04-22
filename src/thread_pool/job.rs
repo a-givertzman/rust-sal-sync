@@ -1,5 +1,7 @@
-pub type Job = Box<dyn FnOnce() + Send + 'static>;
-// pub enum Job {
-//     Task(Box<dyn FnOnce() -> Result<(), Box<dyn std::error::Error>> + Send + 'static>),
-//     Shutdown,
-// }
+use sal_core::error::Error;
+///
+/// Execution job or shutdown
+pub enum Job {
+    Task((Box<dyn FnOnce() -> Result<(), Error> + Send + 'static>, kanal::Sender<()>)),
+    Shutdown,
+}

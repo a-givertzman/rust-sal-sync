@@ -22,8 +22,11 @@
 //! service(scheduler);
 //! ```
 //! 
-//! 
-pub mod job;
+//!
+mod join_handle; 
+pub(super) mod job;
+
+pub use join_handle::JoinHandle;
 pub mod scheduler;
 pub mod tread_pool;
 pub mod worker;

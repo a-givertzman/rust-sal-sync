@@ -40,3 +40,4 @@ concat-string = "^1.0"
 # Safe multithreading
 kanal = "0.1"
 crossbeam-skiplist = "^0.1"
+coco = "^0.3"
