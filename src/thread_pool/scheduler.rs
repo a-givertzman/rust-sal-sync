@@ -2,6 +2,7 @@ use sal_core::error::Error;
 use super::{job::Job, JoinHandle};
 ///
 /// Provides schedule task to be executed on the [ThreadPool]
+#[derive(Clone)]
 pub struct Scheduler {
     sender: kanal::Sender<Job>,
 }

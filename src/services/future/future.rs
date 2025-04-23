@@ -1,6 +1,7 @@
 use std::sync::mpsc::{Receiver, Sender};
 use log::error;
-use crate::services::types::type_of::TypeOf;
+use sal_core::error::Error;
+use crate::{services::types::type_of::TypeOf, thread_pool::scheduler::Scheduler};
 ///
 /// Contains future callback
 pub struct Future<T> {
@@ -10,15 +11,26 @@ pub struct Future<T> {
 }
 //
 //
-impl<T> Future<T> {
+impl<T: Send + 'static> Future<T> {
     ///
-    /// 
+    /// Returns Future new instance
     pub fn new() -> (Self, Sink<T>) {
         let (send, recv) = std::sync::mpsc::channel();
         (
             Self { recv },
             Sink::new(send),
         )
+    }
+    /// 
+    /// Returns value from future
+    pub fn wait(&self) -> Result<T, Error> {
+        match self.recv.recv() {
+            Ok(event) => Ok(event),
+            Err(err) => {
+                log::warn!("Future.wait | Recv error: {:?}", err);
+                Err(Error::new("Future", "wait").pass(err.to_string()))
+            }
+        }
     }
     /// 
     /// Returns future callback
@@ -30,6 +42,25 @@ impl<T> Future<T> {
             Err(err) => {
                 (on_err)(format!("{}.then | Error: {:#?}", self.type_of(), err))
             }
+        }
+    }
+    ///
+    /// Spawning the closure using [Scheduler]
+    pub fn spawn<F>(scheduler: Scheduler, f: F) -> Result<Future<T>, Error>
+    where
+        F: FnOnce() -> T + Send + 'static 
+    {
+        let (send, recv) = std::sync::mpsc::channel();
+        let h = scheduler.spawn(move || {
+            let result = f();
+            if let Err(err) = send.send(result) {
+                log::warn!("Future.spawn | Send error: {:?}", err);
+            }
+            Ok(())
+        });
+        match h {
+            Ok(_) => Ok(Self { recv }),
+            Err(err) => Err(Error::new("Future", "spawn").pass(err))
         }
     }
 }
