@@ -73,11 +73,20 @@
 //! `2024-02-19T12:16:57.648504907Z`
 //! 
 //! </details>
-pub mod point;
-pub mod point_hlr;
-pub mod point_tx_id;
-pub mod point_config_type;
-pub mod point_config;
-pub mod point_config_address;
-pub mod point_config_history;
-pub mod point_config_filters;
+mod point;
+mod point_hlr;
+mod point_tx_id;
+mod point_config_type;
+mod point_config;
+mod point_config_address;
+mod point_config_history;
+mod point_config_filters;
+
+pub use point::*;
+pub use point_hlr::*;
+pub use point_tx_id::*;
+pub use point_config_type::*;
+pub use point_config::*;
+pub use point_config_address::*;
+pub use point_config_history::*;
+pub use point_config_filters::*;

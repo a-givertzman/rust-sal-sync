@@ -1,9 +1,8 @@
 use std::sync::mpsc::{Sender, Receiver};
 use sal_core::error::Error;
 use crate::services::{
-    entity::{object::Object, point::{point::Point, point_config::PointConfig}},
-    subscription::subscription_criteria::SubscriptionCriteria,
-    service::service_handles::ServiceHandles,
+    entity::{Object, Point, PointConfig},
+    subscription::SubscriptionCriteria,
 };
 ///
 /// Interface for application service
@@ -38,7 +37,7 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
     }
     ///
     /// Starts service's main loop in the individual thread
-    fn run(&mut self) -> Result<ServiceHandles<()>, Error>;
+    fn run(&mut self) -> Result<(), Error>;
     ///
     /// Returns list of configurations of the defined points
     fn points(&self) -> Vec<PointConfig> {
@@ -48,8 +47,13 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
     /// Returns `Receiver<Point>`, where will be pushed all points by subscription
     fn gi(&self, _receiver_name: &str, _points: &[SubscriptionCriteria]) -> Receiver<Point> {
         panic!("{}.gi | Does not supported", self.name())
-    }    
+    }
     ///
     /// Sends "exit" signal to the service's thread
     fn exit(&self);
+    ///
+    /// Returns [Future] to wait for [Service] will finished
+    fn wait(&self) -> crate::services::future::Future<()> {
+        panic!("{}.wait | Does not supported", self.name())
+    }
 }

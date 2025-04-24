@@ -6,7 +6,7 @@ mod future {
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
     use crate::{
-        services::future::future::Future,
+        services::future::Future,
         thread_pool::tread_pool::ThreadPool,
     };
     ///

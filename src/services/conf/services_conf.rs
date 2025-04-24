@@ -1,6 +1,6 @@
 use sal_core::dbg::Dbg;
 use crate::services::{
-    entity::name::Name, retain::retain_conf::RetainConf,
+    entity::Name, retain::RetainConf,
 };
 use super::conf_tree::ConfTree;
 ///

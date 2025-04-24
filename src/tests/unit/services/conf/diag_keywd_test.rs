@@ -5,7 +5,7 @@ mod diag_keywd {
     use std::{sync::Once, time::Duration};
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use crate::services::conf::diag_keywd::DiagKeywd;
+    use crate::services::conf::DiagKeywd;
     ///
     ///
     static INIT: Once = Once::new();

@@ -6,9 +6,7 @@ mod point_config {
     use log::debug;
     use serde_json::json;
     use testing::stuff::max_test_duration::TestDuration;
-    use crate::services::entity::{name::Name, point::{
-        point_config::PointConfig, point_config_address::PointConfigAddress, point_config_filters::PointConfigFilter, point_config_history::PointConfigHistory, point_config_type::PointConfigType
-    }};
+    use crate::services::entity::{Name, PointConfig, PointConfigAddress, PointConfigFilter, PointConfigHistory, PointConfigType};
     ///
     ///
     static INIT: Once = Once::new();

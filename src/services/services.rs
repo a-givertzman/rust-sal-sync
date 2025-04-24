@@ -1,31 +1,33 @@
 use crate::{
-    kernel::state::change_notify::ChangeNotify,
+    kernel::state::ChangeNotify,
     services::{
-        entity::{name::Name, object::Object, point::{point::Point, point_config::PointConfig}},
-        future::future::{Future, Sink}, retain::{retain_conf::RetainConf, retain_point_id::RetainPointId},
+        conf::ServicesConf,
+        entity::{Name, Object, Point, PointConfig},
+        future::{Future, Sink}, retain::{RetainConf, RetainPointId},
         safe_lock::rwlock::SafeLock,
-        service::{link_name::LinkName, service::Service, service_cycle::ServiceCycle, service_handles::ServiceHandles},
-        subscription::subscription_criteria::SubscriptionCriteria,
+        service::{link_name::LinkName, service::Service, service_cycle::ServiceCycle},
+        subscription::SubscriptionCriteria,
     },
 };
 use std::{
     collections::HashMap, fmt::Debug,
     sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{Receiver, Sender}, Arc, RwLock},
-    thread, time::Duration,
+    thread::{self, JoinHandle}, time::Duration,
 };
+use coco::Stack;
 use concat_string::concat_string;
-use sal_core::error::Error;
-use super::conf::services_conf::ServicesConf;
+use sal_core::{dbg::Dbg, error::Error};
 ///
 /// Holds a map of the all services in app by there names
 pub struct Services {
-    id: String,
+    dbg: Dbg,
     name: Name,
     map: Arc<RwLock<HashMap<String, Arc<RwLock<dyn Service>>>>>,
     conf: ServicesConf,
     retain_point_id: Option<Arc<RwLock<RetainPointId>>>,
     points_requested: Arc<AtomicUsize>,
     points_request: Arc<RwLock<Vec< (String, Sink<Vec<PointConfig>>) >>>,
+    handle: Stack<JoinHandle<()>>,
     exit: Arc<AtomicBool>,
 }
 //
@@ -43,40 +45,42 @@ impl Services {
     ///
     /// Creates new instance of the Services
     pub fn new(parent: impl Into<String>, conf: ServicesConf) -> Self {
-        let name = Name::new(parent, "Services");
-        let self_id = name.join();
+        let parent = parent.into();
+        let name = Name::new(&parent, "Services");
+        let name_str = name.join();
         Self {
-            id: self_id.clone(),
+            dbg: Dbg::new(parent, "Services"),
             name,
             map: Arc::new(RwLock::new(HashMap::new())),
             retain_point_id: match &conf.retain.point {
-                Some(_) => Some(Arc::new(RwLock::new(RetainPointId::new(&self_id, conf.retain.clone())))),
+                Some(_) => Some(Arc::new(RwLock::new(RetainPointId::new(&name_str, conf.retain.clone())))),
                 None => None,
             },
             conf: conf,
             points_requested: Arc::new(AtomicUsize::new(0)),
             points_request: Arc::new(RwLock::new(vec![])),
+            handle: Stack::new(),
             exit: Arc::new(AtomicBool::new(false)),
         }
     }
     ///
     /// Prepairing retained points id's
-    fn prepare_point_ids(self_id: &str, notify: &mut ChangeNotify<NotifyState, String>, retain_point_id: &Option<Arc<RwLock<RetainPointId>>>, services: &Arc<RwLock<HashMap<String, Arc<RwLock<dyn Service>>>>>) {
+    fn prepare_point_ids(dbg: &Dbg, notify: &mut ChangeNotify<NotifyState, String>, retain_point_id: &Option<Arc<RwLock<RetainPointId>>>, services: &Arc<RwLock<HashMap<String, Arc<RwLock<dyn Service>>>>>) {
         match retain_point_id {
             Some(retain_point_id) => {
-                log::info!("{}.prepare_point_ids | Preparing retained Point's id's...", self_id);
+                log::info!("{}.prepare_point_ids | Preparing retained Point's id's...", dbg);
                 match services.read() {
                     Ok(services) => {
                         for (service_id, service) in services.iter() {
-                            let service_points = service.rlock(self_id).points();
+                            let service_points = service.rlock(dbg).points();
                             match retain_point_id.write() {
                                 Ok(mut retain_point_id) => {
                                     retain_point_id.insert(&service_id, service_points);
                                 }
-                                Err(err) => log::error!("{}.prepare_point_ids | Points id's write access error: {:#?}", self_id, err),
+                                Err(err) => log::error!("{}.prepare_point_ids | Points id's write access error: {:#?}", dbg, err),
                             }
                         };
-                        log::info!("{}.prepare_point_ids | Point's is chashed: {}", self_id, retain_point_id.read().unwrap().is_cached());
+                        log::info!("{}.prepare_point_ids | Point's is chashed: {}", dbg, retain_point_id.read().unwrap().is_cached());
                         let points = retain_point_id.write().unwrap()
                             .points()
                             .iter()
@@ -85,30 +89,31 @@ impl Services {
                                     concat_string!(owner, " | ", p.id.to_string(), " | ", p.type_.to_string(), " | ", p.name, "\n")
                                 }).collect()
                             }).collect::<Vec<String>>();
-                        log::trace!("{}.prepare_point_ids | Point's: {:#?}", self_id, points);
-                        log::info!("{}.prepare_point_ids | Preparing retained Point's id's - ok", self_id);
+                        log::trace!("{}.prepare_point_ids | Point's: {:#?}", dbg, points);
+                        log::info!("{}.prepare_point_ids | Preparing retained Point's id's - ok", dbg);
                     }
-                    Err(err) => log::error!("{}.prepare_point_ids | Services read access error: {:#?}", self_id, err),
+                    Err(err) => log::error!("{}.prepare_point_ids | Services read access error: {:#?}", dbg, err),
                 }
             }
-            None => notify.add(NotifyState::RetainPointNotConfiguredWarn, format!("{}.run | Retain->Point - not configured", self_id)),
+            None => notify.add(NotifyState::RetainPointNotConfiguredWarn, format!("{}.run | Retain->Point - not configured", dbg)),
         }
     }
     ///
     /// Main loop of the Services
-    pub fn run(&mut self) -> Result<ServiceHandles<()>, Error> {
-        log::info!("{}.run | Starting...", self.id);
-        let self_id = self.id.clone();
+    pub fn run(&mut self) -> Result<(), Error> {
+        log::info!("{}.run | Starting...", self.dbg);
+        let dbg = self.dbg.clone();
+        let name = self.name.clone();
         let points_requested = self.points_requested.clone();
         let points_request = self.points_request.clone();
         let retain_point_id = self.retain_point_id.clone();
         let services = self.map.clone();
         let exit = self.exit.clone();
-        log::info!("{}.run | Preparing thread...", self_id);
-        let handle = thread::Builder::new().name(format!("{}.run", self_id.clone())).spawn(move || {
-            log::info!("{}.run | Preparing thread - ok", self_id);
+        log::info!("{}.run | Preparing thread...", dbg);
+        let handle = thread::Builder::new().name(format!("{}.run", dbg)).spawn(move || {
+            log::info!("{}.run | Preparing thread - ok", dbg);
             let mut notify = ChangeNotify::new(
-                &self_id,
+                &dbg,
                 NotifyState::Start,
                 vec![
                     (NotifyState::Start,  Box::new(|message| log::info!("{}", message))),
@@ -120,8 +125,8 @@ impl Services {
                     (NotifyState::PointsRequestsIsEmpty,  Box::new(|message| log::error!("{}", message))),
                 ],
             );
-            Self::prepare_point_ids(&self_id, &mut notify, &retain_point_id, &services);
-            let mut cycle = ServiceCycle::new(&self_id, Duration::from_millis(10));
+            Self::prepare_point_ids(&dbg, &mut notify, &retain_point_id, &services);
+            let mut cycle = ServiceCycle::new(&name.join(), Duration::from_millis(10));
             loop {
                 cycle.start();
                 if points_requested.load(Ordering::SeqCst) > 0 {
@@ -129,7 +134,7 @@ impl Services {
                         Ok(mut requests) => {
                             match requests.pop() {
                                 Some((requester_name, sink)) => {
-                                    log::debug!("{}.run | Points requested from: '{}'", self_id, requester_name);
+                                    log::debug!("{}.run | Points requested from: '{}'", dbg, requester_name);
                                     points_requested.fetch_sub(1, Ordering::SeqCst);
                                     match &retain_point_id {
                                         Some(retain_point_id) => match retain_point_id.write() {
@@ -143,24 +148,24 @@ impl Services {
                                                     }
                                                 }).flatten().collect();
                                                 sink.add(points);
-                                                log::debug!("{}.run | Points requested from: '{}' - Ok", self_id, requester_name);
+                                                log::debug!("{}.run | Points requested from: '{}' - Ok", dbg, requester_name);
                                             }
                                             Err(err) => {
-                                                log::error!("{}.run | Points id's write access error, requester: '{}', error: {:#?}", self_id, requester_name, err);
+                                                log::error!("{}.run | Points id's write access error, requester: '{}', error: {:#?}", dbg, requester_name, err);
                                                 sink.add(vec![]);
                                             }
                                         },
                                         None => {
-                                            notify.add(NotifyState::RetainPointNotConfiguredWarn, format!("{}.run | Retain->Point - not configured", self_id));
+                                            notify.add(NotifyState::RetainPointNotConfiguredWarn, format!("{}.run | Retain->Point - not configured", dbg));
                                             sink.add(vec![]);
                                         }
                                     }
                                 }
-                                None => notify.add(NotifyState::PointsRequestsIsEmpty, format!("{}.run | Points requests is empty", self_id)),
+                                None => notify.add(NotifyState::PointsRequestsIsEmpty, format!("{}.run | Points requests is empty", dbg)),
                             }
                         }
                         Err(err) => {
-                            notify.add(NotifyState::PointsRequestsAccessError, format!("{}.run | Points requests access error: {:#?}", self_id, err));
+                            notify.add(NotifyState::PointsRequestsAccessError, format!("{}.run | Points requests access error: {:#?}", dbg, err));
                         }
                     }
                 }
@@ -172,18 +177,19 @@ impl Services {
                     break;
                 }
             }
-            log::info!("{}.run | Exit", self_id);
+            log::info!("{}.run | Exit", dbg);
         });
         thread::sleep(Duration::from_millis(50));
         match handle {
             Ok(handle) => {
-                log::info!("{}.run | Starting - ok", self.id);
-                Ok(ServiceHandles::new(vec![(self.id.clone(), handle)]))
+                log::info!("{}.run | Starting - ok", self.dbg);
+                self.handle.push(handle);
+                Ok(())
             }
             Err(err) => {
-                let message = format!("{}.run | Start failed: {:#?}", self.id, err);
+                let message = format!("{}.run | Start failed: {:#?}", self.dbg, err);
                 log::warn!("{}", message);
-                Err(Error::new(&self.id, "run").err(message))
+                Err(Error::new(&self.dbg, "run").err(message))
             }
         }
 
@@ -194,22 +200,22 @@ impl Services {
         let mut map = HashMap::new();
         match self.map.read() {
             Ok(services) => services.clone_into(&mut map),
-            Err(err) => log::error!("{}.all | Services read access error: {:#?}", self.id, err),
+            Err(err) => log::error!("{}.all | Services read access error: {:#?}", self.dbg, err),
         }
         map
     }
     ///
     /// Inserts a new service into the collection
     pub fn insert(&mut self, service: Arc<RwLock<dyn Service>>) {
-        let name = service.rlock(&self.id).name().join();
+        let name = service.rlock(&self.dbg).name().join();
         match self.map.write() {
             Ok(mut services) => {
                 if services.contains_key(&name) {
-                    panic!("{}.insert | Duplicated service name '{:?}'", self.id, name);
+                    panic!("{}.insert | Duplicated service name '{:?}'", self.dbg, name);
                 }
                 services.insert(name, service);
             }
-            Err(err) => log::error!("{}.insert | Services write access error: {:#?}", self.id, err),
+            Err(err) => log::error!("{}.insert | Services write access error: {:#?}", self.dbg, err),
         }
     }
     ///
@@ -220,13 +226,13 @@ impl Services {
                 match services.get(name) {
                     Some(srvc) => Some(srvc.clone()),
                     None => {
-                        log::warn!("{}.get | service '{:?}' - not found", self.id, name);
+                        log::warn!("{}.get | service '{:?}' - not found", self.dbg, name);
                         None
                     },
                 }
             }
             Err(err) => {
-                log::error!("{}.get | Services read access error: {:#?}", self.id, err);
+                log::error!("{}.get | Services read access error: {:#?}", self.dbg, err);
                 None
             }
         }
@@ -236,8 +242,8 @@ impl Services {
     pub fn get_link(&self, name: &LinkName) -> Result<Sender<Point>, Error> {
         let (service, queue) = name.split();
         match self.get(&service) {
-            Some(srvc) => Ok(srvc.wlock(&self.id).get_link(&queue)),
-            None => Err(Error::new(&self.id, "get_link").err(format!("service '{:?}' - not found", name))),
+            Some(srvc) => Ok(srvc.wlock(&self.dbg).get_link(&queue)),
+            None => Err(Error::new(&self.dbg, "get_link").err(format!("service '{:?}' - not found", name))),
         }
     }
     ///
@@ -246,10 +252,10 @@ impl Services {
     pub fn subscribe(&mut self, service: &str, receiver_name: &str, points: &[SubscriptionCriteria]) -> (Sender<Point>, Receiver<Point>) {
         match self.get(service) {
             Some(srvc) => {
-                let r = srvc.wlock(&self.id).subscribe(receiver_name, points);
+                let r = srvc.wlock(&self.dbg).subscribe(receiver_name, points);
                 r
             }
-            None => panic!("{}.subscribe | service '{:?}' - not found", self.id, service),
+            None => panic!("{}.subscribe | service '{:?}' - not found", self.dbg, service),
         }
     }
     ///
@@ -259,10 +265,10 @@ impl Services {
         // panic!("{}.extend_subscription | Not implemented yet", self.id);
         match self.get(service) {
             Some(srvc) => {
-                let r = srvc.wlock(&self.id).extend_subscription(receiver_name, points);
+                let r = srvc.wlock(&self.dbg).extend_subscription(receiver_name, points);
                 r
             }
-            None => panic!("{}.extend_suscription | service '{:?}' - not found", self.id, service),
+            None => panic!("{}.extend_suscription | service '{:?}' - not found", self.dbg, service),
         }
     }
     ///
@@ -271,10 +277,10 @@ impl Services {
     pub fn unsubscribe(&mut self, service: &str, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
         match self.get(service) {
             Some(srvc) => {
-                let r = srvc.wlock(&self.id).unsubscribe(receiver_name, points);
+                let r = srvc.wlock(&self.dbg).unsubscribe(receiver_name, points);
                 r
             }
-            None => panic!("{}.unsubscribe | service '{:?}' - not found", self.id, service),
+            None => panic!("{}.unsubscribe | service '{:?}' - not found", self.dbg, service),
         }
     }
     ///
@@ -287,19 +293,34 @@ impl Services {
                 points_request.push((requester_name.into(), sink));
                 self.points_requested.fetch_add(1, Ordering::SeqCst);
             }
-            Err(err) => log::error!("{}.get | Services read access error: {:#?}", self.id, err),
+            Err(err) => log::error!("{}.get | Services read access error: {:#?}", self.dbg, err),
         }
         future
     }
     ///
     /// Sends the General Interogation request to all services
     pub fn gi(&self, _service: &str, _points: &[SubscriptionCriteria]) -> Receiver<Point> {
-        panic!("{}.gi | Not implemented yet", self.id);
+        panic!("{}.gi | Not implemented yet", self.dbg);
     }
     ///
     /// Returns Retain configuration
     pub fn retain(&self) -> RetainConf {
         self.conf.retain.clone()
+    }
+    ///
+    /// Returns [Future] to wait for [Service] will finished
+    pub fn wait(&self) -> Future<()> {
+        let (future, sink) = Future::new();
+        let dbg = self.dbg.clone();
+        if let Some(handle) = self.handle.pop() {
+            std::thread::spawn(move|| {
+                if let Err(err) = handle.join() {
+                    log::warn!("{}.wait | Error: {:?}", dbg, err);
+                }
+                sink.add(());
+            });
+        }
+        future
     }
     ///
     /// 
@@ -320,7 +341,7 @@ impl Debug for Services {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("Services")
-            .field("id", &self.id)
+            .field("id", &self.dbg)
             .finish()
     }
 }

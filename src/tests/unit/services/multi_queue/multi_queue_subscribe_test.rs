@@ -1,19 +1,21 @@
-use std::{fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc, RwLock}, thread, time::Duration};
+use std::{fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc, RwLock}, thread::{self, JoinHandle}, time::Duration};
+use coco::Stack;
 use log::{info, trace, warn};
-use sal_core::error::Error;
-use crate::services::{entity::{name::Name, object::Object, point::point::Point}, safe_lock::rwlock::SafeLock, service::{service::Service, service_handles::ServiceHandles}, services::Services};
+use sal_core::{dbg::Dbg, error::Error};
+use crate::services::{entity::{Name, Object, Point}, safe_lock::rwlock::SafeLock, service::service::Service, services::Services};
 #[cfg(test)]
 
 mod multi_queue {
     use log::debug;
+    use sal_core::dbg::Dbg;
     use std::{sync::{Arc, Once, RwLock}, thread, time::{Duration, Instant}};
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
     use testing::{
         entities::test_value::Value,
-        stuff::{random_test_values::RandomTestValues, max_test_duration::TestDuration, wait::WaitTread},
+        stuff::{random_test_values::RandomTestValues, max_test_duration::TestDuration},
     };
     use crate::{
-        services::{conf::{conf_tree::ConfTree, services_conf::ServicesConf}, multi_queue::{multi_queue::MultiQueue, multi_queue_conf::MultiQueueConf}, safe_lock::rwlock::SafeLock, service::service::Service, services::Services},
+        services::{conf::{ConfTree, ServicesConf}, multi_queue::{MultiQueue, MultiQueueConf}, safe_lock::rwlock::SafeLock, service::service::Service, services::Services},
         tests::unit::services::multi_queue::{mock_send_service::MockSendService, multi_queue_subscribe_test::MockReceiver},
     };
     ///
@@ -42,13 +44,13 @@ mod multi_queue {
         init_once();
         init_each();
         println!();
-        let self_id = "multi_queue_subscribe_test";
-        println!("\n{}", self_id);
+        let dbg = Dbg::own("multi_queue_subscribe");
+        println!("\n{}", dbg);
         let sender_count = 10;         // count of MockSendService's
         let receiver_count = 10;         // count of MockReceiver's
         let iterations = 1000;          // test data length of the single sender
         let total_test_events = sender_count * iterations;
-        let test_duration = TestDuration::new(self_id, Duration::from_secs(10));
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
         let conf = r#"
             service MultiQueue:
@@ -57,39 +59,36 @@ mod multi_queue {
                 send-to:  # direct send links - are empty, because only client subscribtions will be used
         "#.to_string();
         let conf = serde_yaml::from_str(&conf).unwrap();
-        let mq_conf = MultiQueueConf::from_yaml(self_id, &conf);
+        let mq_conf = MultiQueueConf::from_yaml(&dbg, &conf);
         debug!("mqConf: {:?}", mq_conf);
-        let services = Arc::new(RwLock::new(Services::new(self_id, ServicesConf::new(
-            self_id, 
+        let services = Arc::new(RwLock::new(Services::new(&dbg, ServicesConf::new(
+            &dbg, 
             ConfTree::new_root(serde_yaml::from_str(r#""#).unwrap()),
         ))));
         let mq_service = Arc::new(RwLock::new(MultiQueue::new(mq_conf, services.clone())));
-        services.wlock(self_id).insert(mq_service.clone());
-        let mut receiver_handles = vec![];
+        services.wlock(&dbg).insert(mq_service.clone());
         let mut receivers = vec![];
         for _ in 0..receiver_count {
             let receiver = Arc::new(RwLock::new(MockReceiver::new(
-                self_id,
-                &format!("/{}/MultiQueue", self_id),
+                &dbg,
+                &format!("/{}/MultiQueue", dbg),
                 services.clone(),
                 Some(total_test_events),
             )));
-            services.wlock(self_id).insert(receiver.clone());
+            services.wlock(&dbg).insert(receiver.clone());
             receivers.push(receiver);
         }
-        let mq_handle = mq_service.write().unwrap().run().unwrap();
+        mq_service.write().unwrap().run().unwrap();
         for receiver in &receivers {
-            let h = receiver.write().unwrap().run().unwrap();
-            receiver_handles.push(h);
+            receiver.write().unwrap().run().unwrap();
         }
         println!("All MockReceiver's threads - started");
         thread::sleep(Duration::from_millis(100));
         let mut senders = vec![];
-        let mut sender_handles = vec![];
         let time = Instant::now();
         for i in 0..sender_count {
             let dynamic_test_data = RandomTestValues::new(
-                self_id,
+                &dbg,
                 vec![
                     Value::String(format!("dynamic01{}", i)),
                     Value::String(format!("dynamic02{}", i)),
@@ -103,25 +102,24 @@ mod multi_queue {
             );
             let dynamic_test_data: Vec<Value> = dynamic_test_data.collect();
             let sender = Arc::new(RwLock::new(MockSendService::new(
-                self_id,
-                &format!("/{}/MultiQueue.in-queue", self_id),
+                &dbg,
+                &format!("/{}/MultiQueue.in-queue", dbg),
                 services.clone(),
                 dynamic_test_data.clone(),
                 None,
             )));
-            services.wlock(self_id).insert(sender.clone());
+            services.wlock(&dbg).insert(sender.clone());
             senders.push(sender.clone());
         }
-        let services_handle = services.wlock(self_id).run().unwrap();
+        services.wlock(&dbg).run().unwrap();
         for sender in &senders {
-            let sender_handle = sender.write().unwrap().run().unwrap();
-            sender_handles.push(sender_handle);
+            sender.write().unwrap().run().unwrap();
         }
-        for h in sender_handles {
-            h.wait().unwrap()
+        for s in &senders {
+            s.read().unwrap().wait().wait().unwrap()
         }
-        for h in receiver_handles {
-            h.wait().unwrap();
+        for r in &receivers {
+            r.read().unwrap().wait().wait().unwrap();
         }
         for receiver in &receivers {
             receiver.read().unwrap().exit();
@@ -143,9 +141,9 @@ mod multi_queue {
             assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
         }
         mq_service.read().unwrap().exit();
-        services.rlock(self_id).exit();
-        mq_handle.wait().unwrap();
-        services_handle.wait().unwrap();
+        services.rlock(&dbg).exit();
+        mq_service.read().unwrap().wait().wait().unwrap();
+        _ = services.rlock(&dbg).wait().wait();
         test_duration.exit();
     }
 }
@@ -153,12 +151,13 @@ mod multi_queue {
 ///
 /// Receiver with subscribtion to Multiqueue
 struct MockReceiver {
-    id: String,
+    dbg: Dbg,
     name: Name,
     subscribe: String,
     services: Arc<RwLock<Services>>,
     received: Arc<RwLock<Vec<Point>>>,
     recv_limit: Option<usize>,
+    handle: Stack<JoinHandle<()>>,
     exit: Arc<AtomicBool>,
 }
 //
@@ -167,12 +166,13 @@ impl MockReceiver {
     pub fn new(parent: impl Into<String>, subscribe: &str, services: Arc<RwLock<Services>>, recv_limit: Option<usize>) -> Self {
         let name = Name::new(parent, format!("MockReceiver{}", COUNT.fetch_add(1, Ordering::Relaxed)));
         Self {
-            id: name.join(),
+            dbg: Dbg::new(name.parent(), name.me()),
             name,
             subscribe: subscribe.to_owned(),
             services,
             received: Arc::new(RwLock::new(vec![])),
             recv_limit,
+            handle: Stack::new(),
             exit: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -190,7 +190,7 @@ impl Debug for MockReceiver {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("MockReceiver")
-            .field("id", &self.id)
+            .field("id", &self.dbg)
             .finish()
     }
 }
@@ -199,17 +199,17 @@ impl Debug for MockReceiver {
 impl Service for MockReceiver {
     //
     //
-    fn run(&mut self) -> Result<ServiceHandles<()>, Error> {
-        let self_id = self.id.clone();
+    fn run(&mut self) -> Result<(), Error> {
+        let dbg = self.dbg.clone();
         let exit = self.exit.clone();
         let recv_limit = self.recv_limit;
         let subscribe = self.subscribe.clone();
         let received = self.received.clone();
         let services = self.services.clone();
-        let handle = thread::Builder::new().name(format!("{}.run", self_id)).spawn(move || {
-            let self_id = self_id.as_str();
+        let handle = thread::Builder::new().name(format!("{}.run", dbg)).spawn(move || {
+            let dbg = dbg.clone();
             let points = vec![];
-            let (_, recv) = services.wlock(self_id).subscribe(&subscribe, self_id, &points);
+            let (_, recv) = services.wlock(&dbg).subscribe(&subscribe, &dbg.to_string(), &points);
             match recv_limit {
                 Some(recv_limit) => {
                     let mut received_len = 0;
@@ -217,11 +217,11 @@ impl Service for MockReceiver {
                         match recv.recv_timeout(Duration::from_secs(3)) {
                             Ok(point) => {
                                 received_len += 1;
-                                trace!("{}.run | Received point: {:#?}", self_id, point);
+                                trace!("{}.run | Received point: {:#?}", dbg, point);
                                 received.write().unwrap().push(point);
                             }
                             Err(err) => match err {
-                                std::sync::mpsc::RecvTimeoutError::Timeout      => warn!("{}.run | Receive error: {:#?}", self_id, err),
+                                std::sync::mpsc::RecvTimeoutError::Timeout      => warn!("{}.run | Receive error: {:#?}", dbg, err),
                                 std::sync::mpsc::RecvTimeoutError::Disconnected => {}
                             }
                         }
@@ -237,7 +237,7 @@ impl Service for MockReceiver {
                                 received.write().unwrap().push(point)
                             }
                             Err(err) => match err {
-                                std::sync::mpsc::RecvTimeoutError::Timeout      => warn!("{}.run | Receive error: {:#?}", self_id, err),
+                                std::sync::mpsc::RecvTimeoutError::Timeout      => warn!("{}.run | Receive error: {:#?}", dbg, err),
                                 std::sync::mpsc::RecvTimeoutError::Disconnected => {}
                             }
                         }
@@ -250,15 +250,31 @@ impl Service for MockReceiver {
         });
         match handle {
             Ok(handle) => {
-                info!("{}.run | Starting - ok", self.id);
-                Ok(ServiceHandles::new(vec![(self.id.to_owned(), handle)]))
+                info!("{}.run | Starting - ok", self.dbg);
+                self.handle.push(handle);
+                Ok(())
             }
             Err(err) => {
-                let message = format!("{}.run | Start failed: {:#?}", self.id, err);
+                let message = format!("{}.run | Start failed: {:#?}", self.dbg, err);
                 warn!("{}", message);
-                Err(Error::new(&self.id, "run").err(message))
+                Err(Error::new(&self.dbg, "run").err(message))
             }
         }
+    }
+    //
+    //
+    fn wait(&self) -> crate::services::future::Future<()> {
+        let dbg = self.dbg.clone();
+        let (future, sink) = crate::services::future::Future::new();
+        if let Some(handle) = self.handle.pop() {
+            std::thread::spawn(move|| {
+                if let Err(err) = handle.join() {
+                    log::warn!("{dbg}.wait | Error: {:?}", err);
+                }
+                sink.add(());
+            });
+        }
+        future
     }
     //
     //

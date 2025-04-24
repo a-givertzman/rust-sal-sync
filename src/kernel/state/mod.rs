@@ -1,4 +1,9 @@
-pub mod change_notify;
-pub mod exit_notify;
-pub mod switch_state_changed;
-pub mod switch_state;
+mod change_notify;
+mod exit_notify;
+mod switch_state_changed;
+mod switch_state;
+
+pub use change_notify::*;
+pub use exit_notify::*;
+pub use switch_state_changed::*;
+pub use switch_state::*;

@@ -1,4 +1,6 @@
 //!
 //! # Collection types and tools
 //! 
-pub mod map;
+mod map;
+
+pub use map::*;

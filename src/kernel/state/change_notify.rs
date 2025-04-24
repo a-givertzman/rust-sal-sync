@@ -1,5 +1,5 @@
 use log::error;
-use crate::collections::map::FxIndexMap;
+use crate::collections::FxIndexMap;
 ///
 /// Provides callback on connection status changes
 pub struct ChangeNotify<S, T> {

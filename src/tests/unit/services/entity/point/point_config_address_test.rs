@@ -5,7 +5,7 @@ mod point_config_address {
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
     use log::debug;
     use testing::stuff::max_test_duration::TestDuration;
-    use crate::services::entity::point::point_config_address::PointConfigAddress;
+    use crate::services::entity::PointConfigAddress;
     ///
     ///
     static INIT: Once = Once::new();

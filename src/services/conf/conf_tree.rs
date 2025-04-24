@@ -2,9 +2,9 @@ use std::{str::FromStr, time::Duration};
 use sal_core::error::Error;
 use serde::de::DeserializeOwned;
 use crate::{
-    collections::map::FxIndexMap,
+    collections::FxIndexMap,
     services::{
-        entity::{name::Name, point::point_config::PointConfig},
+        entity::{Name, PointConfig},
         task::functions::conf::fn_conf_keywd::{FnConfKeywd, FnConfKindName},
     },
 };

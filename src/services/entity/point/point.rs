@@ -4,11 +4,12 @@ use serde::{Deserialize, Serialize};
 use testing::entities::test_value::Value;
 use crate::services::{
         entity::{
-            cot::Cot, point::{
+            Cot,
+            point::{
                 point_config_type::PointConfigType, point_hlr::PointHlr
-            }, status::status::Status
+            }, Status
         },
-        subscription::subscription_criteria::SubscriptionCriteria,
+        subscription::SubscriptionCriteria,
         types::{bool::Bool, type_of::TypeOf},
     };
 ///

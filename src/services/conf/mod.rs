@@ -1,10 +1,16 @@
 //!
 //! # Common entities and tools for configuration stored in yaml
 //! 
-pub mod conf_duration;
-pub mod conf_keywd;
-pub mod conf_kind;
-pub mod conf_tree;
-pub mod diag_keywd;
-pub mod service_conf;
-pub mod services_conf;
+mod conf_duration;
+mod conf_keywd;
+mod conf_kind;
+mod conf_tree;
+mod diag_keywd;
+mod services_conf;
+
+pub use conf_duration::*;
+pub use conf_keywd::*;
+pub use conf_kind::*;
+pub use conf_tree::*;
+pub use diag_keywd::*;
+pub use services_conf::*;

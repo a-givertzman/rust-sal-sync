@@ -5,7 +5,7 @@ mod fn_conf_keywd {
     use log::{debug, info};
     use std::{sync::Once, str::FromStr};
     use crate::services::{
-        entity::status::status::Status,
+        entity::Status,
         task::functions::conf::{
             fn_conf_options::FnConfOptions,
             fn_conf_keywd::{FnConfKeywd, FnConfKeywdValue, FnConfPointType},

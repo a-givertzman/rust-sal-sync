@@ -1,7 +1,7 @@
 use log::{info, warn, debug, trace};
 use std::{fmt::Debug, str::FromStr, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc, RwLock}, thread};
 use sal_sync::services::{
-    entity::{name::Name, object::Object, point::{point::{Point, ToPoint}, point_tx_id::PointTxId}},
+    entity::{Name, object::Object, point::{point::{Point, ToPoint}, point_tx_id::PointTxId}},
     service::{link_name::LinkName, service::Service, service_handles::ServiceHandles},
 };
 use testing::entities::test_value::Value;
@@ -160,6 +160,21 @@ impl Service for MockTcpServer {
             (Err(read_err), Err(write_err)) => Err(format!("{}.run | Error starting inner thread: \n\t  recv: {:#?}\n\t send: {:#?}", self.id, read_err, write_err)),
         }
 
+    }
+    //
+    //
+    fn wait(&self) -> crate::services::future::Future<()> {
+        let dbg = self.dbg.clone();
+        let (future, sink) = crate::services::future::Future::new();
+        if let Some(handle) = self.handle.pop() {
+            std::thread::spawn(move|| {
+                if let Err(err) = handle.join() {
+                    log::warn!("{dbg}.wait | Error: {:?}", err);
+                }
+                sink.add(());
+            });
+        }
+        future
     }
     //
     //

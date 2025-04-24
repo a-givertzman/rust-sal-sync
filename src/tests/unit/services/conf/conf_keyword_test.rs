@@ -1,9 +1,8 @@
 #[cfg(test)]
 mod conf_keywd {
-        use std::{sync::Once, str::FromStr};
+    use std::{sync::Once, str::FromStr};
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-
-    use crate::services::conf::{conf_keywd::ConfKeywd, conf_kind::ConfKind};
+    use crate::services::conf::{ConfKeywd, ConfKind};
     ///
     ///
     static INIT: Once = Once::new();

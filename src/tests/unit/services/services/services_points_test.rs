@@ -5,7 +5,7 @@ mod services_points {
     use testing::stuff::{max_test_duration::TestDuration, wait::WaitTread};
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
 
-    use crate::services::entity::name::Name;
+    use crate::services::entity::Name;
     ///
     ///
     static INIT: Once = Once::new();

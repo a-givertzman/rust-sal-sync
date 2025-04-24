@@ -5,7 +5,7 @@ mod subscriptions {
     use std::{sync::{mpsc, Once}, thread, time::Duration};
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use crate::services::{entity::point::point::Point, subscription::subscriptions::Subscriptions};
+    use crate::services::{entity::Point, subscription::Subscriptions};
     ///
     ///
     static INIT: Once = Once::new();

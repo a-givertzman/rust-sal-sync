@@ -5,10 +5,10 @@ mod conf_subscribe {
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
     use crate::services::{
-        entity::{cot::Cot, name::Name, point::point_config::PointConfig},
+        entity::{Cot, Name, PointConfig},
         subscription::{
-            subscription_criteria::SubscriptionCriteria,
-            conf_subscribe::ConfSubscribe,
+            SubscriptionCriteria,
+            ConfSubscribe,
         },
     };
     ///

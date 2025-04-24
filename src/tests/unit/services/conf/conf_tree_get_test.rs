@@ -4,7 +4,7 @@ mod config_tree_get {
     use indexmap::IndexMap;
     use testing::entities::test_value::Value;
     use debugging ::session::debug_session::{Backtrace, DebugSession, LogLevel};
-    use crate::services::conf::conf_tree::{ConfTree, ConfTreeGet};
+    use crate::services::conf::{ConfTree, ConfTreeGet};
     ///
     ///
     static INIT: Once = Once::new();

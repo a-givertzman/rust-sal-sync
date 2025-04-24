@@ -3,12 +3,12 @@
 mod multi_queue {
     use log::debug;
     use std::{sync::{Arc, RwLock, Once}, time::{Duration, Instant}};
-    use testing::{entities::test_value::Value, stuff::{max_test_duration::TestDuration, random_test_values::RandomTestValues, wait::WaitTread}};
+    use testing::{entities::test_value::Value, stuff::{max_test_duration::TestDuration, random_test_values::RandomTestValues}};
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
     use crate::{
         services::{
-            conf::{conf_tree::ConfTree, services_conf::ServicesConf}, entity::object::Object,
-            multi_queue::{multi_queue::MultiQueue, multi_queue_conf::MultiQueueConf},
+            conf::{ConfTree, ServicesConf}, entity::Object,
+            multi_queue::{MultiQueue, MultiQueueConf},
             safe_lock::rwlock::SafeLock, service::service::Service, services::Services,
             task::functions::reset_counter::AtomicReset
         },
@@ -111,7 +111,6 @@ mod multi_queue {
         debug!("mqConf: {:?}", mq_conf);
         let mq_service = Arc::new(RwLock::new(MultiQueue::new(mq_conf, services.clone())));
         services.wlock(self_id).insert(mq_service.clone());
-        let mut recv_handles = vec![];
         let timer = Instant::now();
         mock_send_service::COUNT.reset(0);
         let send_service = Arc::new(RwLock::new(MockSendService::new(
@@ -122,15 +121,13 @@ mod multi_queue {
             None,
         )));
         services.wlock(self_id).insert(send_service.clone());
-        let services_handle = services.wlock(self_id).run().unwrap();
         mq_service.write().unwrap().run().unwrap();
         for service in &mut recv_services {
-            let handle = service.write().unwrap().run().unwrap();
-            recv_handles.push(handle);
+            service.write().unwrap().run().unwrap();
         }
         send_service.write().unwrap().run().unwrap();
-        for thd in recv_handles {
-            thd.wait().unwrap();
+        for thd in &recv_services {
+            thd.read().unwrap().wait().wait().unwrap();
         }
         println!("\nelapsed: {:?}", timer.elapsed());
         println!("total test events: {:?}", total_count);
@@ -147,7 +144,7 @@ mod multi_queue {
             service.read().unwrap().exit();
         }
         services.rlock(self_id).exit();
-        services_handle.wait().unwrap();
+        _ = services.rlock(self_id).wait().wait();
         test_duration.exit();
     }
 }

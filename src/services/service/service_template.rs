@@ -11,7 +11,7 @@ use std::{sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}, mpsc::Sender}, thre
 use log::{info, warn};
 use crate::{
     services::entity::{
-        object::Object, point::point::Point, name::Name,
+        object::Object, point::point::Point, Name,
     }, 
     conf::ServiceNameConfig,
     services::{

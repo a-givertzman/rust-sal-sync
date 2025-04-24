@@ -1,7 +1,7 @@
 use std::{hash::{DefaultHasher, Hash, Hasher}, str::FromStr};
 use log::{trace, warn};
 use regex::RegexBuilder;
-use crate::services::entity::status::status::Status;
+use crate::services::entity::Status;
 ///
 /// Optional parameters of the [FnConf]
 #[derive(Debug, PartialEq, Clone)]

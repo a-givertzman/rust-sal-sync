@@ -1,5 +1,5 @@
 use std::{fs, str::FromStr};
-use crate::services::{conf::{conf_kind::ConfKind, conf_tree::ConfTree}, entity::name::Name, service::link_name::LinkName};
+use crate::services::{conf::{ConfKind, ConfTree}, entity::Name, service::link_name::LinkName};
 ///
 /// creates config from serde_yaml::Value of following format:
 /// ```yaml
