@@ -6,7 +6,7 @@ mod name {
     use log::debug;
     use testing::stuff::max_test_duration::TestDuration;
 
-    use crate::services::entity::name::Name;
+    use crate::services::entity::Name;
     ///
     ///
     static INIT: Once = Once::new();

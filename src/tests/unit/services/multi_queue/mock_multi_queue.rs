@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Debug, str::FromStr, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{self, Receiver, Sender}, Arc, Mutex, RwLock}, thread};
 use log::{info, warn, error, trace};
 use sal_sync::services::{
-    entity::{name::Name, object::Object, point::{point::Point, point_tx_id::PointTxId}},
+    entity::{Name, object::Object, point::{point::Point, point_tx_id::PointTxId}},
     service::{link_name::LinkName, service::Service, service_handles::ServiceHandles},
     subscription::{subscription_criteria::SubscriptionCriteria, subscriptions::Subscriptions},
 };
@@ -152,6 +152,21 @@ impl Service for MockMultiQueue {
                 Err(message)
             }
         }        
+    }
+    //
+    //
+    fn wait(&self) -> crate::services::future::Future<()> {
+        let dbg = self.dbg.clone();
+        let (future, sink) = crate::services::future::Future::new();
+        if let Some(handle) = self.handle.pop() {
+            std::thread::spawn(move|| {
+                if let Err(err) = handle.join() {
+                    log::warn!("{dbg}.wait | Error: {:?}", err);
+                }
+                sink.add(());
+            });
+        }
+        future
     }
     //
     //

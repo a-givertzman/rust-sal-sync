@@ -1,7 +1,7 @@
 #[cfg(test)]
 use std::{sync::Once, str::FromStr};
 use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-use crate::services::{conf::conf_duration::{ConfDuration, ConfDurationUnit}, task::functions::conf::fn_conf_keywd::FnConfKeywd};
+use crate::services::{conf::{ConfDuration, ConfDurationUnit}, task::functions::conf::fn_conf_keywd::FnConfKeywd};
 ///
 ///
 static INIT: Once = Once::new();

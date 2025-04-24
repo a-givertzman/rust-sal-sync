@@ -1,6 +1,5 @@
 use concat_string::concat_string;
-
-use crate::services::entity::cot::Cot;
+use crate::services::entity::Cot;
 ///
 /// Detailed definition of the subscription;
 /// - "name" - the name of the point to be subscribed;

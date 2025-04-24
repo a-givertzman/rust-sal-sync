@@ -1,4 +1,4 @@
-use crate::services::entity::name::Name;
+use crate::services::entity::Name;
 ///
 /// Interface for Service's object
 pub trait Object {

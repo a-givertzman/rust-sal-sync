@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use log::trace;
 use crate::services::{
-    entity::{cot::Cot, point::{point_config::PointConfig, point_config_history::PointConfigHistory}},
+    entity::{Cot, PointConfig, PointConfigHistory},
     subscription::subscription_criteria::SubscriptionCriteria,
 };
 ///

@@ -1,4 +1,6 @@
 //!
 //! # Tools for lazy / delayed / pending operations
 //! 
-pub mod future;
+mod future;
+
+pub use future::*;

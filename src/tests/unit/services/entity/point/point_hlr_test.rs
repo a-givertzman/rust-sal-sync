@@ -5,8 +5,7 @@ mod point_hlr {
     use std::{sync::Once, time::Duration};
     use testing::{entities::test_value::Value, stuff::max_test_duration::TestDuration};
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-
-    use crate::services::{entity::{cot::Cot, point::point_hlr::PointHlr, status::status::Status}, types::bool::Bool};
+    use crate::services::{entity::{Cot, PointHlr, Status}, types::bool::Bool};
     ///
     ///
     static INIT: Once = Once::new();

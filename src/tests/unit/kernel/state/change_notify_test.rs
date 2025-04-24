@@ -4,7 +4,7 @@ mod change_notify {
     use std::{cell::RefCell, rc::Rc, sync::Once};
     use debugging::session::debug_session::{Backtrace, DebugSession, LogLevel};
     use sal_core::dbg::Dbg;
-    use crate::kernel::state::change_notify::ChangeNotify;
+    use crate::kernel::state::ChangeNotify;
     ///
     ///
     #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]

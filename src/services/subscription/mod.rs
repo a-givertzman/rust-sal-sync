@@ -1,6 +1,10 @@
 //!
 //! # Service's event-driven data exchange subscription
 //! 
-pub mod subscription_criteria;
-pub mod conf_subscribe;
-pub mod subscriptions;
+mod subscription_criteria;
+mod conf_subscribe;
+mod subscriptions;
+
+pub use subscription_criteria::*;
+pub use conf_subscribe::*;
+pub use subscriptions::*;

@@ -30,7 +30,7 @@ mod scheduler {
         init_each();
         let dbg = Dbg::own("single_capacity");
         log::debug!("\n{}", dbg);
-        let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(1));
         test_duration.run().unwrap();
         let threads = 10;
         let thread_pool = ThreadPool::new(&dbg, Some(1));

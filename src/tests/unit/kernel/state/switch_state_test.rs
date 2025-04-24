@@ -3,7 +3,7 @@
 mod tests {
     use std::sync::Once;
     use debugging::session::debug_session::{Backtrace, DebugSession, LogLevel};
-    use crate::kernel::state::switch_state::{Switch, SwitchCondition, SwitchState};
+    use crate::kernel::state::{Switch, SwitchCondition, SwitchState};
     ///
     ///
     #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]

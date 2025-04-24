@@ -5,7 +5,7 @@ mod subscription_criteria {
     use std::{sync::Once, time::{Duration, Instant}};
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use crate::services::{entity::cot::Cot, subscription::subscription_criteria::SubscriptionCriteria};
+    use crate::services::{entity::Cot, subscription::SubscriptionCriteria};
     ///
     ///
     static INIT: Once = Once::new();

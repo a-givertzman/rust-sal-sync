@@ -1,12 +1,15 @@
 use std::{
     collections::HashMap, fmt::Debug, fs, io::Write,
     sync::{atomic::{AtomicBool, Ordering}, mpsc::{self, Receiver, Sender}, Arc, Mutex, RwLock},
-    thread,
+    thread::{self, JoinHandle},
 };
+use coco::Stack;
 use concat_string::concat_string;
 use sal_core::error::Error;
 use crate::services::{
-    entity::{name::Name, object::Object, point::{point::Point, point_tx_id::PointTxId}}, safe_lock::rwlock::SafeLock, service::{link_name::LinkName, service::Service, service_handles::ServiceHandles, RECV_TIMEOUT}, services::Services, subscription::{subscription_criteria::SubscriptionCriteria, subscriptions::Subscriptions}
+    entity::{Name, Object, Point, PointTxId},
+    safe_lock::rwlock::SafeLock, service::{link_name::LinkName, service::Service, RECV_TIMEOUT},
+    services::Services, subscription::{SubscriptionCriteria, Subscriptions},
 };
 use super::multi_queue_conf::MultiQueueConf;
 ///
@@ -23,6 +26,7 @@ pub struct MultiQueue {
     send_queues: Vec<LinkName>,
     services: Arc<RwLock<Services>>,
     receiver_dictionary: HashMap<usize, String>,
+    handle: Stack<JoinHandle<()>>,
     exit: Arc<AtomicBool>,
 }
 //
@@ -45,6 +49,7 @@ impl MultiQueue {
             send_queues,
             services,
             receiver_dictionary: HashMap::new(),
+            handle: Stack::new(),
             exit: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -204,7 +209,7 @@ impl Service for MultiQueue {
     }
     //
     //
-    fn run(&mut self) -> Result<ServiceHandles<()>, Error> {
+    fn run(&mut self) -> Result<(), Error> {
         log::info!("{}.run | Starting...", self.id);
         let self_id = self.id.clone();
         let self_name = self.name.clone();
@@ -262,7 +267,8 @@ impl Service for MultiQueue {
         match handle {
             Ok(handle) => {
                 log::info!("{}.run | Started", self.id);
-                Ok(ServiceHandles::new(vec![(self.id.clone(), handle)]))
+                self.handle.push(handle);
+                Ok(())
             }
             Err(err) => {
                 let err = Error::new(&self.id, "run").pass_with("Start failed", err.to_string());
@@ -270,6 +276,21 @@ impl Service for MultiQueue {
                 Err(err)
             }
         }
+    }
+    //
+    //
+    fn wait(&self) -> crate::services::future::Future<()> {
+        let dbg = self.id.clone();
+        let (future, sink) = crate::services::future::Future::new();
+        if let Some(handle) = self.handle.pop() {
+            std::thread::spawn(move|| {
+                if let Err(err) = handle.join() {
+                    log::warn!("{dbg}.wait | Error: {:?}", err);
+                }
+                sink.add(());
+            });
+        }
+        future
     }
     //
     //

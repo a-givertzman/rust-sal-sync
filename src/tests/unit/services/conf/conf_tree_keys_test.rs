@@ -2,7 +2,7 @@
 mod conf_tree {
     use std::sync::Once;
     use debugging ::session::debug_session::{Backtrace, DebugSession, LogLevel};
-    use crate::services::conf::conf_tree::ConfTree;
+    use crate::services::conf::ConfTree;
     ///
     ///
     static INIT: Once = Once::new();

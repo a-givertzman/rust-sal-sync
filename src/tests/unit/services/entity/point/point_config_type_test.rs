@@ -5,7 +5,7 @@ mod point_config_type {
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
     use log::debug;
     use testing::stuff::max_test_duration::TestDuration;
-    use crate::services::entity::point::point_config_type::PointConfigType;
+    use crate::services::entity::PointConfigType;
     ///
     ///
     static INIT: Once = Once::new();

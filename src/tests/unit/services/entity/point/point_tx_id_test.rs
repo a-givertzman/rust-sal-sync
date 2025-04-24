@@ -5,7 +5,7 @@ mod point_tx_id {
     use std::{sync::Once, time::Duration};
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use crate::services::entity::point::point_tx_id::PointTxId;
+    use crate::services::entity::PointTxId;
     ///
     ///
     static INIT: Once = Once::new();

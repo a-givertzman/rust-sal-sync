@@ -5,7 +5,7 @@ mod cot {
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
     use log::debug;
     use testing::stuff::max_test_duration::TestDuration;
-    use crate::services::entity::cot::Cot;
+    use crate::services::entity::Cot;
     ///
     ///
     static INIT: Once = Once::new();

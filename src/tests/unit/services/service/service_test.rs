@@ -7,7 +7,7 @@ mod trait_service {
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
 
-    use crate::services::{entity::{name::Name, object::Object}, service::{service::Service, service_handles::ServiceHandles}};
+    use crate::services::{entity::{Name, Object}, service::{service::Service, service_handles::ServiceHandles}};
     ///
     ///
     static INIT: Once = Once::new();
@@ -62,8 +62,7 @@ mod trait_service {
         debug!("\n{}", dbg);
         let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
-        let name = Name::new(&dbg, "ServiceTest");
-        let mut service_test = ServiceTest { name  };
+        let mut service_test = ServiceTest { name: Name::new(&dbg, "ServiceTest") };
         let _ = service_test.get_link("");
         test_duration.exit();
     }    
@@ -79,8 +78,7 @@ mod trait_service {
         debug!("\n{}", dbg);
         let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
-        let name = Name::new(&dbg, "ServiceTest");
-        let mut service_test = ServiceTest { name  };
+        let mut service_test = ServiceTest { name: Name::new(&dbg, "ServiceTest") };
         let _ = service_test.subscribe("", &[]);
         test_duration.exit();
     }
@@ -143,10 +141,9 @@ mod trait_service {
     //
     //
     impl Service for ServiceTest {
-        fn run(&mut self) -> Result<ServiceHandles<()>, Error> {
+        fn run(&mut self) -> Result<(), Error> {
             Err(Error::new("ServiceTest", "run").err("testing"))
         }
-    
         fn exit(&self) {
         }
     }
@@ -160,7 +157,7 @@ mod trait_service {
     //
     //
     impl Object for ServiceTest {
-        fn name(&self) -> crate::services::entity::name::Name {
+        fn name(&self) -> crate::services::entity::Name {
             self.name.clone()
         }
     }

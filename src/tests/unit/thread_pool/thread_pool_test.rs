@@ -30,7 +30,7 @@ mod thread_pool {
         init_each();
         let dbg = Dbg::own("single_capacity");
         log::debug!("\n{}", dbg);
-        let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(1));
         test_duration.run().unwrap();
         let threads = 10;
         let thread_pool = ThreadPool::new(&dbg, Some(1));
@@ -65,7 +65,7 @@ mod thread_pool {
         init_each();
         let dbg = Dbg::own("spawn");
         log::debug!("\n{}", dbg);
-        let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(1));
         test_duration.run().unwrap();
         let threads = 100;
         let thread_pool = ThreadPool::new(&dbg, Some(threads + threads / 3));
@@ -76,7 +76,7 @@ mod thread_pool {
             let result = result.clone();
             thread_pool.spawn(move || {
                 log::debug!("{dbg_}", );
-                std::thread::sleep(Duration::from_secs(1));
+                std::thread::sleep(Duration::from_millis(100));
                 result.fetch_add(1, Ordering::SeqCst);
                 Ok(())
             }).unwrap();

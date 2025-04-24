@@ -4,8 +4,8 @@ use serde::{Serialize, Deserialize};
 use crate::services::{
     // conf::ConfTree,
     // fn_::fn_conf_keywd::FnConfKeywd,
-    conf::conf_tree::ConfTree, entity::{
-        name::Name,
+    conf::ConfTree, entity::{
+        Name,
         point::{
             point_config_address::PointConfigAddress, 
             point_config_filters::PointConfigFilter, 

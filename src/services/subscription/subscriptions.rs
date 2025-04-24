@@ -1,7 +1,7 @@
 use log::{warn, trace};
 use std::{collections::HashMap, fmt::Debug, hash::BuildHasherDefault, sync::mpsc::Sender};
 use hashers::fx_hash::FxHasher;
-use crate::{collections::map::FxHashMap, services::entity::point::point::Point};
+use crate::{collections::FxHashMap, services::entity::Point};
 ///
 /// Unique id of the service receiving the Point's by the subscription
 /// This id used to identify the service produced the Points. 

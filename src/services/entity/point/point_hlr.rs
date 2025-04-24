@@ -1,6 +1,6 @@
 use chrono::DateTime;
 use crate::services::{
-    entity::{cot::Cot, status::status::Status},
+    entity::{Cot, Status},
     types::bool::Bool,
 };
 ///
