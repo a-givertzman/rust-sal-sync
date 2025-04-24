@@ -49,11 +49,17 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
         panic!("{}.gi | Does not supported", self.name())
     }
     ///
-    /// Sends "exit" signal to the service's thread
-    fn exit(&self);
-    ///
-    /// Returns [Future] to wait for [Service] will finished
+    /// Returns [Future] to wait for [Service] will be finished
     fn wait(&self) -> crate::services::future::Future<()> {
         panic!("{}.wait | Does not supported", self.name())
     }
+    ///
+    /// Checks if the [Service] has finished running.
+    /// 
+    /// To finish the [Service] call exit
+    /// 
+    fn is_finished(&self) -> bool;
+    ///
+    /// Sends "exit" signal to the service's thread
+    fn exit(&self);
 }
