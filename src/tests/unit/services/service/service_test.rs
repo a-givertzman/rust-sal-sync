@@ -143,6 +143,9 @@ mod trait_service {
         fn run(&mut self) -> Result<(), Error> {
             Err(Error::new("ServiceTest", "run").err("testing"))
         }
+        fn is_finished(&self) -> bool {
+            todo!()
+        }
         fn exit(&self) {
         }
     }

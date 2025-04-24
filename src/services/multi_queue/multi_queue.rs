@@ -27,6 +27,7 @@ pub struct MultiQueue {
     services: Arc<RwLock<Services>>,
     receiver_dictionary: HashMap<usize, String>,
     handle: Stack<JoinHandle<()>>,
+    is_finished: Arc<AtomicBool>,
     exit: Arc<AtomicBool>,
 }
 //
@@ -50,6 +51,7 @@ impl MultiQueue {
             services,
             receiver_dictionary: HashMap::new(),
             handle: Stack::new(),
+            is_finished: Arc::new(AtomicBool::new(false)),
             exit: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -279,14 +281,21 @@ impl Service for MultiQueue {
     }
     //
     //
+    fn is_finished(&self) -> bool {
+        self.is_finished.load(Ordering::SeqCst)
+    }
+    //
+    //
     fn wait(&self) -> crate::services::future::Future<()> {
         let dbg = self.id.clone();
+        let is_finished = self.is_finished.clone();
         let (future, sink) = crate::services::future::Future::new();
         if let Some(handle) = self.handle.pop() {
             std::thread::spawn(move|| {
                 if let Err(err) = handle.join() {
                     log::warn!("{dbg}.wait | Error: {:?}", err);
                 }
+                is_finished.store(true, Ordering::SeqCst);
                 sink.add(());
             });
         }

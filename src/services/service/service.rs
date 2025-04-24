@@ -57,7 +57,6 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
     /// Checks if the [Service] has finished running.
     /// 
     /// To finish the [Service] call exit
-    /// 
     fn is_finished(&self) -> bool;
     ///
     /// Sends "exit" signal to the service's thread

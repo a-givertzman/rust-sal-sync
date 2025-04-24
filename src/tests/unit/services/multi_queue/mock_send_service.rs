@@ -143,6 +143,11 @@ impl Service for MockSendService {
     }
     //
     //
+    fn is_finished(&self) -> bool {
+        todo!()
+    }
+    //
+    //
     fn exit(&self) {
         self.exit.store(true, Ordering::SeqCst);
     }

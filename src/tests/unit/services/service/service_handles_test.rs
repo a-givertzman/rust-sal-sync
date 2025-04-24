@@ -3,7 +3,7 @@
 mod service_handles {
     use log::debug;
     use std::{sync::Once, thread::{self, JoinHandle}, time::Duration};
-    use testing::stuff::{max_test_duration::TestDuration, wait::WaitTread};
+    use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
     use crate::services::service::ServiceHandles;
     ///
@@ -43,7 +43,7 @@ mod service_handles {
         let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
         test_duration.run().unwrap();
         let test_data_len = test_data.len();
-        let mut handles = ServiceHandles::new(vec![]);
+        let handles = ServiceHandles::new(vec![]);
         let mut target_id = vec![];
         for (step, id, handle) in test_data {
             debug!("step {}  |  id: {}  |  target: {:?}", step, id, handle);
@@ -77,7 +77,7 @@ mod service_handles {
         let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
         test_duration.run().unwrap();
         let test_data_len = test_data.len();
-        let mut handles = ServiceHandles::new(vec![]);
+        let handles = ServiceHandles::new(vec![]);
         for (_, id, handle) in test_data {
             handles.insert(id, handle)
         }
@@ -85,6 +85,35 @@ mod service_handles {
         let target = test_data_len;
         assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
         handles.wait().unwrap();
+        test_duration.exit();
+    }
+    ///
+    /// Testing ServiceHandles::is_finished
+    #[test]
+    fn is_finished() {
+        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        init_once();
+        let test_data = init_each();
+        println!();
+        let self_id = "test";
+        println!("\n{}", self_id);
+        let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
+        test_duration.run().unwrap();
+        let test_data_len = test_data.len();
+        let handles = ServiceHandles::new(vec![]);
+        for (_, id, handle) in test_data {
+            handles.insert(id, handle)
+        }
+        let result = handles.is_finished();
+        let target = false;
+        assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
+        let result = handles.len();
+        let target = test_data_len;
+        assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
+        handles.wait().unwrap();
+        let result = handles.is_finished();
+        let target = true;
+        assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
         test_duration.exit();
     }
 }

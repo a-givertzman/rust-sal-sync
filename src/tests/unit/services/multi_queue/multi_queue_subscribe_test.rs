@@ -278,6 +278,11 @@ impl Service for MockReceiver {
     }
     //
     //
+    fn is_finished(&self) -> bool {
+        todo!()
+    }
+    //
+    //
     fn exit(&self) {
         self.exit.store(true, Ordering::SeqCst);
     }
