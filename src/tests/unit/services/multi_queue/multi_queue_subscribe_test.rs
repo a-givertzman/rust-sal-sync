@@ -180,9 +180,6 @@ impl MockReceiver {
 //
 //
 impl Object for MockReceiver {
-    fn id(&self) -> &str {
-        self.id.as_str()
-    }
     fn name(&self) -> Name {
         self.name.clone()
     }

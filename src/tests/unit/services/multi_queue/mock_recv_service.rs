@@ -49,9 +49,6 @@ impl MockRecvService {
 //
 // 
 impl Object for MockRecvService {
-    fn id(&self) -> &str {
-        &self.id
-    }
     fn name(&self) -> Name {
         self.name.clone()
     }

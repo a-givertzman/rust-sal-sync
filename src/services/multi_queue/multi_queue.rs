@@ -91,9 +91,6 @@ impl MultiQueue {
 //
 //
 impl Object for MultiQueue {
-    fn id(&self) -> &str {
-        &self.id
-    }
     fn name(&self) -> Name {
         self.name.clone()
     }

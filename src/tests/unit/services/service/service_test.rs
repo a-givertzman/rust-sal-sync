@@ -29,12 +29,12 @@ mod trait_service {
         DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
         init_each();
-        let self_id = Dbg::own("test");
-        log::debug!("\n{}", self_id);
-        let test_duration = TestDuration::new(&self_id, Duration::from_secs(10));
+        let dbg = Dbg::own("basic");
+        log::debug!("\n{}", dbg);
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
-        let name = Name::new(&self_id, "ServiceTest");
-        let mut service_test = ServiceTest { id: name.join(), name  };
+        let name = Name::new(&dbg, "ServiceTest");
+        let mut service_test = ServiceTest { name  };
         let result = service_test.run();
         let target: Result<ServiceHandles<()>, Error> = Err(Error::new("ServiceTest", "run").err("testing"));
         match result {
@@ -58,12 +58,12 @@ mod trait_service {
         DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
         init_each();
-        let self_id = "get_link";
-        debug!("\n{}", self_id);
-        let test_duration = TestDuration::new(self_id, Duration::from_secs(10));
+        let dbg = Dbg::own("get_link");
+        debug!("\n{}", dbg);
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
-        let name = Name::new(self_id, "ServiceTest");
-        let mut service_test = ServiceTest { id: name.join(), name  };
+        let name = Name::new(&dbg, "ServiceTest");
+        let mut service_test = ServiceTest { name  };
         let _ = service_test.get_link("");
         test_duration.exit();
     }    
@@ -75,12 +75,12 @@ mod trait_service {
         DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
         init_each();
-        let self_id = "subscribe";
-        debug!("\n{}", self_id);
-        let test_duration = TestDuration::new(self_id, Duration::from_secs(10));
+        let dbg = Dbg::own("subscribe");
+        debug!("\n{}", dbg);
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
-        let name = Name::new(self_id, "ServiceTest");
-        let mut service_test = ServiceTest { id: name.join(), name  };
+        let name = Name::new(&dbg, "ServiceTest");
+        let mut service_test = ServiceTest { name  };
         let _ = service_test.subscribe("", &[]);
         test_duration.exit();
     }
@@ -92,12 +92,12 @@ mod trait_service {
         DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
         init_each();
-        let self_id = "extend_subscription";
-        debug!("\n{}", self_id);
-        let test_duration = TestDuration::new(self_id, Duration::from_secs(10));
+        let dbg = Dbg::own("extend_subscription");
+        debug!("\n{}", dbg);
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
-        let name = Name::new(self_id, "ServiceTest");
-        let mut service_test = ServiceTest { id: name.join(), name  };
+        let name = Name::new(&dbg, "ServiceTest");
+        let mut service_test = ServiceTest { name  };
         let _ = service_test.extend_subscription("", &[]);
         test_duration.exit();
     }
@@ -109,12 +109,12 @@ mod trait_service {
         DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
         init_each();
-        let self_id = "unsubscribe";
-        debug!("\n{}", self_id);
-        let test_duration = TestDuration::new(self_id, Duration::from_secs(10));
+        let dbg = Dbg::own("unsubscribe");
+        debug!("\n{}", dbg);
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
-        let name = Name::new(self_id, "ServiceTest");
-        let mut service_test = ServiceTest { id: name.join(), name  };
+        let name = Name::new(&dbg, "ServiceTest");
+        let mut service_test = ServiceTest { name  };
         let _ = service_test.unsubscribe("", &[]);
         test_duration.exit();
     }
@@ -126,19 +126,18 @@ mod trait_service {
         DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
         init_each();
-        let self_id = "gi";
-        debug!("\n{}", self_id);
-        let test_duration = TestDuration::new(self_id, Duration::from_secs(10));
+        let dbg = Dbg::own("gi");
+        debug!("\n{}", dbg);
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
-        let name = Name::new(self_id, "ServiceTest");
-        let service_test = ServiceTest { id: name.join(), name  };
+        let name = Name::new(&dbg, "ServiceTest");
+        let service_test = ServiceTest { name  };
         let _ = service_test.gi("", &[]);
         test_duration.exit();
     }
     ///
     /// 
     struct ServiceTest {
-        id: String,
         name: Name,
     }
     //
@@ -161,10 +160,6 @@ mod trait_service {
     //
     //
     impl Object for ServiceTest {
-        fn id(&self) -> &str {
-            self.id.as_str()
-        }
-    
         fn name(&self) -> crate::services::entity::name::Name {
             self.name.clone()
         }

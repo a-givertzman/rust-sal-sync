@@ -310,9 +310,6 @@ impl Services {
 //
 //
 impl Object for Services {
-    fn id(&self) -> &str {
-        &self.id
-    }
     fn name(&self) -> Name {
         self.name.clone()
     }

@@ -16,25 +16,25 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
     /// Returns copy of the Sender - service's incoming queue
     #[allow(unused_variables)]
     fn get_link(&mut self, name: &str) -> Sender<Point> {
-        panic!("{}.get_link | Does not supported", self.id())
+        panic!("{}.get_link | Does not supported", self.name())
     }
     ///
     /// Returns Receiver
     #[allow(unused_variables)]
     fn subscribe(&mut self, receiver_id: &str, points: &[SubscriptionCriteria]) -> (Sender<Point>, Receiver<Point>) {
-        panic!("{}.subscribe | Does not supported", self.id())
+        panic!("{}.subscribe | Does not supported", self.name())
     }
     ///
     /// Extends the sucessfully with additiuonal points
     #[allow(unused_variables)]
     fn extend_subscription(&mut self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
-        panic!("{}.extend_subscription | Does not supported", self.id())
+        panic!("{}.extend_subscription | Does not supported", self.name())
     }
     ///
     /// Canceling the subsciption
     #[allow(unused_variables)]
     fn unsubscribe(&mut self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
-        panic!("{}.unsubscribe | Does not supported", self.id())
+        panic!("{}.unsubscribe | Does not supported", self.name())
     }
     ///
     /// Starts service's main loop in the individual thread
@@ -47,7 +47,7 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
     ///
     /// Returns `Receiver<Point>`, where will be pushed all points by subscription
     fn gi(&self, _receiver_name: &str, _points: &[SubscriptionCriteria]) -> Receiver<Point> {
-        panic!("{}.gi | Does not supported", self.id())
+        panic!("{}.gi | Does not supported", self.name())
     }    
     ///
     /// Sends "exit" signal to the service's thread
