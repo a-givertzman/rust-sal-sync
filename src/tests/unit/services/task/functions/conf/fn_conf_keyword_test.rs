@@ -7,8 +7,7 @@ mod fn_conf_keywd {
     use crate::services::{
         entity::Status,
         task::functions::conf::{
-            fn_conf_options::FnConfOptions,
-            fn_conf_keywd::{FnConfKeywd, FnConfKeywdValue, FnConfPointType},
+            FnConfOptions, FnConfKeywd, FnConfKeywdValue, FnConfPointType,
         },
     };
     ///
