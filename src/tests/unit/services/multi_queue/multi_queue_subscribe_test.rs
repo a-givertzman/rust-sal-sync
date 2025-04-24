@@ -2,7 +2,7 @@ use std::{fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc, R
 use coco::Stack;
 use log::{info, trace, warn};
 use sal_core::{dbg::Dbg, error::Error};
-use crate::services::{entity::{Name, Object, Point}, safe_lock::rwlock::SafeLock, service::service::Service, services::Services};
+use crate::services::{entity::{Name, Object, Point}, safe_lock::rwlock::SafeLock, service::Service, services::Services};
 #[cfg(test)]
 
 mod multi_queue {
@@ -15,7 +15,7 @@ mod multi_queue {
         stuff::{random_test_values::RandomTestValues, max_test_duration::TestDuration},
     };
     use crate::{
-        services::{conf::{ConfTree, ServicesConf}, multi_queue::{MultiQueue, MultiQueueConf}, safe_lock::rwlock::SafeLock, service::service::Service, services::Services},
+        services::{conf::{ConfTree, ServicesConf}, multi_queue::{MultiQueue, MultiQueueConf}, safe_lock::rwlock::SafeLock, service::Service, services::Services},
         tests::unit::services::multi_queue::{mock_send_service::MockSendService, multi_queue_subscribe_test::MockReceiver},
     };
     ///

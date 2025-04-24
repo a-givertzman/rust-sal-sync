@@ -4,7 +4,7 @@ use log::{info, trace, warn};
 use sal_core::{dbg::Dbg, error::Error};
 use crate::services::{
     entity::{Name, Object, Point},
-    service::{service::Service, RECV_TIMEOUT},
+    service::{Service, RECV_TIMEOUT},
 };
 ///
 /// Global static counter of FnOut instances

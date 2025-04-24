@@ -1,4 +1,3 @@
-#![allow(non_snake_case)]
 use std::{fmt::Debug, str::FromStr, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc, RwLock}, thread::{self, JoinHandle}, time::Duration};
 use coco::Stack;
 use log::{info, warn, trace};
@@ -6,7 +5,7 @@ use sal_core::{dbg::Dbg, error::Error};
 use testing::entities::test_value::Value;
 use crate::services::{
     entity::{Name, Object, Point, ToPoint},
-    safe_lock::rwlock::SafeLock, service::{link_name::LinkName, service::Service}, services::Services,
+    safe_lock::rwlock::SafeLock, service::{LinkName, Service}, services::Services,
 };
 ///
 ///
@@ -84,7 +83,7 @@ impl Service for MockSendService {
         info!("{}.run | Starting...", self.dbg);
         let self_id = self.dbg.clone();
         let exit = self.exit.clone();
-        let txSend = self.services.rlock(&self_id).get_link(&self.send_to).unwrap_or_else(|err| {
+        let tx_send = self.services.rlock(&self_id).get_link(&self.send_to).unwrap_or_else(|err| {
             panic!("{}.run | services.get_link error: {:#?}", self.dbg, err);
         });
         let test_data = self.test_data.clone();
@@ -94,7 +93,7 @@ impl Service for MockSendService {
             info!("{}.run | Preparing thread - ok", self_id);
             for value in test_data {
                 let point = value.to_point(0,&format!("{}/test", self_id));
-                match txSend.send(point.clone()) {
+                match tx_send.send(point.clone()) {
                     Ok(_) => {
                         trace!("{}.run | send: {:?}", self_id, point);
                         sent.write().unwrap().push(point);

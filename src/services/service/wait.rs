@@ -1,6 +1,5 @@
 use log::{error, info};
 use testing::stuff::wait::WaitTread;
-
 use super::service_handles::ServiceHandles;
 
 impl<T> WaitTread for ServiceHandles<T> {

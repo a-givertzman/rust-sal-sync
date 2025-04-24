@@ -6,8 +6,7 @@ mod trait_service {
     use std::{sync::Once, time::Duration};
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-
-    use crate::services::{entity::{Name, Object}, service::{service::Service, service_handles::ServiceHandles}};
+    use crate::services::{entity::{Name, Object}, service::{Service, ServiceHandles}};
     ///
     ///
     static INIT: Once = Once::new();

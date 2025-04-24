@@ -5,7 +5,7 @@ use crate::{
         entity::{Name, Object, Point, PointConfig},
         future::{Future, Sink}, retain::{RetainConf, RetainPointId},
         safe_lock::rwlock::SafeLock,
-        service::{link_name::LinkName, service::Service, service_cycle::ServiceCycle},
+        service::{LinkName, Service, ServiceCycle},
         subscription::SubscriptionCriteria,
     },
 };

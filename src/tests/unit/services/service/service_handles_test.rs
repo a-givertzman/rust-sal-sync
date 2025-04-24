@@ -5,7 +5,7 @@ mod service_handles {
     use std::{sync::Once, thread::{self, JoinHandle}, time::Duration};
     use testing::stuff::{max_test_duration::TestDuration, wait::WaitTread};
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use crate::services::service::service_handles::ServiceHandles;
+    use crate::services::service::ServiceHandles;
     ///
     ///
     static INIT: Once = Once::new();

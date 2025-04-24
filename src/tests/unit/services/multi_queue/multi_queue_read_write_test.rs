@@ -8,7 +8,7 @@ mod multi_queue {
     use crate::{
         services::{
             conf::{ConfTree, ServicesConf}, multi_queue::{MultiQueue, MultiQueueConf},
-            safe_lock::rwlock::SafeLock, service::service::Service, services::Services,
+            safe_lock::rwlock::SafeLock, service::Service, services::Services,
         },
         tests::unit::services::multi_queue::mock_recv_send_service::MockRecvSendService,
     };

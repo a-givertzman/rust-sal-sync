@@ -8,7 +8,7 @@ use concat_string::concat_string;
 use sal_core::error::Error;
 use crate::services::{
     entity::{Name, Object, Point, PointTxId},
-    safe_lock::rwlock::SafeLock, service::{link_name::LinkName, service::Service, RECV_TIMEOUT},
+    safe_lock::rwlock::SafeLock, service::{LinkName, Service, RECV_TIMEOUT},
     services::Services, subscription::{SubscriptionCriteria, Subscriptions},
 };
 use super::multi_queue_conf::MultiQueueConf;

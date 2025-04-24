@@ -9,7 +9,7 @@ use std::{
 use testing::entities::test_value::Value;
 use crate::services::{
     entity::{Name, Object, Point, ToPoint, PointTxId},
-    safe_lock::rwlock::SafeLock, service::{link_name::LinkName, service::Service, RECV_TIMEOUT},
+    safe_lock::rwlock::SafeLock, service::{LinkName, Service, RECV_TIMEOUT},
     services::Services,
 };
 ///

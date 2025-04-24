@@ -1,7 +1,7 @@
 use std::{net::TcpStream, sync::{atomic::AtomicUsize, mpsc::Receiver, Arc, RwLock, RwLockReadGuard, RwLockWriteGuard}, time::Duration};
 use crate::{
     services::{
-        service::service::Service, subscription::Subscriptions, types::type_of::TypeOf,
+        service::Service, subscription::Subscriptions, types::type_of::TypeOf,
         safe_lock::lock_timer::LockTimer,
         // server::connections::TcpServerConnections,
         services::Services,
