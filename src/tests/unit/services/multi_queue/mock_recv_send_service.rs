@@ -189,26 +189,17 @@ impl Service for MockRecvSendService {
     }
     //
     //
-    fn wait(&self) -> crate::services::future::Future<()> {
+    fn wait(&self) -> Result<(), Error> {
         let dbg = self.dbg.clone();
-        let is_finished = self.is_finished.clone();
-        let (future, sink) = crate::services::future::Future::new();
-        let mut handles = vec![];
         while !self.handles.is_empty() {
-            if let Some(handle) = self.handles.pop() {
-                handles.push(handle);
-            }
-        }
-        std::thread::spawn(move|| {
-            for (id, handle) in handles {
+            if let Some((id, handle)) = self.handles.pop() {
                 if let Err(err) = handle.join() {
                     log::warn!("{dbg}.wait | Wait for '{id}' error: {:?}", err);
                 }
             }
-            is_finished.store(true, Ordering::SeqCst);
-            sink.add(());
-        });
-        future
+        }
+        self.is_finished.store(true, Ordering::SeqCst);
+        Ok(())
     }
     //
     //

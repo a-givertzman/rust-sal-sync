@@ -116,10 +116,10 @@ mod multi_queue {
             sender.write().unwrap().run().unwrap();
         }
         for s in &senders {
-            s.read().unwrap().wait().wait().unwrap()
+            s.read().unwrap().wait().unwrap()
         }
         for r in &receivers {
-            r.read().unwrap().wait().wait().unwrap();
+            r.read().unwrap().wait().unwrap();
         }
         for receiver in &receivers {
             receiver.read().unwrap().exit();
@@ -142,7 +142,7 @@ mod multi_queue {
         }
         mq_service.read().unwrap().exit();
         services.rlock(&dbg).exit();
-        mq_service.read().unwrap().wait().wait().unwrap();
+        mq_service.read().unwrap().wait().unwrap();
         _ = services.rlock(&dbg).wait().wait();
         test_duration.exit();
     }
@@ -263,18 +263,14 @@ impl Service for MockReceiver {
     }
     //
     //
-    fn wait(&self) -> crate::services::future::Future<()> {
+    fn wait(&self) -> Result<(), Error> {
         let dbg = self.dbg.clone();
-        let (future, sink) = crate::services::future::Future::new();
         if let Some(handle) = self.handle.pop() {
-            std::thread::spawn(move|| {
-                if let Err(err) = handle.join() {
-                    log::warn!("{dbg}.wait | Error: {:?}", err);
-                }
-                sink.add(());
-            });
+            if let Err(err) = handle.join() {
+                log::warn!("{dbg}.wait | Error: {:?}", err);
+            }
         }
-        future
+        Ok(())
     }
     //
     //

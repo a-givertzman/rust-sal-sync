@@ -128,18 +128,14 @@ impl Service for MockSendService {
     }
     //
     //
-    fn wait(&self) -> crate::services::future::Future<()> {
+    fn wait(&self) -> Result<(), Error> {
         let dbg = self.dbg.clone();
-        let (future, sink) = crate::services::future::Future::new();
         if let Some(handle) = self.handle.pop() {
-            std::thread::spawn(move|| {
-                if let Err(err) = handle.join() {
-                    log::warn!("{dbg}.wait | Error: {:?}", err);
-                }
-                sink.add(());
-            });
+            if let Err(err) = handle.join() {
+                log::warn!("{dbg}.wait | Error: {:?}", err);
+            }
         }
-        future
+        Ok(())
     }
     //
     //

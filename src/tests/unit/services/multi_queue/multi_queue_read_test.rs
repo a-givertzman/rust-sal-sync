@@ -127,7 +127,7 @@ mod multi_queue {
         }
         send_service.write().unwrap().run().unwrap();
         for thd in &recv_services {
-            thd.read().unwrap().wait().wait().unwrap();
+            thd.read().unwrap().wait().unwrap();
         }
         println!("\nelapsed: {:?}", timer.elapsed());
         println!("total test events: {:?}", total_count);

@@ -5,7 +5,7 @@ use std::{
 };
 use coco::Stack;
 use concat_string::concat_string;
-use sal_core::error::Error;
+use sal_core::{dbg::Dbg, error::Error};
 use crate::services::{
     entity::{Name, Object, Point, PointTxId},
     safe_lock::rwlock::SafeLock, service::{LinkName, Service, RECV_TIMEOUT},
@@ -17,7 +17,7 @@ use super::multi_queue_conf::MultiQueueConf;
 /// - If new point received, immediately sends it to the all subscribed consumers
 /// - Keeps all consumers subscriptions in the single map:
 pub struct MultiQueue {
-    id: String,
+    dbg: Dbg,
     name: Name,
     subscriptions: Arc<RwLock<Subscriptions>>,
     subscriptions_changed: Arc<AtomicBool>,
@@ -37,13 +37,12 @@ impl MultiQueue {
     /// Creates new instance of [ApiClient]
     /// - [parent] - the ID if the parent entity
     pub fn new(conf: MultiQueueConf, services: Arc<RwLock<Services>>) -> Self {
-        let self_id = format!("{}", conf.name);
+        let dbg = Dbg::new(conf.name.parent(), conf.name.me());
         let (send, recv) = mpsc::channel();
         let send_queues = conf.send_to;
         Self {
-            id: self_id.clone(),
             name: conf.name.clone(),
-            subscriptions: Arc::new(RwLock::new(Subscriptions::new(self_id))),
+            subscriptions: Arc::new(RwLock::new(Subscriptions::new(&dbg))),
             subscriptions_changed: Arc::new(AtomicBool::new(false)),
             rx_send: HashMap::from([(conf.rx, send)]),
             rx_recv: Mutex::new(Some(recv)),
@@ -53,6 +52,7 @@ impl MultiQueue {
             handle: Stack::new(),
             is_finished: Arc::new(AtomicBool::new(false)),
             exit: Arc::new(AtomicBool::new(false)),
+            dbg,
         }
     }
     ///
@@ -67,21 +67,21 @@ impl MultiQueue {
                     Ok(_) => {}
                     Err(err) => {
                         if log::max_level() >= log::LevelFilter::Trace {
-                            log::warn!("{}.log | Error writing to file: '{}'\n\terror: {:?}", self.id, path, err)
+                            log::warn!("{}.log | Error writing to file: '{}'\n\terror: {:?}", self.dbg, path, err)
                         }
                     }
                 }
             }
             Err(err) => {
                 if log::max_level() >= log::LevelFilter::Trace {
-                    log::warn!("{}.log | Error open file: '{}'\n\terror: {:?}", self.id, path, err)
+                    log::warn!("{}.log | Error open file: '{}'\n\terror: {:?}", self.dbg, path, err)
                 }
             }
         }
     }
     ///
     /// Writes Point's to the log file 
-    fn log_point(self_id: &str, parent: &Name, point_id: &str, point: &Point) {
+    fn log_point(dbg: &Dbg, parent: &Name, point_id: &str, point: &Point) {
         let path = concat_string!("./logs", parent.join(), "/points.log");
         match fs::OpenOptions::new().create(true).append(true).open(&path) {
             Ok(mut f) => {
@@ -89,7 +89,7 @@ impl MultiQueue {
             }
             Err(err) => {
                 if log::max_level() >= log::LevelFilter::Trace {
-                    log::warn!("{}.log | Error open file: '{}'\n\terror: {:?}", self_id, path, err)
+                    log::warn!("{}.log | Error open file: '{}'\n\terror: {:?}", dbg, path, err)
                 }
             }
         }
@@ -108,7 +108,7 @@ impl Debug for MultiQueue {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("MultiQueue")
-            .field("id", &self.id)
+            .field("id", &self.dbg)
             .finish()
     }
 }
@@ -120,7 +120,7 @@ impl Service for MultiQueue {
     fn get_link(&mut self, name: &str) -> Sender<Point> {
         match self.rx_send.get(name) {
             Some(send) => send.clone(),
-            None => panic!("{}.run | link '{:?}' - not found", self.id, name),
+            None => panic!("{}.run | link '{:?}' - not found", self.dbg, name),
         }
     }
     //
@@ -130,16 +130,16 @@ impl Service for MultiQueue {
         let receiver_hash = PointTxId::from_str(receiver_name);
         self.receiver_dictionary.insert(receiver_hash, receiver_name.to_string());
         if points.is_empty() {
-            self.subscriptions.wlock(&self.id).add_broadcast(receiver_hash, send.clone());
+            self.subscriptions.wlock(&self.dbg).add_broadcast(receiver_hash, send.clone());
             self.log("/broadcast.log", receiver_name, receiver_hash, points);
-            log::debug!("{}.subscribe | Broadcast subscription registered, receiver: \n\t{} ({})", self.id, receiver_name, receiver_hash);
+            log::debug!("{}.subscribe | Broadcast subscription registered, receiver: \n\t{} ({})", self.dbg, receiver_name, receiver_hash);
         } else {
             for subscription_criteria in points {
-                self.subscriptions.wlock(&self.id).add_multicast(receiver_hash, &subscription_criteria.destination(), send.clone());
+                self.subscriptions.wlock(&self.dbg).add_multicast(receiver_hash, &subscription_criteria.destination(), send.clone());
             }
             self.log("/multicast.log", receiver_name, receiver_hash, points);
-            log::debug!("{}.subscribe | Multicast subscription registered, receiver: \n\t{} ({}) \n\tpoints: {:#?}", self.id, receiver_name, receiver_hash, points.len());
-            log::trace!("{}.subscribe | Multicast subscription registered, receiver: \n\t{} ({}) \n\tpoints: {:#?}", self.id, receiver_name, receiver_hash, points);
+            log::debug!("{}.subscribe | Multicast subscription registered, receiver: \n\t{} ({}) \n\tpoints: {:#?}", self.dbg, receiver_name, receiver_hash, points.len());
+            log::trace!("{}.subscribe | Multicast subscription registered, receiver: \n\t{} ({}) \n\tpoints: {:#?}", self.dbg, receiver_name, receiver_hash, points);
         }
         self.subscriptions_changed.store(true, Ordering::SeqCst);
         (send, recv)
@@ -147,27 +147,27 @@ impl Service for MultiQueue {
     //
     //
     fn extend_subscription(&mut self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
-        let error = Error::new(&self.id, "extend_subscription");
+        let error = Error::new(&self.dbg, "extend_subscription");
         let receiver_hash = PointTxId::from_str(receiver_name);
         if points.is_empty() {
-            let message = format!("{}.extend_subscription | Broadcast subscription can't be extended, receiver: {} ({})", self.id, receiver_name, receiver_hash);
+            let message = format!("{}.extend_subscription | Broadcast subscription can't be extended, receiver: {} ({})", self.dbg, receiver_name, receiver_hash);
             log::warn!("{}", message);
             Err(error.err(message))
         } else {
             let mut message = String::new();
             for subscription_criteria in points {
-                log::trace!("{}.extend_subscription | Multicast subscription extending for receiver: {} ({})...", self.id, receiver_name, receiver_hash);
-                if let Err(err) = self.subscriptions.wlock(&self.id).extend_multicast(receiver_hash, &subscription_criteria.destination()) {
+                log::trace!("{}.extend_subscription | Multicast subscription extending for receiver: {} ({})...", self.dbg, receiver_name, receiver_hash);
+                if let Err(err) = self.subscriptions.wlock(&self.dbg).extend_multicast(receiver_hash, &subscription_criteria.destination()) {
                     message = concat_string!(message, err, "\n");
                 };
             }
             self.log("/multicast.log", receiver_name, receiver_hash, points);
             if message.is_empty() {
-                log::debug!("{}.extend_subscription | Multicast subscription extended, receiver: {} ({})", self.id, receiver_name, receiver_hash);
+                log::debug!("{}.extend_subscription | Multicast subscription extended, receiver: {} ({})", self.dbg, receiver_name, receiver_hash);
                 self.subscriptions_changed.store(true, Ordering::SeqCst);
                 Ok(())
             } else {
-                log::debug!("{}.extend_subscription | Multicast subscription extended, receiver: {} ({}) \n\t with errors: {:?}", self.id, receiver_name, receiver_hash, message);
+                log::debug!("{}.extend_subscription | Multicast subscription extended, receiver: {} ({}) \n\t with errors: {:?}", self.dbg, receiver_name, receiver_hash, message);
                 self.subscriptions_changed.store(true, Ordering::SeqCst);
                 Err(error.err(message))
             }
@@ -177,14 +177,14 @@ impl Service for MultiQueue {
     //
     fn unsubscribe(&mut self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
         let mut changed = false;
-        let error = Error::new(&self.id, "unsubscribe");
+        let error = Error::new(&self.dbg, "unsubscribe");
         let receiver_hash = PointTxId::from_str(receiver_name);
         if points.is_empty() {
-            match self.subscriptions.wlock(&self.id).remove_all(&receiver_hash) {
+            match self.subscriptions.wlock(&self.dbg).remove_all(&receiver_hash) {
                 Ok(_) => {
                     self.receiver_dictionary.remove(&receiver_hash);
                     changed |= true;
-                    log::debug!("{}.unsubscribe | Broadcast subscription removed, receiver: {} ({})", self.id, receiver_name, receiver_hash);
+                    log::debug!("{}.unsubscribe | Broadcast subscription removed, receiver: {} ({})", self.dbg, receiver_name, receiver_hash);
                 }
                 Err(err) => {
                     return Err(error.pass(err))
@@ -192,11 +192,11 @@ impl Service for MultiQueue {
             }
         } else {
             for subscription_criteria in points {
-                match self.subscriptions.wlock(&self.id).remove(&receiver_hash, &subscription_criteria.destination()) {
+                match self.subscriptions.wlock(&self.dbg).remove(&receiver_hash, &subscription_criteria.destination()) {
                     Ok(_) => {
                         self.receiver_dictionary.remove(&receiver_hash);
                         changed |= true;
-                        log::debug!("{}.unsubscribe | Multicat subscription '{}' removed, receiver: {} ({})", self.id, subscription_criteria.destination(), receiver_name, receiver_hash);
+                        log::debug!("{}.unsubscribe | Multicat subscription '{}' removed, receiver: {} ({})", self.dbg, subscription_criteria.destination(), receiver_name, receiver_hash);
                     }
                     Err(err) => {
                         return Err(error.pass(err))
@@ -212,8 +212,8 @@ impl Service for MultiQueue {
     //
     //
     fn run(&mut self) -> Result<(), Error> {
-        log::info!("{}.run | Starting...", self.id);
-        let self_id = self.id.clone();
+        log::info!("{}.run | Starting...", self.dbg);
+        let self_id = self.dbg.clone();
         let self_name = self.name.clone();
         let exit = self.exit.clone();
         let recv = self.rx_recv.lock().unwrap().take().unwrap();
@@ -226,7 +226,7 @@ impl Service for MultiQueue {
             });
             let receiver_hash = PointTxId::from_str(&receiver_name.name());
             self.subscriptions.wlock(&self_id).add_broadcast(receiver_hash, send.clone());
-            log::debug!("{}.run | Broadcast subscription registered, receiver: \n\t{} ({})", self.id, receiver_name, receiver_hash);
+            log::debug!("{}.run | Broadcast subscription registered, receiver: \n\t{} ({})", self.dbg, receiver_name, receiver_hash);
         }
         let handle = thread::Builder::new().name(format!("{}.run", self_id.clone())).spawn(move || {
             log::info!("{}.run | Preparing thread - ok", self_id);
@@ -268,12 +268,12 @@ impl Service for MultiQueue {
         });
         match handle {
             Ok(handle) => {
-                log::info!("{}.run | Started", self.id);
+                log::info!("{}.run | Started", self.dbg);
                 self.handle.push(handle);
                 Ok(())
             }
             Err(err) => {
-                let err = Error::new(&self.id, "run").pass_with("Start failed", err.to_string());
+                let err = Error::new(&self.dbg, "run").pass_with("Start failed", err.to_string());
                 log::warn!("{}", err);
                 Err(err)
             }
@@ -286,20 +286,16 @@ impl Service for MultiQueue {
     }
     //
     //
-    fn wait(&self) -> crate::services::future::Future<()> {
-        let dbg = self.id.clone();
-        let is_finished = self.is_finished.clone();
-        let (future, sink) = crate::services::future::Future::new();
+    fn wait(&self) -> Result<(), Error> {
+        let dbg = self.dbg.clone();
         if let Some(handle) = self.handle.pop() {
-            std::thread::spawn(move|| {
-                if let Err(err) = handle.join() {
-                    log::warn!("{dbg}.wait | Error: {:?}", err);
-                }
-                is_finished.store(true, Ordering::SeqCst);
-                sink.add(());
-            });
+            if let Err(err) = handle.join() {
+                log::warn!("{dbg}.wait | Error: {:?}", err);
+                return Err(Error::new(&self.dbg, "wait").pass(format!("{:?}", err)));
+            }
+            self.is_finished.store(true, Ordering::SeqCst);
         }
-        future
+        Ok(())
     }
     //
     //

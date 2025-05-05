@@ -111,7 +111,7 @@ mod multi_queue {
             service.write().unwrap().run().unwrap();
         }
         for thd in &rs_services {
-            thd.read().unwrap().wait().wait().unwrap();
+            thd.read().unwrap().wait().unwrap();
         }
         println!("\nelapsed: {:?}", timer.elapsed());
         println!("total test events: {:?}", total_count);

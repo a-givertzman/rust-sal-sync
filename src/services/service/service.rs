@@ -49,8 +49,16 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
         panic!("{}.gi | Does not supported", self.name())
     }
     ///
-    /// Returns [Future] to wait for [Service] will be finished
-    fn wait(&self) -> crate::services::future::Future<()> {
+    /// Waits for the [Service] to finish.
+    ///
+    /// Returns immediately if the [Service] has already finished.
+    /// 
+    /// ## Panics
+    /// - If not implemented for associated [Service]
+    /// - If specific implementation may panics internally,
+    ///   like `std::thread::JoinHandle` - may panic on some platforms 
+    ///   if a thread attempts to join itself or otherwise may create a deadlock with joining threads.
+    fn wait(&self) -> Result<(), Error> {
         panic!("{}.wait | Does not supported", self.name())
     }
     ///
