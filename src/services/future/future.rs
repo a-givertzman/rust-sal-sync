@@ -1,7 +1,7 @@
 use std::sync::mpsc::{Receiver, Sender};
 use log::error;
 use sal_core::error::Error;
-use crate::{services::types::type_of::TypeOf, thread_pool::scheduler::Scheduler};
+use crate::{services::types::type_of::TypeOf, thread_pool::Scheduler};
 ///
 /// Contains future callback
 pub struct Future<T> {

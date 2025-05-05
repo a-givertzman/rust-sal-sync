@@ -7,7 +7,7 @@ mod future {
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
     use crate::{
         services::future::Future,
-        thread_pool::tread_pool::ThreadPool,
+        thread_pool::ThreadPool,
     };
     ///
     ///

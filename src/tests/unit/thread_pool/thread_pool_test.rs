@@ -5,8 +5,7 @@ mod thread_pool {
     use sal_core::dbg::Dbg;
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-
-    use crate::thread_pool::tread_pool::ThreadPool;
+    use crate::thread_pool::ThreadPool;
     ///
     ///
     static INIT: Once = Once::new();

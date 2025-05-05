@@ -23,10 +23,13 @@
 //! ```
 //! 
 //!
-mod join_handle; 
+mod worker;
 pub(super) mod job;
 
-pub use join_handle::JoinHandle;
-pub mod scheduler;
-pub mod tread_pool;
-pub mod worker;
+mod join_handle; 
+mod scheduler;
+mod tread_pool;
+
+pub use join_handle::*;
+pub use scheduler::*;
+pub use tread_pool::*;
