@@ -5,7 +5,7 @@ use std::{
 };
 use coco::Stack;
 use concat_string::concat_string;
-use sal_core::{dbg::Dbg, error::Error};
+use sal_core::{dbg::{self, dbg, Dbg}, error::Error};
 use crate::services::{
     entity::{Name, Object, Point, PointTxId},
     safe_lock::rwlock::SafeLock, service::{LinkName, Service, RECV_TIMEOUT},
@@ -286,12 +286,12 @@ impl Service for MultiQueue {
     }
     //
     //
+    #[dbg]
     fn wait(&self) -> Result<(), Error> {
-        let dbg = self.dbg.clone();
         if let Some(handle) = self.handle.pop() {
             if let Err(err) = handle.join() {
-                log::warn!("{dbg}.wait | Error: {:?}", err);
-                return Err(Error::new(&self.dbg, "wait").pass(format!("{:?}", err)));
+                dbg::warn!("Error: {:?}", err);
+                return Err(Error::new(&self.dbg, "wait").err(format!("{:?}", err)));
             }
             self.is_finished.store(true, Ordering::SeqCst);
         }
