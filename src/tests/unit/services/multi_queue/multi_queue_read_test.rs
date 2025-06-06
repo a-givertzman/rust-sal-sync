@@ -9,8 +9,7 @@ mod multi_queue {
         services::{
             conf::{ConfTree, ServicesConf}, entity::Object,
             multi_queue::{MultiQueue, MultiQueueConf},
-            safe_lock::rwlock::SafeLock, service::Service, services::Services,
-            task::functions::reset_counter::AtomicReset
+            safe_lock::rwlock::SafeLock, service::Service, services::Services, task::functions::AtomicReset,
         },
         tests::unit::services::multi_queue::{mock_recv_service::MockRecvService, mock_send_service::{self, MockSendService}},
     };

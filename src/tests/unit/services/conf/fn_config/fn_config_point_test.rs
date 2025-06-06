@@ -4,7 +4,7 @@ mod tests {
     use std::sync::Once;
     use indexmap::IndexMap;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use crate::services::{entity::{Name, PointConfig, PointConfigHistory, PointConfigType}, task::functions::conf::{FnConfKind, FnConfOptions, FnConfPointType, FnConfig, FnPointConfig}};
+    use crate::services::{entity::{Name, PointConfig, PointConfigHistory, PointConfigType}, task::functions::{FnConfKind, FnConfOptions, FnConfPointType, FnConfig, FnPointConfig}};
     ///
     ///
     static INIT: Once = Once::new();

@@ -1,2 +1,5 @@
-pub mod conf;
-pub mod reset_counter;
+mod conf;
+mod reset_counter;
+
+pub use conf::*;
+pub(crate) use reset_counter::*;

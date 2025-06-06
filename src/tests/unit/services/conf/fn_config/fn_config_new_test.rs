@@ -2,11 +2,8 @@
 
 mod tests {
     use crate::services::{
-        conf::ConfTree, entity::Name, task::functions::conf::{FnConfKind, FnConfOptions, FnConfPointType},
+        conf::ConfTree, entity::Name, task::functions::{FnConfKind, FnConfOptions, FnConfPointType, FnConfig},
     };
-    use crate::services::task::functions::conf::
-        FnConfig
-    ;
     use std::sync::Once;
     use indexmap::IndexMap;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};

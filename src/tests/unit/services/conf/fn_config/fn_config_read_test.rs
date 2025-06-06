@@ -4,7 +4,7 @@ mod tests {
     use std::{sync::Once, env};
     use indexmap::IndexMap;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use crate::services::{entity::Name, task::functions::conf::{FnConfKind, FnConfOptions, FnConfPointType, FnConfig}};
+    use crate::services::{entity::Name, task::functions::{FnConfKind, FnConfOptions, FnConfPointType, FnConfig}};
 
     ///
     ///

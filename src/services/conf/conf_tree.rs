@@ -5,7 +5,7 @@ use crate::{
     collections::FxIndexMap,
     services::{
         entity::{Name, PointConfig},
-        task::functions::conf::{FnConfKeywd, FnConfKindName},
+        task::functions::{FnConfKeywd, FnConfKindName},
     },
 };
 use super::{conf_duration::ConfDuration, conf_keywd::ConfKeywd, conf_kind::ConfKind, diag_keywd::DiagKeywd};
