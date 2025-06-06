@@ -1,4 +1,6 @@
 use std::{time::{Duration, Instant}, thread};
+
+use sal_core::dbg::Dbg;
 ///
 /// ServiceCycle - provides exact time interval in ms / us (future posible implementation)
 ///  - creates with Duration of interval
@@ -7,7 +9,7 @@ use std::{time::{Duration, Instant}, thread};
 /// 
 /// [How to sleep for a few microseconds](https://stackoverflow.com/questions/4986818/how-to-sleep-for-a-few-microseconds)
 pub struct ServiceCycle {
-    id: String,
+    dbg: Dbg,
     instant: Instant,
     interval: Duration,
     warn_exceed: Duration,
@@ -18,9 +20,9 @@ pub struct ServiceCycle {
 impl ServiceCycle {
     ///
     /// Creates ServiceCycle with Duration of interval
-    pub fn new(parent: &str, interval: Duration) -> Self {
+    pub fn new(parent: impl Into<String>, interval: Duration) -> Self {
         Self {
-            id: format!("{}/ServiceCycle", parent),
+            dbg: Dbg::new(parent.into(), "ServiceCycle"),
             instant: Instant::now(),
             interval,
             warn_exceed: interval / 10,
@@ -46,19 +48,19 @@ impl ServiceCycle {
         let elapsed = self.instant.elapsed();
         if elapsed <= self.interval {
             let remainder = self.interval - elapsed;
-            log::trace!("{}.wait | waiting: {:?}", self.id, remainder);
+            log::trace!("{}.wait | waiting: {:?}", self.dbg, remainder);
             thread::sleep(remainder);
         } else {
             let exceed = elapsed - self.interval;
             match exceed {
                 e if e >= self.err_exceed => {
-                    log::error!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.id, self.interval, elapsed - self.interval, elapsed);
+                    log::error!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.dbg, self.interval, elapsed - self.interval, elapsed);
                 }
                 e if e >= self.warn_exceed => {
-                    log::warn!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.id, self.interval, elapsed - self.interval, elapsed);
+                    log::warn!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.dbg, self.interval, elapsed - self.interval, elapsed);
                 }
                 _ => {
-                    log::debug!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.id, self.interval, elapsed - self.interval, elapsed);
+                    log::debug!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.dbg, self.interval, elapsed - self.interval, elapsed);
                 }
             }
         }
