@@ -308,19 +308,14 @@ impl Services {
         self.conf.retain.clone()
     }
     ///
-    /// Returns [Future] to wait for [Service] will finished
-    pub fn wait(&self) -> Future<()> {
-        let (future, sink) = Future::new();
-        let dbg = self.dbg.clone();
+    /// Returns [Ok] when all [Service]'s are finished
+    pub fn wait(&self) -> Result<(), Error> {
         if let Some(handle) = self.handle.pop() {
-            std::thread::spawn(move|| {
-                if let Err(err) = handle.join() {
-                    log::warn!("{}.wait | Error: {:?}", dbg, err);
-                }
-                sink.add(());
-            });
+            if let Err(err) = handle.join() {
+                log::warn!("{}.wait | Error: {:?}", self.dbg, err);
+            }
         }
-        future
+        Ok(())
     }
     ///
     /// 
