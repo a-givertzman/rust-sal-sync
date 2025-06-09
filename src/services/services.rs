@@ -100,7 +100,7 @@ impl Services {
     }
     ///
     /// Main loop of the Services
-    pub fn run(&mut self) -> Result<(), Error> {
+    pub fn run(&self) -> Result<(), Error> {
         log::info!("{}.run | Starting...", self.dbg);
         let dbg = self.dbg.clone();
         let name = self.name.clone();
@@ -206,7 +206,7 @@ impl Services {
     }
     ///
     /// Inserts a new service into the collection
-    pub fn insert(&mut self, service: Arc<RwLock<dyn Service>>) {
+    pub fn insert(&self, service: Arc<RwLock<dyn Service>>) {
         let name = service.rlock(&self.dbg).name().join();
         match self.map.write() {
             Ok(mut services) => {
@@ -249,7 +249,7 @@ impl Services {
     ///
     /// Returns Receiver
     /// - service - the name of the service to subscribe on
-    pub fn subscribe(&mut self, service: &str, receiver_name: &str, points: &[SubscriptionCriteria]) -> (Sender<Point>, Receiver<Point>) {
+    pub fn subscribe(&self, service: &str, receiver_name: &str, points: &[SubscriptionCriteria]) -> (Sender<Point>, Receiver<Point>) {
         match self.get(service) {
             Some(srvc) => {
                 let r = srvc.wlock(&self.dbg).subscribe(receiver_name, points);
@@ -261,7 +261,7 @@ impl Services {
     ///
     /// Returns ok if subscription extended sucessfully
     /// - service - the name of the service to extend subscribtion on
-    pub fn extend_subscription(&mut self, service: &str, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
+    pub fn extend_subscription(&self, service: &str, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
         // panic!("{}.extend_subscription | Not implemented yet", self.id);
         match self.get(service) {
             Some(srvc) => {
@@ -274,7 +274,7 @@ impl Services {
     ///
     /// Returns ok if subscription removed sucessfully
     /// - service - the name of the service to unsubscribe on
-    pub fn unsubscribe(&mut self, service: &str, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
+    pub fn unsubscribe(&self, service: &str, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
         match self.get(service) {
             Some(srvc) => {
                 let r = srvc.wlock(&self.dbg).unsubscribe(receiver_name, points);
