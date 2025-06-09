@@ -5,7 +5,7 @@ mod service_cycle {
     use rand::Rng;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
     use crate::{
-        services::service::ServiceCycle, tests::unit::temp::aprox_eq::AproxEq,
+        services::ServiceCycle, tests::unit::temp::aprox_eq::AproxEq,
     };
     ///
     ///

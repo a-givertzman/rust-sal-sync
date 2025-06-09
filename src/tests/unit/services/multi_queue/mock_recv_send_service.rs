@@ -95,7 +95,7 @@ impl Service for MockRecvSendService {
         info!("{}.run | Starting...", self.dbg);
         let dbg = self.dbg.clone();
         let exit = self.exit.clone();
-        let rx_recv = self.rx_recv.lock().unwrap().take().unwrap();
+        let rx_recv = self.rx_recv.lock().take().unwrap();
         let received = self.received.clone();
         let recv_limit = self.recv_limit.clone();
         let handle_recv = thread::Builder::new().name(format!("{}.run | Recv", dbg)).spawn(move || {
@@ -107,7 +107,7 @@ impl Service for MockRecvSendService {
                         match rx_recv.recv_timeout(RECV_TIMEOUT) {
                             Ok(point) => {
                                 trace!("{}.run | received: {:?}", dbg, point);
-                                received.write().unwrap().push(point);
+                                received.write().push(point);
                                 received_count += 1;
                             }
                             Err(_) => {}
@@ -125,7 +125,7 @@ impl Service for MockRecvSendService {
                         match rx_recv.recv_timeout(RECV_TIMEOUT) {
                             Ok(point) => {
                                 trace!("{}.run | received: {:?}", dbg, point);
-                                received.write().unwrap().push(point);
+                                received.write().push(point);
                             }
                             Err(_) => {}
                         };
@@ -139,7 +139,7 @@ impl Service for MockRecvSendService {
         let dbg = self.dbg.clone();
         let name = self.dbg.to_string();
         let exit = self.exit.clone();
-        let tx_send = self.services.rlock(&dbg).get_link(&self.send_to).unwrap_or_else(|err| {
+        let tx_send = self.services.get_link(&self.send_to).unwrap_or_else(|err| {
             panic!("{}.run | services.get_link error: {:#?}", self.dbg, err);
         });
         let test_data = self.test_data.clone();
@@ -152,7 +152,7 @@ impl Service for MockRecvSendService {
                 match tx_send.send(point.clone()) {
                     Ok(_) => {
                         trace!("{}.run | send: {:?}", dbg, point);
-                        sent.write().unwrap().push(point);
+                        sent.write().push(point);
                     }
                     Err(err) => {
                         warn!("{}.run | send error: {:?}", dbg, err);

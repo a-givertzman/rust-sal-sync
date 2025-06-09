@@ -116,12 +116,12 @@ mod multi_queue {
         println!("\nelapsed: {:?}", timer.elapsed());
         println!("total test events: {:?}", total_count);
         for service in &rs_services {
-            println!("sent events: {:?}\n", service.sent().read().unwrap().len());
+            println!("sent events: {:?}\n", service.sent().read().len());
         }
         let mut received = vec![];
         let target = total_count;
         for recv_service in &rs_services {
-            let len = recv_service.received().read().unwrap().len();
+            let len = recv_service.received().read().len();
             assert!(len == target, "\nresult: {:?}\ntarget: {:?}", len, target);
             received.push(len);
         }

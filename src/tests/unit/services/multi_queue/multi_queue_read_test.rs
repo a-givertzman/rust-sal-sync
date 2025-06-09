@@ -120,21 +120,21 @@ mod multi_queue {
             None,
         ));
         services.insert(send_service.clone());
-        mq_service.write().unwrap().run().unwrap();
+        mq_service.run().unwrap();
         for service in &mut recv_services {
             service.run().unwrap();
         }
-        send_service.write().unwrap().run().unwrap();
+        send_service.run().unwrap();
         for thd in &recv_services {
             thd.wait().unwrap();
         }
         println!("\nelapsed: {:?}", timer.elapsed());
         println!("total test events: {:?}", total_count);
-        println!("sent events: {:?}\n", count * send_service.read().unwrap().sent().read().unwrap().len());
+        println!("sent events: {:?}\n", count * send_service.sent().read().len());
         let mut received = vec![];
         let target = test_data_len;
         for recv_service in &recv_services {
-            let len = recv_service.received().read().unwrap().len();
+            let len = recv_service.received().read().len();
             assert!(len == target, "\nresult: {:?}\ntarget: {:?}", len, target);
             received.push(len);
         }

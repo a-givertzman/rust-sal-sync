@@ -131,17 +131,17 @@ mod multi_queue {
         let target = iterations;
         for sender in senders {
             let sent = sender.sent();
-            let result = sent.read().unwrap().len();
-            println!("\t {} sent: {:?}", sender.read().unwrap().id(), result);
+            let result = sent.read().len();
+            println!("\t {} sent: {:?}", sender.id(), result);
             assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
         }
         let target = total_test_events;
         for receiver in receivers {
-            let result = receiver.received.read().unwrap().len();
+            let result = receiver.received.read().len();
             assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
         }
         mq_service.exit();
-        services.rlock(&dbg).exit();
+        services.exit();
         mq_service.wait().unwrap();
         services.wait().unwrap();
         test_duration.exit();
@@ -209,7 +209,7 @@ impl Service for MockReceiver {
         let handle = thread::Builder::new().name(format!("{}.run", dbg)).spawn(move || {
             let dbg = dbg.clone();
             let points = vec![];
-            let (_, recv) = services.wlock(&dbg).subscribe(&subscribe, &dbg.to_string(), &points);
+            let (_, recv) = services.subscribe(&subscribe, &dbg.to_string(), &points);
             match recv_limit {
                 Some(recv_limit) => {
                     let mut received_len = 0;
@@ -218,7 +218,7 @@ impl Service for MockReceiver {
                             Ok(point) => {
                                 received_len += 1;
                                 trace!("{}.run | Received point: {:#?}", dbg, point);
-                                received.write().unwrap().push(point);
+                                received.write().push(point);
                             }
                             Err(err) => match err {
                                 std::sync::mpsc::RecvTimeoutError::Timeout      => warn!("{}.run | Receive error: {:#?}", dbg, err),
@@ -234,7 +234,7 @@ impl Service for MockReceiver {
                     loop {
                         match recv.recv_timeout(Duration::from_secs(3)) {
                             Ok(point) => {
-                                received.write().unwrap().push(point)
+                                received.write().push(point)
                             }
                             Err(err) => match err {
                                 std::sync::mpsc::RecvTimeoutError::Timeout      => warn!("{}.run | Receive error: {:#?}", dbg, err),

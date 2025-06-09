@@ -95,7 +95,7 @@ impl Service for MockSendService {
                 match tx_send.send(point.clone()) {
                     Ok(_) => {
                         trace!("{}.run | send: {:?}", self_id, point);
-                        sent.write().unwrap().push(point);
+                        sent.write().push(point);
                     }
                     Err(err) => {
                         warn!("{}.run | send error: {:?}", self_id, err);
