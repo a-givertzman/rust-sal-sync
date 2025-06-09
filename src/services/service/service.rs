@@ -14,30 +14,30 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
     ///
     /// Returns copy of the Sender - service's incoming queue
     #[allow(unused_variables)]
-    fn get_link(&mut self, name: &str) -> Sender<Point> {
+    fn get_link(&self, name: &str) -> Sender<Point> {
         panic!("{}.get_link | Does not supported", self.name())
     }
     ///
     /// Returns Receiver
     #[allow(unused_variables)]
-    fn subscribe(&mut self, receiver_id: &str, points: &[SubscriptionCriteria]) -> (Sender<Point>, Receiver<Point>) {
+    fn subscribe(&self, receiver_id: &str, points: &[SubscriptionCriteria]) -> (Sender<Point>, Receiver<Point>) {
         panic!("{}.subscribe | Does not supported", self.name())
     }
     ///
     /// Extends the sucessfully with additiuonal points
     #[allow(unused_variables)]
-    fn extend_subscription(&mut self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
+    fn extend_subscription(&self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
         panic!("{}.extend_subscription | Does not supported", self.name())
     }
     ///
     /// Canceling the subsciption
     #[allow(unused_variables)]
-    fn unsubscribe(&mut self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
+    fn unsubscribe(&self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
         panic!("{}.unsubscribe | Does not supported", self.name())
     }
     ///
     /// Starts service's main loop in the individual thread
-    fn run(&mut self) -> Result<(), Error>;
+    fn run(&self) -> Result<(), Error>;
     ///
     /// Returns list of configurations of the defined points
     fn points(&self) -> Vec<PointConfig> {

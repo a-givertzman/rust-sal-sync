@@ -1,7 +1,6 @@
-use log::{warn, trace};
-use std::{collections::HashMap, fmt::Debug, hash::BuildHasherDefault, sync::mpsc::Sender};
+use std::{fmt::Debug, hash::BuildHasherDefault, sync::mpsc::Sender};
 use hashers::fx_hash::FxHasher;
-use crate::{collections::FxHashMap, services::entity::Point};
+use crate::{collections::FxDashMap, services::entity::Point};
 ///
 /// Unique id of the service receiving the Point's by the subscription
 /// This id used to identify the service produced the Points. 
@@ -17,9 +16,8 @@ type PointDest = String;
 #[derive(Clone)]
 pub struct Subscriptions {
     id: String,
-    multicast: FxHashMap<PointDest, FxHashMap<ReceiverId, Sender<Point>>>,
-    broadcast: FxHashMap<ReceiverId, Sender<Point>>,
-    empty: FxHashMap<ReceiverId, Sender<Point>>,
+    multicast: FxDashMap<PointDest, FxDashMap<ReceiverId, Sender<Point>>>,
+    broadcast: FxDashMap<ReceiverId, Sender<Point>>,
 }
 //
 // 
@@ -29,59 +27,80 @@ impl Subscriptions {
     pub fn new(parent: impl Into<String>, ) -> Self {
         Self {
             id: format!("{}/Subscriptions", parent.into()),
-            multicast: HashMap::with_hasher(BuildHasherDefault::<FxHasher>::default()),
-            broadcast: HashMap::with_hasher(BuildHasherDefault::<FxHasher>::default()),
-            empty: HashMap::with_hasher(BuildHasherDefault::<FxHasher>::default()),
+            multicast: FxDashMap::with_hasher(BuildHasherDefault::<FxHasher>::default()),
+            broadcast: FxDashMap::with_hasher(BuildHasherDefault::<FxHasher>::default()),
         }
     }
     ///
     /// Adds subscription for receiver_id with destination 
-    pub fn add_multicast(&mut self, receiver_id: usize, destination: &str, sender: Sender<Point>) {
+    pub fn add_multicast(&self, receiver_id: usize, destination: &str, sender: Sender<Point>) {
         self.multicast
             .entry(destination.to_owned())
-            .or_insert(HashMap::with_hasher(BuildHasherDefault::<FxHasher>::default()))
+            .or_insert(FxDashMap::with_hasher(BuildHasherDefault::<FxHasher>::default()))
             .insert(receiver_id, sender);
     }
     ///
     /// Extends subscription if exists, otherwise returns error
-    pub fn extend_multicast(&mut self, receiver_id: usize, destination: &str) -> Result<(), String> {
-        match self.multicast.iter().find_map(|(_, senders)| senders.get(&receiver_id)) {
+    pub fn extend_multicast(&self, receiver_id: usize, destination: &str) -> Result<(), String> {
+        match self.multicast.iter().find_map(|r| {
+            r
+                .value()
+                .get(&receiver_id)
+                .map(|v| v.clone())
+        }) {
             Some(sender) => {
-                self.add_multicast(receiver_id, destination, sender.clone());
+                self.add_multicast(receiver_id, destination, sender);
                 Ok(())
             }
             None => {
                 let message = format!("{}.extend_multicast | Receiver '{}' - not found in subscriptions", self.id, receiver_id);
-                warn!("{}", message);
+                log::warn!("{}", message);
                 Err(message)
             }
         }
     }
     ///
     /// Adds subscription for receiver_id without destination, all destinations will be received
-    pub fn add_broadcast(&mut self, receiver_id: usize, sender: Sender<Point>) {
+    pub fn add_broadcast(&self, receiver_id: usize, sender: Sender<Point>) {
         self.broadcast.insert(
             receiver_id,
             sender,
         );
     }
+    // ///
+    // /// Returns map of Senders
+    // pub fn iter(&self, point_id: &str) -> impl Iterator<Item = (usize, Sender<Point>)> {
+    //     fn mapref(r: dashmap::mapref::multiple::RefMulti<'_, usize, Sender<Point>>) -> (usize, Sender<Point>) {
+    //         (*r.key(), r.value().clone())
+    //     }
+    //     match self.multicast.get(point_id) {
+    //         Some(multicast) => {
+    //             trace!("{}.iter | \n\t Multicast: {:?} \n\t Broadcast: {:?}", self.id, multicast, self.broadcast);
+    //             multicast.iter().chain(&self.broadcast).map(mapref)
+    //         }
+    //         None => {
+    //             trace!("{}.iter | \n\t Broadcast: {:?}", self.id, self.broadcast);
+    //             self.broadcast.iter().chain(&self.empty).map(mapref)
+    //         }
+    //     }
+    // }
     ///
-    /// Returns map of Senders
-    pub fn iter(&self, point_id: &str) -> impl Iterator<Item = (&usize, &Sender<Point>)> {
+    /// Returns all pairs of `key`, `Senders`
+    pub fn get(&self, point_id: &str) -> Vec<(usize, Sender<Point>)> {
         match self.multicast.get(point_id) {
             Some(multicast) => {
-                trace!("{}.iter | \n\t Multicast: {:?} \n\t Broadcast: {:?}", self.id, multicast, self.broadcast);
-                multicast.iter().chain(&self.broadcast)
+                log::trace!("{}.iter | \n\t Multicast: {:?} \n\t Broadcast: {:?}", self.id, multicast, self.broadcast);
+                multicast.iter().chain(&self.broadcast).map(|r| (*r.key(), r.value().clone())).collect()
             }
             None => {
-                trace!("{}.iter | \n\t Broadcast: {:?}", self.id, self.broadcast);
-                self.broadcast.iter().chain(&self.empty)
+                log::trace!("{}.iter | \n\t Broadcast: {:?}", self.id, self.broadcast);
+                self.broadcast.iter().map(|r| (*r.key(), r.value().clone())).collect()
             }
         }
     }
     ///
     /// Removes single subscription by Point Id for receiver ID
-    pub fn remove(&mut self, receiver_id: &usize, point_id: &str) -> Result<(), String> {
+    pub fn remove(&self, receiver_id: &usize, point_id: &str) -> Result<(), String> {
         match self.multicast.get_mut(point_id) {
             Some(senders) => {
                 match senders.remove(receiver_id) {
@@ -94,10 +113,10 @@ impl Subscriptions {
     }
     ///
     /// Removes all subscriptions for receiver ID
-    pub fn remove_all(&mut self, receiver_id: &usize) -> Result<(), String> {
+    pub fn remove_all(&self, receiver_id: &usize) -> Result<(), String> {
         let mut changed = false;
         let mut messages = vec![];
-        let keys: Vec<String> = self.multicast.keys().cloned().collect();
+        let keys: Vec<String> = self.multicast.iter().map(|r| r.key().clone()).collect();
         for point_id in keys {
             match self.multicast.get_mut(&point_id) {
                 Some(senders) => {
@@ -131,7 +150,7 @@ impl Subscriptions {
     }
     ///
     /// Removes all subscriptions
-    pub fn exit(&mut self) {
+    pub fn exit(&self) {
         self.broadcast.clear();
         self.multicast.clear();
     }
