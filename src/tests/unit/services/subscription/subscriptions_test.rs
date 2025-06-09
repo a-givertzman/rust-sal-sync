@@ -31,7 +31,7 @@ mod subscriptions {
         debug!("\n{}", self_id);
         let test_duration = TestDuration::new(self_id, Duration::from_secs(10));
         test_duration.run().unwrap();
-        let mut subscriptions = Subscriptions::new(self_id);
+        let subscriptions = Subscriptions::new(self_id);
         let mut threads = vec![];
         let mut receivers = vec![];
         let test_receivers = vec![
@@ -80,7 +80,7 @@ mod subscriptions {
         let mut value = 0.1f64;
         for (_, destinations) in test_data {
             for point_id in destinations {
-                for (receiver_id, subscriber) in subscriptions.iter(point_id) {
+                for (receiver_id, subscriber) in subscriptions.get(point_id) {
                     let point = Point::new(0, &point_id, value);
                     value += 1.0;
                     subscriber.send(point.clone()).unwrap();

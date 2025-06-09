@@ -33,7 +33,7 @@ mod trait_service {
         let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
         let name = Name::new(&dbg, "ServiceTest");
-        let mut service_test = ServiceTest { name  };
+        let service_test = ServiceTest { name  };
         let result = service_test.run();
         let target: Result<ServiceHandles<()>, Error> = Err(Error::new("ServiceTest", "run").err("testing"));
         match result {
@@ -61,7 +61,7 @@ mod trait_service {
         debug!("\n{}", dbg);
         let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
-        let mut service_test = ServiceTest { name: Name::new(&dbg, "ServiceTest") };
+        let service_test = ServiceTest { name: Name::new(&dbg, "ServiceTest") };
         let _ = service_test.get_link("");
         test_duration.exit();
     }    
@@ -77,7 +77,7 @@ mod trait_service {
         debug!("\n{}", dbg);
         let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
-        let mut service_test = ServiceTest { name: Name::new(&dbg, "ServiceTest") };
+        let service_test = ServiceTest { name: Name::new(&dbg, "ServiceTest") };
         let _ = service_test.subscribe("", &[]);
         test_duration.exit();
     }
@@ -94,7 +94,7 @@ mod trait_service {
         let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
         let name = Name::new(&dbg, "ServiceTest");
-        let mut service_test = ServiceTest { name  };
+        let service_test = ServiceTest { name  };
         let _ = service_test.extend_subscription("", &[]);
         test_duration.exit();
     }
@@ -111,7 +111,7 @@ mod trait_service {
         let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
         let name = Name::new(&dbg, "ServiceTest");
-        let mut service_test = ServiceTest { name  };
+        let service_test = ServiceTest { name  };
         let _ = service_test.unsubscribe("", &[]);
         test_duration.exit();
     }
@@ -140,7 +140,7 @@ mod trait_service {
     //
     //
     impl Service for ServiceTest {
-        fn run(&mut self) -> Result<(), Error> {
+        fn run(&self) -> Result<(), Error> {
             Err(Error::new("ServiceTest", "run").err("testing"))
         }
         fn is_finished(&self) -> bool {

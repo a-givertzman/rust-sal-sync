@@ -143,7 +143,7 @@ mod multi_queue {
         mq_service.read().unwrap().exit();
         services.rlock(&dbg).exit();
         mq_service.read().unwrap().wait().unwrap();
-        _ = services.rlock(&dbg).wait().wait();
+        services.rlock(&dbg).wait().unwrap();
         test_duration.exit();
     }
 }
@@ -199,7 +199,7 @@ impl Debug for MockReceiver {
 impl Service for MockReceiver {
     //
     //
-    fn run(&mut self) -> Result<(), Error> {
+    fn run(&self) -> Result<(), Error> {
         let dbg = self.dbg.clone();
         let exit = self.exit.clone();
         let recv_limit = self.recv_limit;

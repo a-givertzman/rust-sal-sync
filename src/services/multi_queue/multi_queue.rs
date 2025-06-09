@@ -123,6 +123,7 @@ impl Service for MultiQueue {
     }
     //
     //
+    #[dbg]
     fn subscribe(&self, receiver_name: &str, points: &[SubscriptionCriteria]) -> (Sender<Point>, Receiver<Point>) {
         let (send, recv) = mpsc::channel();
         let receiver_hash = PointTxId::from_str(receiver_name);
@@ -130,20 +131,21 @@ impl Service for MultiQueue {
         if points.is_empty() {
             self.subscriptions.add_broadcast(receiver_hash, send.clone());
             self.log("/broadcast.log", receiver_name, receiver_hash, points);
-            log::debug!("{}.subscribe | Broadcast registered, receiver: \n\t{} ({})", self.dbg, receiver_name, receiver_hash);
+            dbg::debug!("Broadcast registered, receiver: \n\t{} ({})", receiver_name, receiver_hash);
         } else {
             for subscription_criteria in points {
                 self.subscriptions.add_multicast(receiver_hash, &subscription_criteria.destination(), send.clone());
             }
             self.log("/multicast.log", receiver_name, receiver_hash, points);
-            log::debug!("{}.subscribe | Multicast registered, receiver: \n\t{} ({}) \n\tpoints: {:#?}", self.dbg, receiver_name, receiver_hash, points.len());
-            log::trace!("{}.subscribe | Multicast registered, receiver: \n\t{} ({}) \n\tpoints: {:#?}", self.dbg, receiver_name, receiver_hash, points);
+            dbg::debug!("Multicast registered, receiver: \n\t{} ({}) \n\tpoints: {:#?}", receiver_name, receiver_hash, points.len());
+            dbg::trace!("Multicast registered, receiver: \n\t{} ({}) \n\tpoints: {:#?}", receiver_name, receiver_hash, points);
         }
         self.subscriptions_changed.store(true, Ordering::SeqCst);
         (send, recv)
     }
     //
     //
+    #[dbg]
     fn extend_subscription(&self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
         let error = Error::new(&self.dbg, "extend_subscription");
         let receiver_hash = PointTxId::from_str(receiver_name);
@@ -154,18 +156,18 @@ impl Service for MultiQueue {
         } else {
             let mut message = String::new();
             for subscription_criteria in points {
-                log::trace!("{}.extend_subscription | Multicast subscription extending for receiver: {} ({})...", self.dbg, receiver_name, receiver_hash);
+                dbg::trace!("Multicast subscription extending for receiver: {} ({})...", receiver_name, receiver_hash);
                 if let Err(err) = self.subscriptions.extend_multicast(receiver_hash, &subscription_criteria.destination()) {
                     message = concat_string!(message, err, "\n");
                 };
             }
             self.log("/multicast.log", receiver_name, receiver_hash, points);
             if message.is_empty() {
-                log::debug!("{}.extend_subscription | Multicast subscription extended, receiver: {} ({})", self.dbg, receiver_name, receiver_hash);
+                dbg::debug!("Multicast subscription extended, receiver: {} ({})", receiver_name, receiver_hash);
                 self.subscriptions_changed.store(true, Ordering::SeqCst);
                 Ok(())
             } else {
-                log::debug!("{}.extend_subscription | Multicast subscription extended, receiver: {} ({}) \n\t with errors: {:?}", self.dbg, receiver_name, receiver_hash, message);
+                dbg::debug!("Multicast subscription extended, receiver: {} ({}) \n\t with errors: {:?}", receiver_name, receiver_hash, message);
                 self.subscriptions_changed.store(true, Ordering::SeqCst);
                 Err(error.err(message))
             }
@@ -173,6 +175,7 @@ impl Service for MultiQueue {
     }
     //
     //
+    #[dbg]
     fn unsubscribe(&self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
         let mut changed = false;
         let error = Error::new(&self.dbg, "unsubscribe");
@@ -182,7 +185,7 @@ impl Service for MultiQueue {
                 Ok(_) => {
                     self.receiver_dictionary.remove(&receiver_hash);
                     changed |= true;
-                    log::debug!("{}.unsubscribe | Broadcast subscription removed, receiver: {} ({})", self.dbg, receiver_name, receiver_hash);
+                    dbg::debug!("Broadcast subscription removed, receiver: {} ({})", receiver_name, receiver_hash);
                 }
                 Err(err) => {
                     return Err(error.pass(err))
@@ -194,7 +197,7 @@ impl Service for MultiQueue {
                     Ok(_) => {
                         self.receiver_dictionary.remove(&receiver_hash);
                         changed |= true;
-                        log::debug!("{}.unsubscribe | Multicat subscription '{}' removed, receiver: {} ({})", self.dbg, subscription_criteria.destination(), receiver_name, receiver_hash);
+                        dbg::debug!("Multicat subscription '{}' removed, receiver: {} ({})", subscription_criteria.destination(), receiver_name, receiver_hash);
                     }
                     Err(err) => {
                         return Err(error.pass(err))

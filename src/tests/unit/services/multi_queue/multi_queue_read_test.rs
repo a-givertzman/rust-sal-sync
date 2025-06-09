@@ -143,7 +143,7 @@ mod multi_queue {
             service.read().unwrap().exit();
         }
         services.rlock(self_id).exit();
-        _ = services.rlock(self_id).wait().wait();
+        services.rlock(self_id).wait().unwrap();
         test_duration.exit();
     }
 }

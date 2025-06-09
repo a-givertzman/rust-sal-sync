@@ -130,7 +130,7 @@ mod multi_queue {
             service.read().unwrap().exit();
         }
         services.rlock(self_id).exit();
-        services.rlock(self_id).wait().wait().unwrap();
+        services.rlock(self_id).wait().unwrap();
         // assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
         test_duration.exit();
     }
