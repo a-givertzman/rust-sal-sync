@@ -5,8 +5,7 @@ mod bool {
     use std::{sync::Once, time::Duration};
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-
-    use crate::services::types::bool::Bool;
+    use crate::services::types::Bool;
     ///
     ///
     static INIT: Once = Once::new();

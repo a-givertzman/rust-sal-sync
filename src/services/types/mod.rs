@@ -1,5 +1,10 @@
 //!
 //! # Common application types and tools
 //!
-pub mod bool;
-pub mod type_of;
+mod bool;
+mod sync;
+mod type_of;
+
+pub use bool::*;
+pub use sync::*;
+pub use type_of::*;

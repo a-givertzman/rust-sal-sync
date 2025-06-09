@@ -3,14 +3,12 @@ use log::{info, warn, trace};
 use sal_core::{dbg::Dbg, error::Error};
 use std::{
     collections::HashMap, fmt::Debug, str::FromStr,
-    sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{self, Receiver, Sender}, Arc, Mutex, RwLock},
+    sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{self, Receiver, Sender}, Arc},
     thread::{self, JoinHandle},
 };
 use testing::entities::test_value::Value;
 use crate::services::{
-    entity::{Name, Object, Point, ToPoint, PointTxId},
-    safe_lock::rwlock::SafeLock, service::{LinkName, Service, RECV_TIMEOUT},
-    services::Services,
+    entity::{Name, Object, Point, PointTxId, ToPoint}, types::{Mutex, RwLock}, LinkName, Service, Services, RECV_TIMEOUT
 };
 ///
 /// 
@@ -20,7 +18,7 @@ pub struct MockRecvSendService {
     rx_send: HashMap<String, Sender<Point>>,
     rx_recv: Mutex<Option<Receiver<Point>>>,
     send_to: LinkName,
-    services: Arc<RwLock<Services>>,
+    services: Arc<Services>,
     test_data: Vec<Value>,
     sent: Arc<RwLock<Vec<Point>>>,
     received: Arc<RwLock<Vec<Point>>>,
@@ -32,7 +30,7 @@ pub struct MockRecvSendService {
 //
 // 
 impl MockRecvSendService {
-    pub fn new(parent: impl Into<String>, rx_queue: &str, send_to: &str, services: Arc<RwLock<Services>>, test_data: Vec<Value>, recv_limit: Option<usize>) -> Self {
+    pub fn new(parent: impl Into<String>, rx_queue: &str, send_to: &str, services: Arc<Services>, test_data: Vec<Value>, recv_limit: Option<usize>) -> Self {
         let parent = parent.into();
         let me = format!("MockRecvSendService{}", COUNT.fetch_add(1, Ordering::Relaxed));
         let (send, recv) = mpsc::channel::<Point>();

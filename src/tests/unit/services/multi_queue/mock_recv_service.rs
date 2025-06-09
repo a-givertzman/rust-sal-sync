@@ -1,10 +1,9 @@
-use std::{collections::HashMap, fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{self, Receiver, Sender}, Arc, Mutex, RwLock}, thread::{self, JoinHandle}};
+use std::{collections::HashMap, fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{self, Receiver, Sender}, Arc}, thread::{self, JoinHandle}};
 use coco::Stack;
 use log::{info, trace, warn};
 use sal_core::{dbg::Dbg, error::Error};
 use crate::services::{
-    entity::{Name, Object, Point},
-    service::{Service, RECV_TIMEOUT},
+    entity::{Name, Object, Point}, types::{Mutex, RwLock}, Service, RECV_TIMEOUT
 };
 ///
 /// Global static counter of FnOut instances

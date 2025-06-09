@@ -1,12 +1,14 @@
 use std::{
-    collections::HashMap, fmt::Debug, fs, hash::BuildHasherDefault, io::Write, sync::{atomic::{AtomicBool, Ordering}, mpsc::{self, Receiver, Sender}, Arc, Mutex, RwLock}, thread::{self, JoinHandle}
+    collections::HashMap, fmt::Debug, fs, hash::BuildHasherDefault, io::Write,
+    sync::{atomic::{AtomicBool, Ordering}, mpsc::{self, Receiver, Sender}, Arc},
+    thread::{self, JoinHandle},
 };
 use coco::Stack;
 use concat_string::concat_string;
 use sal_core::{dbg::{self, dbg, Dbg}, error::Error};
 use crate::{collections::FxDashMap, services::{
     entity::{Name, Object, Point, PointTxId},
-    safe_lock::rwlock::SafeLock, service::{LinkName, Service, RECV_TIMEOUT},
+    service::{LinkName, Service, RECV_TIMEOUT},
     services::Services, subscription::{SubscriptionCriteria, Subscriptions},
 }};
 use super::multi_queue_conf::MultiQueueConf;
@@ -20,9 +22,9 @@ pub struct MultiQueue {
     subscriptions: Arc<Subscriptions>,
     subscriptions_changed: Arc<AtomicBool>,
     rx_send: HashMap<String, Sender<Point>>,
-    rx_recv: Mutex<Option<Receiver<Point>>>,
+    rx_recv: Stack<Receiver<Point>>,
     send_queues: Vec<LinkName>,
-    services: Arc<RwLock<Services>>,
+    services: Arc<Services>,
     receiver_dictionary: FxDashMap<usize, String>,
     handle: Stack<JoinHandle<()>>,
     is_finished: Arc<AtomicBool>,
@@ -34,16 +36,18 @@ impl MultiQueue {
     ///
     /// Creates new instance of [ApiClient]
     /// - [parent] - the ID if the parent entity
-    pub fn new(conf: MultiQueueConf, services: Arc<RwLock<Services>>) -> Self {
+    pub fn new(conf: MultiQueueConf, services: Arc<Services>) -> Self {
         let dbg = Dbg::new(conf.name.parent(), conf.name.me());
         let (send, recv) = mpsc::channel();
         let send_queues = conf.send_to;
+        let rx_recv = Stack::new();
+        rx_recv.push(recv);
         Self {
             name: conf.name.clone(),
             subscriptions: Arc::new(Subscriptions::new(&dbg)),
             subscriptions_changed: Arc::new(AtomicBool::new(false)),
             rx_send: HashMap::from([(conf.rx, send)]),
-            rx_recv: Mutex::new(Some(recv)),
+            rx_recv,
             send_queues,
             services,
             receiver_dictionary: FxDashMap::with_hasher(BuildHasherDefault::default()),
@@ -217,12 +221,12 @@ impl Service for MultiQueue {
         let self_id = self.dbg.clone();
         let self_name = self.name.clone();
         let exit = self.exit.clone();
-        let recv = self.rx_recv.lock().unwrap().take().unwrap();
+        let recv = self.rx_recv.pop().unwrap();
         let subscriptions_ref = self.subscriptions.clone();
         let subscriptions_changed = self.subscriptions_changed.clone();
         // let receiver_dictionary = self.receiver_dictionary.clone();
         for receiver_name in &self.send_queues {
-            let send = self.services.rlock(&self_id).get_link(receiver_name).unwrap_or_else(|err| {
+            let send = self.services.get_link(receiver_name).unwrap_or_else(|err| {
                 panic!("{}.run | services.get_link error: {:#?}", self_id, err);
             });
             let receiver_hash = PointTxId::from_str(&receiver_name.name());
