@@ -6,10 +6,7 @@ mod conf_subscribe {
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
     use crate::services::{
         entity::{Cot, Name, PointConfig},
-        subscription::{
-            SubscriptionCriteria,
-            ConfSubscribe,
-        },
+        SubscriptionCriteria,ConfSubscribe,
     };
     ///
     ///

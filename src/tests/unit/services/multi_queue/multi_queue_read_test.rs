@@ -8,7 +8,7 @@ mod multi_queue {
     use crate::{
         services::{
             conf::{ConfTree, ServicesConf}, entity::Object,
-            multi_queue::{MultiQueue, MultiQueueConf},
+            MultiQueue, MultiQueueConf,
             Service, Services, task::functions::AtomicReset,
         },
         tests::unit::services::multi_queue::{mock_recv_service::MockRecvService, mock_send_service::{self, MockSendService}},
@@ -36,13 +36,13 @@ mod multi_queue {
         init_once();
         init_each();
         println!();
-        let self_id = "multi_queue_read_test";
-        println!("\n{}", self_id);
+        let dbg = "multi_queue_read_test";
+        println!("\n{}", dbg);
         //
         // can be changed
         let iterations = 10;
         let test_data = RandomTestValues::new(
-            self_id,
+            dbg,
             vec![
                 Value::Int(i64::MIN),
                 Value::Int(i64::MAX),
@@ -74,10 +74,10 @@ mod multi_queue {
         let test_data_len = test_data.len();
         let count = 30;
         let total_count = count * test_data.len();
-        let test_duration = TestDuration::new(self_id, Duration::from_secs(30));
+        let test_duration = TestDuration::new(dbg, Duration::from_secs(30));
         test_duration.run().unwrap();
-        let services = Arc::new(Services::new(self_id, ServicesConf::new(
-            self_id, 
+        let services = Arc::new(Services::new(dbg, ServicesConf::new(
+            dbg, 
             ConfTree::new_root(serde_yaml::from_str(r#"
                 retain:
                     path: assets/testing/retain/
@@ -88,7 +88,7 @@ mod multi_queue {
         let mut recv_services = vec![];
         for _ in 0..count {
             let recv_service = Arc::new(MockRecvService::new(
-                self_id,
+                dbg,
                 "in-queue",
                 Some(iterations),
             ));
@@ -106,15 +106,15 @@ mod multi_queue {
             conf = format!("{}\n                    - {}.in-queue", conf, s.name().join())
         }
         let conf = serde_yaml::from_str(&conf).unwrap();
-        let mq_conf = MultiQueueConf::from_yaml(self_id, &conf);
+        let mq_conf = MultiQueueConf::from_yaml(dbg, &conf);
         debug!("mqConf: {:?}", mq_conf);
         let mq_service = Arc::new(MultiQueue::new(mq_conf, services.clone()));
         services.insert(mq_service.clone());
         let timer = Instant::now();
         mock_send_service::COUNT.reset(0);
         let send_service = Arc::new(MockSendService::new(
-            self_id,
-            &format!("/{}/MultiQueue.in-queue", self_id),
+            dbg,
+            &format!("/{}/MultiQueue.in-queue", dbg),
             services.clone(),
             test_data.clone(),
             None,

@@ -7,7 +7,7 @@ mod point {
     use testing::{entities::test_value::Value, stuff::max_test_duration::TestDuration};
     use crate::services::{
         entity::{Cot, Point, PointConfigType, PointHlr, Status},
-        subscription::SubscriptionCriteria, types::Bool,
+        SubscriptionCriteria, types::Bool,
     };
     ///
     ///

@@ -7,7 +7,7 @@ mod multi_queue {
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
     use crate::{
         services::{
-            conf::{ConfTree, ServicesConf}, multi_queue::{MultiQueue, MultiQueueConf},
+            conf::{ConfTree, ServicesConf}, MultiQueue, MultiQueueConf,
             Service, Services,
         },
         tests::unit::services::multi_queue::mock_recv_send_service::MockRecvSendService,

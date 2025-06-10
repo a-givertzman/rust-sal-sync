@@ -154,24 +154,22 @@ impl Service for MultiQueue {
         let error = Error::new(&self.dbg, "extend_subscription");
         let receiver_hash = PointTxId::from_str(receiver_name);
         if points.is_empty() {
-            let message = format!("{}.extend_subscription | Broadcast subscription can't be extended, receiver: {} ({})", self.dbg, receiver_name, receiver_hash);
-            log::warn!("{}", message);
-            Err(error.err(message))
+            Err(error.err(format!("Can't be extended (broadcast), receiver: {} ({})", receiver_name, receiver_hash)))
         } else {
             let mut message = String::new();
             for subscription_criteria in points {
-                dbg::trace!("Multicast subscription extending for receiver: {} ({})...", receiver_name, receiver_hash);
+                dbg::trace!("Extending (multicast) for receiver: {} ({})...", receiver_name, receiver_hash);
                 if let Err(err) = self.subscriptions.extend_multicast(receiver_hash, &subscription_criteria.destination()) {
-                    message = concat_string!(message, err, "\n");
+                    message = concat_string!(message, err.to_string(), "\n");
                 };
             }
             self.log("/multicast.log", receiver_name, receiver_hash, points);
             if message.is_empty() {
-                dbg::debug!("Multicast subscription extended, receiver: {} ({})", receiver_name, receiver_hash);
+                dbg::debug!("Extended (multicast), receiver: {} ({})", receiver_name, receiver_hash);
                 self.subscriptions_changed.store(true, Ordering::SeqCst);
                 Ok(())
             } else {
-                dbg::debug!("Multicast subscription extended, receiver: {} ({}) \n\t with errors: {:?}", receiver_name, receiver_hash, message);
+                dbg::debug!("Extended (multicast), receiver: {} ({}) \n\t with errors: {:?}", receiver_name, receiver_hash, message);
                 self.subscriptions_changed.store(true, Ordering::SeqCst);
                 Err(error.err(message))
             }

@@ -1,13 +1,10 @@
 #[cfg(test)]
 
 mod multi_queue {
-    use std::{collections::HashMap, sync::{Arc, RwLock, Once}, thread, time::{Duration, Instant}};
-    use sal_sync::services::{entity::Name, retain::retain_conf::RetainConf, service::service::Service};
-    use testing::{entities::test_value::Value, stuff::{max_test_duration::TestDuration, random_test_values::RandomTestValues, wait::WaitTread}};
+    use std::{sync::{Arc, Once}, thread, time::{Duration, Instant}};
+    use testing::{entities::test_value::Value, stuff::{max_test_duration::TestDuration, random_test_values::RandomTestValues}};
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use crate::{
-        services::{safe_lock::rwlock::SafeLock, services::Services}, tests::unit::services::multi_queue::{mock_multi_queue::MockMultiQueue, mock_multi_queue_match::MockMultiQueueMatch, mock_recv_service::MockRecvService, mock_send_service::MockSendService}
-    };
+    use crate::{services::{conf::{ConfTree, ServicesConf}, entity::{Name, Object}, MultiQueue, MultiQueueConf, Service, Services}, tests::unit::services::multi_queue::{mock_recv_service::MockRecvService, mock_send_service::MockSendService}};
     ///
     ///
     static INIT: Once = Once::new();
@@ -27,51 +24,56 @@ mod multi_queue {
     const ITERATIONS: usize = 1_000_000;
     ///
     /// Use to estimate performance of multiqueue without matching producer's id
-    #[ignore = "Performance test"]
+    #[ignore = "MultiQueue Performance test"]
     #[test]
     fn performance() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
+        DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
         init_each();
         println!();
-        let self_id = "test MultiQueue Performance";
-        println!("\n{}", self_id);
+        let dbg = "MQ-Performance-test";
+        println!("\n{}", dbg);
         let iterations = ITERATIONS;
-        let test_duration = TestDuration::new(self_id, Duration::from_secs(10));
+        let test_duration = TestDuration::new(dbg, Duration::from_secs(30));
         test_duration.run().unwrap();
         let receiver_count = 3;
         let producer_count = 3;
         let total_count = iterations * producer_count;
-        let mut receivers: HashMap<String, Arc<RwLock<MockRecvService>>> = HashMap::new();
-        let mut producers: HashMap<String, MockSendService> = HashMap::new();
-        let services = Arc::new(RwLock::new(Services::new(self_id, RetainConf::new(None::<&str>, None))));
+        let mut receivers: Vec<Arc<MockRecvService>> = vec![];
+        let mut producers: Vec<MockSendService> = vec![];
+        let services = Arc::new(Services::new(dbg, ServicesConf::new(
+            dbg, 
+            ConfTree::new_root(serde_yaml::Value::Null),
+        )));
         for i in 0..receiver_count {
-            let receiver = Arc::new(RwLock::new(MockRecvService::new(
-                self_id,
+            let receiver = Arc::new(MockRecvService::new(
+                dbg,
                 "rx-queue",
                 Some(total_count)
-            )));
+            ));
             let receiver_id = format!("Receiver{}", i + 1);
-            services.wlock(self_id).insert(receiver.clone());
-            receivers.insert(receiver_id.clone(), receiver);
+            services.insert(receiver.clone());
+            receivers.push(receiver);
             println!(" Receiver {} created", receiver_id);
         }
         println!(" All receivers created");
         println!(" Creating Mock Multiqueue...");
-        let mq_service = Arc::new(RwLock::new(MockMultiQueue::new(
-            self_id,
-            receivers.keys().map(|v| {
-                format!("{}.rx-queue", v)
-            }).collect(),
-            "rx-queue",
-            services.clone(),
-        )));
-        println!(" Creating Mock Multiqueue - ok");
+        let conf = serde_yaml::from_str(&format!(r#"
+            service MultiQueue:
+                in queue in-queue:
+                    max-length: 10000
+                send-to:
+                    {:?}
+        "#, receivers.iter().map(|v| format!("{}.rx-queue", v.name())).collect::<Vec<String>>())).unwrap();
+        println!(" Multiqueue conf: {:#?}", conf);
+        let conf = MultiQueueConf::from_yaml(dbg, &conf);
+        let mq = Arc::new(MultiQueue::new(conf, services.clone()));
+        println!(" Creating {} - ok", mq.name());
         println!(" Inserting Mock Multiqueue into Services...");
-        services.wlock(self_id).insert(mq_service.clone());
+        services.insert(mq.clone());
         println!(" Inserting Mock Multiqueue into Services - ok");
         let test_data = RandomTestValues::new(
-            self_id,
+            dbg,
             vec![
                 Value::Int(i64::MIN),
                 Value::Int(i64::MAX),
@@ -102,25 +104,23 @@ mod multi_queue {
             iterations,
         );
         let test_data: Vec<Value> = test_data.collect();
-        let services_handle = services.wlock(self_id).run().unwrap();
+        services.run().unwrap();
         println!(" Trying to start Multiqueue...:");
-        mq_service.write().unwrap().run().unwrap();
-        let mut recv_handles  = vec![];
-        for (_recv_id, recv) in &receivers {
-            let h = recv.write().unwrap().run().unwrap();
-            recv_handles.push(h)
+        mq.run().unwrap();
+        for recv in &receivers {
+            recv.run().unwrap();
         }
-        for i in 0..producer_count {
-            let mut prod = MockSendService::new(self_id, "MultiQueue.rx-queue", services.clone(), test_data.clone(), None);
+        for _ in 0..producer_count {
+            let prod = MockSendService::new(dbg, &format!("/{dbg}/MultiQueue.in-queue"), services.clone(), test_data.clone(), None);
             prod.run().unwrap();
-            producers.insert(format!("MockSendService{}", i), prod);
+            producers.push(prod);
         }
 
         let timer = Instant::now();
-        for h in recv_handles {
+        for h in &receivers {
             h.wait().unwrap();
         }
-        services_handle.wait().unwrap();
+        services.wait().unwrap();
         println!("\n Elapsed: {:?}", timer.elapsed());
         println!(" Total test events: {:?}", total_count);
         let (total_sent, all_sent) = get_sent(&producers);
@@ -142,45 +142,49 @@ mod multi_queue {
         init_once();
         init_each();
         println!();
-        let self_id = "test MultiQueue Performance with matching by producer ID";
-        println!("\n{}", self_id);
-        let self_id = "MultiQueuePerformance";
+        let dbg = "test MQ-Performance(matching by producer ID)";
+        println!("\n{}", dbg);
         let iterations = ITERATIONS;
-        let test_duration = TestDuration::new(self_id, Duration::from_secs(10));
+        let test_duration = TestDuration::new(dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
         let receiver_count = 3;
         let producer_count = 3;
         let total_count = iterations * producer_count;
-        let mut receivers: HashMap<String, Arc<RwLock<MockRecvService>>> = HashMap::new();
-        let mut producers: HashMap<String, MockSendService> = HashMap::new();
-        let services = Arc::new(RwLock::new(Services::new(self_id, RetainConf::new(None::<&str>, None))));
+        let mut receivers = vec![];
+        let mut producers = vec![];
+        let services = Arc::new(Services::new(dbg, ServicesConf::new(
+            dbg, 
+            ConfTree::new_root(serde_yaml::Value::Null),
+        )));
         for i in 0..receiver_count {
-            let receiver = Arc::new(RwLock::new(MockRecvService::new(
-                self_id,
+            let receiver = Arc::new(MockRecvService::new(
+                dbg,
                 "rx-queue",
                 Some(total_count)
-            )));
-            let receiver_id = format!("/{}/MockRecvService{}", self_id, i);
-            services.wlock(self_id).insert(receiver.clone());
-            receivers.insert(receiver_id.clone(), receiver);
+            ));
+            let receiver_id = format!("/{}/MockRecvService{}", dbg, i);
+            services.insert(receiver.clone());
+            receivers.push(receiver);
             println!(" Receiver {} created", receiver_id);
         }
         println!(" All receivers created");
         println!(" Creating Mock Multiqueue...");
-        let mq_service = Arc::new(RwLock::new(MockMultiQueueMatch::new(
-            self_id,
-            receivers.keys().map(|v| {
-                format!("{}.rx-queue", v)
-            }).collect(),
-            "rx-queue",
-            services.clone(),
-        )));
+        let conf = serde_yaml::from_str(&format!(r#"
+            service MultiQueue:
+                in queue in-queue:
+                    max-length: 10000
+                send-to:
+                    {:?}
+        "#, receivers.iter().map(|v| format!("{}.rx-queue", v.name())).collect::<Vec<String>>())).unwrap();
+        println!(" Multiqueue conf: {:#?}", conf);
+        let conf = MultiQueueConf::from_yaml(dbg, &conf);
+        let mq_service = Arc::new(MultiQueue::new(conf, services.clone()));
         println!(" Creating Mock Multiqueue - ok");
         println!(" Inserting Mock Multiqueue into Services...");
-        services.wlock(self_id).insert(mq_service.clone());
+        services.insert(mq_service.clone());
         println!(" Inserting Mock Multiqueue into Services - ok");
         let test_data = RandomTestValues::new(
-            self_id,
+            dbg,
             vec![
                 Value::Int(7),
                 Value::Real(1.3),
@@ -193,31 +197,31 @@ mod multi_queue {
             iterations,
         );
         let test_data: Vec<Value> = test_data.collect();
-        let services_handle = services.wlock(self_id).run().unwrap();
+        services.run().unwrap();
         thread::sleep(Duration::from_millis(50));
         println!(" Trying to start Multiqueue...:");
-        mq_service.write().unwrap().run().unwrap();
+        mq_service.run().unwrap();
         let mut recv_handles  = vec![];
-        for (_recv_id, recv) in &receivers {
-            let h = recv.write().unwrap().run().unwrap();
+        for recv in &receivers {
+            let h = recv.run().unwrap();
             recv_handles.push(h)
         }
-        for i in 0..producer_count {
-            let mut prod = MockSendService::new(
-                self_id,
-                &Name::new(self_id, "MockMultiQueueMatch0.rx-queue").join(),
+        for _ in 0..producer_count {
+            let prod = MockSendService::new(
+                dbg,
+                &Name::new(dbg, "MockMultiQueueMatch0.rx-queue").join(),
                 services.clone(),
                 test_data.clone(),
                 None,
             );
             prod.run().unwrap();
-            producers.insert(format!("MockSendService{}", i), prod);
+            producers.push(prod);
         }
         let timer = Instant::now();
-        for h in recv_handles {
+        for h in &receivers {
             h.wait().unwrap();
         }
-        services_handle.wait().unwrap();
+        services.wait().unwrap();
         println!("\n Elapsed: {:?}", timer.elapsed());
         println!(" Total test events: {:?}", total_count);
         let (total_sent, all_sent) = get_sent(&producers);
@@ -231,25 +235,25 @@ mod multi_queue {
     }
     ///
     ///
-    fn get_sent<'a>(producers: &'a HashMap<String, MockSendService>) -> (usize, HashMap<&'a str, usize>) {
+    fn get_sent(producers: &Vec<MockSendService>) -> (usize, Vec<(String, usize)>) {
         let mut total_sent = 0;
-        let mut all_sent: HashMap<&'a str, usize> = HashMap::new();
-        for (prod_id, prod) in producers {
-            let sent = prod.sent().read().unwrap().len();
+        let mut all_sent = vec![];
+        for prod in producers {
+            let sent = prod.sent().read().len();
             total_sent += sent;
-            all_sent.insert(prod_id, sent);
+            all_sent.push((prod.name().join(), sent));
         }
         (total_sent, all_sent)
     }
     ///
     ///
-    fn get_received<'a>(receivers: &'a HashMap<String, Arc<RwLock<MockRecvService>>>) -> (usize, HashMap<&'a str, usize>) {
+    fn get_received(receivers: &Vec<Arc<MockRecvService>>) -> (usize, Vec<(String, usize)>) {
         let mut total_received = 0;
-        let mut all_received: HashMap<&'a str, usize> = HashMap::new();
-        for (recv_id, recv) in receivers {
-            let recved = recv.read().unwrap().received().read().len();
+        let mut all_received = vec![];
+        for recv in receivers {
+            let recved = recv.received().read().len();
             total_received += recved;
-            all_received.insert(recv_id, recved);
+            all_received.push((recv.name().join(), recved));
         }
         (total_received, all_received)
     }

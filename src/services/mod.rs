@@ -64,11 +64,13 @@ mod services;
 pub mod conf;
 pub mod entity;
 pub mod future;
-pub mod multi_queue;
+mod multi_queue;
 pub mod retain;
-pub mod subscription;
+mod subscription;
 pub mod task;
 pub mod types;
 
+pub use multi_queue::*;
+pub use subscription::*;
 pub use service::*;
 pub use services::*;

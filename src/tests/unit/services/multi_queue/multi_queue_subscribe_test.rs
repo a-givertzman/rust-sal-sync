@@ -15,7 +15,7 @@ mod multi_queue {
         stuff::{random_test_values::RandomTestValues, max_test_duration::TestDuration},
     };
     use crate::{
-        services::{conf::{ConfTree, ServicesConf}, multi_queue::{MultiQueue, MultiQueueConf}, Service, Services},
+        services::{conf::{ConfTree, ServicesConf}, MultiQueue, MultiQueueConf, Service, Services},
         tests::unit::services::multi_queue::{mock_send_service::MockSendService, multi_queue_subscribe_test::MockReceiver},
     };
     ///
