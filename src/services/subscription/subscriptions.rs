@@ -1,7 +1,7 @@
-use std::{fmt::Debug, hash::BuildHasherDefault, sync::mpsc::Sender};
+use std::{fmt::Debug, hash::BuildHasherDefault};
 use hashers::fx_hash::FxHasher;
 use sal_core::error::Error;
-use crate::{collections::FxDashMap, services::entity::Point};
+use crate::{collections::FxDashMap, services::entity::Point, sync::channel::Sender};
 ///
 /// Unique id of the service receiving the Point's by the subscription
 /// This id used to identify the service produced the Points. 

@@ -125,11 +125,11 @@ impl ThreadPool {
         let error = Error::new("ThreadPool", "shutdown");
         let mut errors = vec![];
         let mut workers = self.pop_workers();
-        log::debug!("ThreadPool.shutdown | Worker notified to 'Shutdown' {}", workers.len());
+        log::debug!("ThreadPool.shutdown | Shutdown signal sent to {} workers", workers.len());
         while !workers.is_empty() {
             match workers.pop() {
                 Some(worker) => {
-                    log::debug!("ThreadPool.shutdown | Wait for worker {}", worker.id);
+                    log::debug!("ThreadPool.shutdown | Wait for worker {}...", worker.id);
                     if let Err(err) = worker.join() {
                         let err = error.pass(format!("{:?}", err));
                         log::warn!("{}", err);
