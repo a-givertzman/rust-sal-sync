@@ -1,7 +1,7 @@
 use chrono::DateTime;
 use crate::services::{
     entity::{Cot, Status},
-    types::bool::Bool,
+    types::Bool,
 };
 ///
 /// Holds the unit of the information 

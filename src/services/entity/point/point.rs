@@ -10,7 +10,7 @@ use crate::services::{
             }, Status
         },
         subscription::SubscriptionCriteria,
-        types::{bool::Bool, type_of::TypeOf},
+        types::{Bool, TypeOf},
     };
 ///
 ///

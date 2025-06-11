@@ -2,14 +2,14 @@
 
 mod multi_queue {
     use log::debug;
-    use std::{sync::{Arc, RwLock, Once}, time::{Duration, Instant}};
+    use std::{sync::{Arc, Once}, time::{Duration, Instant}};
     use testing::{entities::test_value::Value, stuff::{max_test_duration::TestDuration, random_test_values::RandomTestValues}};
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
     use crate::{
         services::{
             conf::{ConfTree, ServicesConf}, entity::Object,
-            multi_queue::{MultiQueue, MultiQueueConf},
-            safe_lock::rwlock::SafeLock, service::Service, services::Services, task::functions::AtomicReset,
+            MultiQueue, MultiQueueConf,
+            Service, Services, task::functions::AtomicReset,
         },
         tests::unit::services::multi_queue::{mock_recv_service::MockRecvService, mock_send_service::{self, MockSendService}},
     };
@@ -36,13 +36,13 @@ mod multi_queue {
         init_once();
         init_each();
         println!();
-        let self_id = "multi_queue_read_test";
-        println!("\n{}", self_id);
+        let dbg = "multi_queue_read_test";
+        println!("\n{}", dbg);
         //
         // can be changed
         let iterations = 10;
         let test_data = RandomTestValues::new(
-            self_id,
+            dbg,
             vec![
                 Value::Int(i64::MIN),
                 Value::Int(i64::MAX),
@@ -74,25 +74,25 @@ mod multi_queue {
         let test_data_len = test_data.len();
         let count = 30;
         let total_count = count * test_data.len();
-        let test_duration = TestDuration::new(self_id, Duration::from_secs(30));
+        let test_duration = TestDuration::new(dbg, Duration::from_secs(30));
         test_duration.run().unwrap();
-        let services = Arc::new(RwLock::new(Services::new(self_id, ServicesConf::new(
-            self_id, 
+        let services = Arc::new(Services::new(dbg, ServicesConf::new(
+            dbg, 
             ConfTree::new_root(serde_yaml::from_str(r#"
                 retain:
                     path: assets/testing/retain/
                     point:
                         path: point/id.json
             "#).unwrap()),
-        ))));
+        )));
         let mut recv_services = vec![];
         for _ in 0..count {
-            let recv_service = Arc::new(RwLock::new(MockRecvService::new(
-                self_id,
+            let recv_service = Arc::new(MockRecvService::new(
+                dbg,
                 "in-queue",
                 Some(iterations),
-            )));
-            services.wlock(self_id).insert(recv_service.clone());
+            ));
+            services.insert(recv_service.clone());
             recv_services.push(recv_service);
         }
         let mut conf = r#"
@@ -103,47 +103,47 @@ mod multi_queue {
         "#.to_string();
         for s in &recv_services {
             // conf = format!("{}\n                    - /{}/MockRecvService{}.in-queue", conf, self_id, i)
-            conf = format!("{}\n                    - {}.in-queue", conf, s.read().unwrap().name().join())
+            conf = format!("{}\n                    - {}.in-queue", conf, s.name().join())
         }
         let conf = serde_yaml::from_str(&conf).unwrap();
-        let mq_conf = MultiQueueConf::from_yaml(self_id, &conf);
+        let mq_conf = MultiQueueConf::from_yaml(dbg, &conf);
         debug!("mqConf: {:?}", mq_conf);
-        let mq_service = Arc::new(RwLock::new(MultiQueue::new(mq_conf, services.clone())));
-        services.wlock(self_id).insert(mq_service.clone());
+        let mq_service = Arc::new(MultiQueue::new(mq_conf, services.clone()));
+        services.insert(mq_service.clone());
         let timer = Instant::now();
         mock_send_service::COUNT.reset(0);
-        let send_service = Arc::new(RwLock::new(MockSendService::new(
-            self_id,
-            &format!("/{}/MultiQueue.in-queue", self_id),
+        let send_service = Arc::new(MockSendService::new(
+            dbg,
+            &format!("/{}/MultiQueue.in-queue", dbg),
             services.clone(),
             test_data.clone(),
             None,
-        )));
-        services.wlock(self_id).insert(send_service.clone());
-        mq_service.write().unwrap().run().unwrap();
+        ));
+        services.insert(send_service.clone());
+        mq_service.run().unwrap();
         for service in &mut recv_services {
-            service.write().unwrap().run().unwrap();
+            service.run().unwrap();
         }
-        send_service.write().unwrap().run().unwrap();
+        send_service.run().unwrap();
         for thd in &recv_services {
-            thd.read().unwrap().wait().unwrap();
+            thd.wait().unwrap();
         }
         println!("\nelapsed: {:?}", timer.elapsed());
         println!("total test events: {:?}", total_count);
-        println!("sent events: {:?}\n", count * send_service.read().unwrap().sent().read().unwrap().len());
+        println!("sent events: {:?}\n", count * send_service.sent().read().len());
         let mut received = vec![];
         let target = test_data_len;
         for recv_service in &recv_services {
-            let len = recv_service.read().unwrap().received().read().unwrap().len();
+            let len = recv_service.received().read().len();
             assert!(len == target, "\nresult: {:?}\ntarget: {:?}", len, target);
             received.push(len);
         }
         println!("recv events: {} {:?}", received.iter().sum::<usize>(), received);
         for service in recv_services {
-            service.read().unwrap().exit();
+            service.exit();
         }
-        services.rlock(self_id).exit();
-        services.rlock(self_id).wait().unwrap();
+        services.exit();
+        services.wait().unwrap();
         test_duration.exit();
     }
 }

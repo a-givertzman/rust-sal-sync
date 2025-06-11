@@ -3,4 +3,5 @@
 //! 
 //! covers required classes with late will be implemented in the separated libraries
 //!
-pub(crate) mod aprox_eq;
+mod aprox_eq;
+pub use aprox_eq::*;

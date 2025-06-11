@@ -4,3 +4,4 @@ mod mock_send_service;
 mod multi_queue_read_test;
 mod multi_queue_read_write_test;
 mod multi_queue_subscribe_test;
+mod multi_queue_performance_test;

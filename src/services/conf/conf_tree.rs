@@ -32,13 +32,18 @@ impl ConfTree {
         }
     }
     ///
-    /// creates ConfTree instance holding the key and serde_yaml::Value
+    /// creates [ConfTree] instance holding the key and serde_yaml::Value
     pub fn new(key: &str, conf: serde_yaml::Value) -> Self {
         Self {
             id: String::from("ConfTree"),
             key: key.into(),
             conf,
         }
+    }
+    ///
+    /// Returns [ConfTree] build from empty yaml
+    pub fn empty() -> Self {
+        ConfTree::new_root(serde_yaml::Value::Null)
     }
     ///
     /// returns true if holding mapping 

@@ -1,5 +1,6 @@
 use std::{fmt::Debug, hash::BuildHasherDefault, sync::mpsc::Sender};
 use hashers::fx_hash::FxHasher;
+use sal_core::error::Error;
 use crate::{collections::FxDashMap, services::entity::Point};
 ///
 /// Unique id of the service receiving the Point's by the subscription
@@ -15,7 +16,7 @@ type PointDest = String;
 /// - Where Sender - is pair of String ID & Sender<PointType>
 #[derive(Clone)]
 pub struct Subscriptions {
-    id: String,
+    dbg: String,
     multicast: FxDashMap<PointDest, FxDashMap<ReceiverId, Sender<Point>>>,
     broadcast: FxDashMap<ReceiverId, Sender<Point>>,
 }
@@ -26,7 +27,7 @@ impl Subscriptions {
     /// Creates new instance of Subscriptions
     pub fn new(parent: impl Into<String>, ) -> Self {
         Self {
-            id: format!("{}/Subscriptions", parent.into()),
+            dbg: format!("{}/Subscriptions", parent.into()),
             multicast: FxDashMap::with_hasher(BuildHasherDefault::<FxHasher>::default()),
             broadcast: FxDashMap::with_hasher(BuildHasherDefault::<FxHasher>::default()),
         }
@@ -41,7 +42,8 @@ impl Subscriptions {
     }
     ///
     /// Extends subscription if exists, otherwise returns error
-    pub fn extend_multicast(&self, receiver_id: usize, destination: &str) -> Result<(), String> {
+    pub fn extend_multicast(&self, receiver_id: usize, destination: &str) -> Result<(), Error> {
+        let error = Error::new(&self.dbg, "extend_multicast");
         match self.multicast.iter().find_map(|r| {
             r
                 .value()
@@ -53,9 +55,7 @@ impl Subscriptions {
                 Ok(())
             }
             None => {
-                let message = format!("{}.extend_multicast | Receiver '{}' - not found in subscriptions", self.id, receiver_id);
-                log::warn!("{}", message);
-                Err(message)
+                Err(error.err(format!("Receiver '{}' - not found in subscriptions", receiver_id)))
             }
         }
     }
@@ -67,53 +67,38 @@ impl Subscriptions {
             sender,
         );
     }
-    // ///
-    // /// Returns map of Senders
-    // pub fn iter(&self, point_id: &str) -> impl Iterator<Item = (usize, Sender<Point>)> {
-    //     fn mapref(r: dashmap::mapref::multiple::RefMulti<'_, usize, Sender<Point>>) -> (usize, Sender<Point>) {
-    //         (*r.key(), r.value().clone())
-    //     }
-    //     match self.multicast.get(point_id) {
-    //         Some(multicast) => {
-    //             trace!("{}.iter | \n\t Multicast: {:?} \n\t Broadcast: {:?}", self.id, multicast, self.broadcast);
-    //             multicast.iter().chain(&self.broadcast).map(mapref)
-    //         }
-    //         None => {
-    //             trace!("{}.iter | \n\t Broadcast: {:?}", self.id, self.broadcast);
-    //             self.broadcast.iter().chain(&self.empty).map(mapref)
-    //         }
-    //     }
-    // }
     ///
     /// Returns all pairs of `key`, `Senders`
     pub fn get(&self, point_id: &str) -> Vec<(usize, Sender<Point>)> {
         match self.multicast.get(point_id) {
             Some(multicast) => {
-                log::trace!("{}.iter | \n\t Multicast: {:?} \n\t Broadcast: {:?}", self.id, multicast, self.broadcast);
+                log::trace!("{}.iter | \n\t Multicast: {:?} \n\t Broadcast: {:?}", self.dbg, multicast, self.broadcast);
                 multicast.iter().chain(&self.broadcast).map(|r| (*r.key(), r.value().clone())).collect()
             }
             None => {
-                log::trace!("{}.iter | \n\t Broadcast: {:?}", self.id, self.broadcast);
+                log::trace!("{}.iter | \n\t Broadcast: {:?}", self.dbg, self.broadcast);
                 self.broadcast.iter().map(|r| (*r.key(), r.value().clone())).collect()
             }
         }
     }
     ///
     /// Removes single subscription by Point Id for receiver ID
-    pub fn remove(&self, receiver_id: &usize, point_id: &str) -> Result<(), String> {
+    pub fn remove(&self, receiver_id: &usize, point_id: &str) -> Result<(), Error> {
+        let error = Error::new(&self.dbg, "remove");
         match self.multicast.get_mut(point_id) {
             Some(senders) => {
                 match senders.remove(receiver_id) {
                     Some(_) => Ok(()),
-                    None => Err(format!("{}.run | Subscription '{}', receiver '{}' - not found", self.id, point_id, receiver_id)),
+                    None => Err(error.err(format!("Subscription '{}', receiver '{}' - not found", point_id, receiver_id))),
                 }
             }
-            None => Err(format!("{}.run | Subscription '{}' - not found", self.id, point_id)),
+            None => Err(error.err(format!("Subscription '{}' - not found", point_id))),
         }
     }
     ///
     /// Removes all subscriptions for receiver ID
-    pub fn remove_all(&self, receiver_id: &usize) -> Result<(), String> {
+    pub fn remove_all(&self, receiver_id: &usize) -> Result<(), Error> {
+        let error = Error::new(&self.dbg, "remove_all");
         let mut changed = false;
         let mut messages = vec![];
         let keys: Vec<String> = self.multicast.iter().map(|r| r.key().clone()).collect();
@@ -125,12 +110,12 @@ impl Subscriptions {
                             changed |= true;
                         }
                         None => {
-                            messages.push(format!("{}.run | Multicast Subscription '{}', receiver '{}' - not found", self.id, point_id, receiver_id));
+                            messages.push(format!("{}.run | Multicast Subscription '{}', receiver '{}' - not found", self.dbg, point_id, receiver_id));
                         }
                     }
                 }
                 None => {
-                    messages.push(format!("{}.run | Multicast Subscription '{}' - not found", self.id, point_id));
+                    messages.push(format!("{}.run | Multicast Subscription '{}' - not found", self.dbg, point_id));
                 }
             }
         }
@@ -139,13 +124,13 @@ impl Subscriptions {
                 changed |= true;
             }
             None => {
-                messages.push(format!("{}.run | Broadcast Subscription by receiver '{}' - not found", self.id, receiver_id));
+                messages.push(format!("{}.run | Broadcast Subscription by receiver '{}' - not found", self.dbg, receiver_id));
             }
         }
         if changed {
             Ok(())
         } else {
-            Err(messages.join("\n"))
+            Err(error.err(messages.join("\n")))
         }
     }
     ///
@@ -161,7 +146,7 @@ impl Debug for Subscriptions {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("Subscriptions")
-            .field("id", &self.id)
+            .field("dbg", &self.dbg)
             .finish()
     }
 }

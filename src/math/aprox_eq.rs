@@ -1,5 +1,5 @@
 use log::warn;
-use crate::services::types::type_of::TypeOf;
+use crate::services::types::TypeOf;
 ///
 /// Provide approximately equality for f32, f64
 pub trait AproxEq<T> {

@@ -1,10 +1,9 @@
-use std::{collections::HashMap, fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{self, Receiver, Sender}, Arc, Mutex, RwLock}, thread::{self, JoinHandle}};
+use std::{collections::HashMap, fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{self, Receiver, Sender}, Arc}, thread::{self, JoinHandle}};
 use coco::Stack;
 use log::{info, trace, warn};
 use sal_core::{dbg::Dbg, error::Error};
 use crate::services::{
-    entity::{Name, Object, Point},
-    service::{Service, RECV_TIMEOUT},
+    entity::{Name, Object, Point}, types::{Mutex, RwLock}, Service, RECV_TIMEOUT
 };
 ///
 /// Global static counter of FnOut instances
@@ -83,7 +82,7 @@ impl Service for MockRecvService {
         info!("{}.run | Starting...", self.dbg);
         let self_id = self.dbg.clone();
         let exit = self.exit.clone();
-        let in_recv = self.rx_recv.lock().unwrap().take().unwrap();
+        let in_recv = self.rx_recv.lock().take().unwrap();
         let received = self.received.clone();
         let recv_limit = self.recv_limit.clone();
         let handle = thread::Builder::new().name(format!("{}.run", self_id)).spawn(move || {
@@ -95,10 +94,7 @@ impl Service for MockRecvService {
                         match in_recv.recv_timeout(RECV_TIMEOUT) {
                             Ok(point) => {
                                 trace!("{}.run | received: {:?}", self_id, point);
-                                match received.write() {
-                                    Ok(mut received) => received.push(point),
-                                    Err(err) => log::warn!("{}.run | RwLock.write error: {:?}", self_id, err),
-                                };
+                                received.write().push(point);
                                 received_count += 1;
                             }
                             Err(_) => {}
@@ -116,10 +112,7 @@ impl Service for MockRecvService {
                         match in_recv.recv_timeout(RECV_TIMEOUT) {
                             Ok(point) => {
                                 trace!("{}.run | received: {:?}", self_id, point);
-                                match received.write() {
-                                    Ok(mut received) => received.push(point),
-                                    Err(err) => log::warn!("{}.run | RwLock.write error: {:?}", self_id, err),
-                                };
+                                received.write().push(point);
                             }
                             Err(_) => {}
                         };

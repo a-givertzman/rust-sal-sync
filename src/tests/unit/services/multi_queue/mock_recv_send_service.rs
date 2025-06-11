@@ -3,14 +3,12 @@ use log::{info, warn, trace};
 use sal_core::{dbg::Dbg, error::Error};
 use std::{
     collections::HashMap, fmt::Debug, str::FromStr,
-    sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{self, Receiver, Sender}, Arc, Mutex, RwLock},
+    sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{self, Receiver, Sender}, Arc},
     thread::{self, JoinHandle},
 };
 use testing::entities::test_value::Value;
 use crate::services::{
-    entity::{Name, Object, Point, ToPoint, PointTxId},
-    safe_lock::rwlock::SafeLock, service::{LinkName, Service, RECV_TIMEOUT},
-    services::Services,
+    entity::{Name, Object, Point, PointTxId, ToPoint}, types::{Mutex, RwLock}, LinkName, Service, Services, RECV_TIMEOUT
 };
 ///
 /// 
@@ -20,7 +18,7 @@ pub struct MockRecvSendService {
     rx_send: HashMap<String, Sender<Point>>,
     rx_recv: Mutex<Option<Receiver<Point>>>,
     send_to: LinkName,
-    services: Arc<RwLock<Services>>,
+    services: Arc<Services>,
     test_data: Vec<Value>,
     sent: Arc<RwLock<Vec<Point>>>,
     received: Arc<RwLock<Vec<Point>>>,
@@ -32,7 +30,7 @@ pub struct MockRecvSendService {
 //
 // 
 impl MockRecvSendService {
-    pub fn new(parent: impl Into<String>, rx_queue: &str, send_to: &str, services: Arc<RwLock<Services>>, test_data: Vec<Value>, recv_limit: Option<usize>) -> Self {
+    pub fn new(parent: impl Into<String>, rx_queue: &str, send_to: &str, services: Arc<Services>, test_data: Vec<Value>, recv_limit: Option<usize>) -> Self {
         let parent = parent.into();
         let me = format!("MockRecvSendService{}", COUNT.fetch_add(1, Ordering::Relaxed));
         let (send, recv) = mpsc::channel::<Point>();
@@ -97,7 +95,7 @@ impl Service for MockRecvSendService {
         info!("{}.run | Starting...", self.dbg);
         let dbg = self.dbg.clone();
         let exit = self.exit.clone();
-        let rx_recv = self.rx_recv.lock().unwrap().take().unwrap();
+        let rx_recv = self.rx_recv.lock().take().unwrap();
         let received = self.received.clone();
         let recv_limit = self.recv_limit.clone();
         let handle_recv = thread::Builder::new().name(format!("{}.run | Recv", dbg)).spawn(move || {
@@ -109,7 +107,7 @@ impl Service for MockRecvSendService {
                         match rx_recv.recv_timeout(RECV_TIMEOUT) {
                             Ok(point) => {
                                 trace!("{}.run | received: {:?}", dbg, point);
-                                received.write().unwrap().push(point);
+                                received.write().push(point);
                                 received_count += 1;
                             }
                             Err(_) => {}
@@ -127,7 +125,7 @@ impl Service for MockRecvSendService {
                         match rx_recv.recv_timeout(RECV_TIMEOUT) {
                             Ok(point) => {
                                 trace!("{}.run | received: {:?}", dbg, point);
-                                received.write().unwrap().push(point);
+                                received.write().push(point);
                             }
                             Err(_) => {}
                         };
@@ -141,7 +139,7 @@ impl Service for MockRecvSendService {
         let dbg = self.dbg.clone();
         let name = self.dbg.to_string();
         let exit = self.exit.clone();
-        let tx_send = self.services.rlock(&dbg).get_link(&self.send_to).unwrap_or_else(|err| {
+        let tx_send = self.services.get_link(&self.send_to).unwrap_or_else(|err| {
             panic!("{}.run | services.get_link error: {:#?}", self.dbg, err);
         });
         let test_data = self.test_data.clone();
@@ -154,7 +152,7 @@ impl Service for MockRecvSendService {
                 match tx_send.send(point.clone()) {
                     Ok(_) => {
                         trace!("{}.run | send: {:?}", dbg, point);
-                        sent.write().unwrap().push(point);
+                        sent.write().push(point);
                     }
                     Err(err) => {
                         warn!("{}.run | send error: {:?}", dbg, err);

@@ -14,11 +14,11 @@ use crate::services::{safe_lock::rwlock::SafeLock, services::Services};
 pub struct MockMultiQueueMatch {
     id: String,
     name: Name,
-    subscriptions: Arc<RwLock<Subscriptions>>,
+    subscriptions: Arc<Subscriptions>,
     rxSend: HashMap<String, Sender<Point>>,
     rx_recv: Mutex<Option<Receiver<Point>>>,
     sendQueues: Vec<String>,
-    services: Arc<RwLock<Services>>,
+    services: Arc<Services>,
     exit: Arc<AtomicBool>,
 }
 //
@@ -27,13 +27,13 @@ impl MockMultiQueueMatch {
     ///
     /// Creates new instance of [ApiClient]
     /// - [parent] - the ID if the parent entity
-    pub fn new(parent: impl Into<String>, txQueues: Vec<String>, rxQueue: impl Into<String>, services: Arc<RwLock<Services>>) -> Self {
+    pub fn new(parent: impl Into<String>, txQueues: Vec<String>, rxQueue: impl Into<String>, services: Arc<Services>) -> Self {
         let name = Name::new(parent, format!("MockMultiQueueMatch{}", COUNT.fetch_add(1, Ordering::Relaxed)));
         let (send, recv) = mpsc::channel();
         Self {
             id: name.join(),
             name: name.clone(),
-            subscriptions: Arc::new(RwLock::new(Subscriptions::new(name))),
+            subscriptions: Arc::new(Subscriptions::new(name)),
             rxSend: HashMap::from([(rxQueue.into(), send)]),
             rx_recv: Mutex::new(Some(recv)),
             sendQueues: txQueues,

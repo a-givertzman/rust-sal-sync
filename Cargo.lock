@@ -1077,6 +1077,7 @@ dependencies = [
  "kanal",
  "lexical",
  "log",
+ "parking_lot",
  "rand 0.9.1",
  "regex",
  "sal-core",

@@ -1,6 +1,7 @@
 use crate::{collections::FxHashMap, services::entity::{PointConfig, PointConfigType}};
 use std::{collections::HashMap, env, ffi::OsStr, fs, hash::BuildHasherDefault, path::{Path, PathBuf}};
 use api_tools::{api::reply::api_reply::ApiReply, client::{api_query::{ApiQuery, ApiQueryKind, ApiQuerySql}, api_request::ApiRequest}};
+use dashmap::DashMap;
 use hashers::fx_hash::FxHasher;
 use concat_string::concat_string;
 use indexmap::IndexMap;
@@ -15,7 +16,7 @@ type RetainedCahe = FxHashMap<String, FxHashMap<String, RetainedPointConfig>>;
 #[derive(Debug)]
 pub struct RetainPointId {
     id: String,
-    cache: IndexMap<String, Vec<PointConfig>>,
+    cache: DashMap<String, Vec<PointConfig>>,
     path: PathBuf,
     conf: RetainConf,
 }
@@ -36,7 +37,7 @@ impl RetainPointId {
         };
         Self {
             id,
-            cache: IndexMap::new(),
+            cache: DashMap::new(),
             path,
             conf,
         }
@@ -48,7 +49,7 @@ impl RetainPointId {
     }
     ///
     /// Inserts collection of [points] owned by [owner]
-    pub fn insert(&mut self, owner: &str, points: Vec<PointConfig>) {
+    pub fn insert(&self, owner: &str, points: Vec<PointConfig>) {
         info!("{}.points | Caching Point's from '{}'...", self.id, owner);
         let mut update_retained = false;
         let mut retained: RetainedCahe = self.read(self.path.clone());
@@ -84,8 +85,11 @@ impl RetainPointId {
     }
     ///
     /// Returns configuration of the Point's
-    pub fn points(&mut self) -> IndexMap<String, Vec<PointConfig>> {
-        self.cache.clone()
+    pub fn points(&self) -> IndexMap<String, Vec<PointConfig>> {
+        let points = self.cache
+            .iter()
+            .map(|r| (r.key().clone(), r.value().clone()));
+        IndexMap::from_iter(points)
     }
     ///
     /// Creates directiry (all necessary folders in the 'path' if not exists)
