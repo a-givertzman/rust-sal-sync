@@ -250,7 +250,7 @@ impl Services {
     }
     ///
     /// Sends the General Interogation request to all services
-    pub fn gi(&self, _service: &str, _points: &[SubscriptionCriteria]) -> Future<Point> {
+    pub fn gi(&self, _service: &str, _points: &[SubscriptionCriteria]) -> Future<Vec<Point>> {
         panic!("{}.gi | Not implemented yet", self.dbg);
     }
     ///

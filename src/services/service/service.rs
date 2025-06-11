@@ -43,7 +43,7 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
     }
     ///
     /// Returns `Future<Point>`, where will be pushed all points by subscription
-    fn gi(&self, _receiver_name: &str, _points: &[SubscriptionCriteria]) -> Future<Point> {
+    fn gi(&self, _receiver_name: &str, _points: &[SubscriptionCriteria]) -> Future<Vec<Point>> {
         panic!("{}.gi | Does not supported", self.name())
     }
     ///

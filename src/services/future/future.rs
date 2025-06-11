@@ -79,7 +79,7 @@ impl<T> Sink<T> {
         }
     }
     ///
-    /// Sends value th the corresponding `Future<T>`
+    /// Sends value to the corresponding `Future<T>`
     pub fn add(&self, value: T) {
         match self.send.send(value) {
             Ok(_) => {}
