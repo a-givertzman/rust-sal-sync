@@ -2,7 +2,7 @@ use std::{fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc}, 
 use coco::Stack;
 use log::{info, trace, warn};
 use sal_core::{dbg::Dbg, error::Error};
-use crate::services::{entity::{Name, Object, Point}, types::RwLock, Service, Services};
+use crate::{services::{entity::{Name, Object, Point}, Service, Services}, sync::{channel::RecvTimeoutError, RwLock}};
 #[cfg(test)]
 
 mod multi_queue {
@@ -221,8 +221,8 @@ impl Service for MockReceiver {
                                 received.write().push(point);
                             }
                             Err(err) => match err {
-                                std::sync::mpsc::RecvTimeoutError::Timeout      => warn!("{}.run | Receive error: {:#?}", dbg, err),
-                                std::sync::mpsc::RecvTimeoutError::Disconnected => {}
+                                RecvTimeoutError::Timeout => warn!("{}.run | Receive error: {:#?}", dbg, err),
+                                _ => {}
                             }
                         }
                         if exit.load(Ordering::SeqCst) {
@@ -237,8 +237,8 @@ impl Service for MockReceiver {
                                 received.write().push(point)
                             }
                             Err(err) => match err {
-                                std::sync::mpsc::RecvTimeoutError::Timeout      => warn!("{}.run | Receive error: {:#?}", dbg, err),
-                                std::sync::mpsc::RecvTimeoutError::Disconnected => {}
+                                RecvTimeoutError::Timeout => warn!("{}.run | Receive error: {:#?}", dbg, err),
+                                _ => {}
                             }
                         }
                         if exit.load(Ordering::SeqCst) {

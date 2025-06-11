@@ -6,11 +6,11 @@ use crate::{
         future::{Future, Sink}, retain::{RetainConf, RetainPointId},
         service::{LinkName, Service, ServiceCycle},
         subscription::SubscriptionCriteria,
-    },
+    }, sync::channel::{Receiver, Sender},
 };
 use std::{
     collections::HashMap, fmt::Debug,
-    sync::{atomic::{AtomicBool, Ordering}, mpsc::{Receiver, Sender}, Arc},
+    sync::{atomic::{AtomicBool, Ordering}, Arc},
     thread::{self, JoinHandle}, time::Duration,
 };
 use coco::Stack;

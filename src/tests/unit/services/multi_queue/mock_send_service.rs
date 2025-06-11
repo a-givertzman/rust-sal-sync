@@ -3,9 +3,9 @@ use coco::Stack;
 use log::{info, warn, trace};
 use sal_core::{dbg::Dbg, error::Error};
 use testing::entities::test_value::Value;
-use crate::services::{
-    entity::{Name, Object, Point, ToPoint}, types::RwLock, LinkName, Service, Services
-};
+use crate::{services::{
+    entity::{Name, Object, Point, ToPoint}, LinkName, Service, Services
+}, sync::{channel::Sender, RwLock}};
 ///
 ///
 pub struct MockSendService {
@@ -69,7 +69,7 @@ impl Debug for MockSendService {
 impl Service for MockSendService {
     //
     //
-    fn get_link(&self, _name: &str) -> std::sync::mpsc::Sender<Point> {
+    fn get_link(&self, _name: &str) -> Sender<Point> {
         panic!("{}.get_link | Does not support get_link", self.id())
         // match self.rxSend.get(name) {
         //     Some(send) => send.clone(),

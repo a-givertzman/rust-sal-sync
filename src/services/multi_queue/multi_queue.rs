@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap, fmt::Debug, fs, hash::BuildHasherDefault, io::Write,
-    sync::{atomic::{AtomicBool, Ordering}, mpsc::{self, Receiver, Sender}, Arc},
+    sync::{atomic::{AtomicBool, Ordering}, Arc},
     thread::{self, JoinHandle},
 };
 use coco::Stack;
@@ -10,7 +10,7 @@ use crate::{collections::FxDashMap, services::{
     entity::{Name, Object, Point, PointTxId},
     service::{LinkName, Service, RECV_TIMEOUT},
     services::Services, subscription::{SubscriptionCriteria, Subscriptions},
-}};
+}, sync::channel::{self, Receiver, Sender}};
 use super::multi_queue_conf::MultiQueueConf;
 ///
 /// - Receives points into the MPSC queue in the blocking mode
@@ -38,7 +38,7 @@ impl MultiQueue {
     /// - [parent] - the ID if the parent entity
     pub fn new(conf: MultiQueueConf, services: Arc<Services>) -> Self {
         let dbg = Dbg::new(conf.name.parent(), conf.name.me());
-        let (send, recv) = mpsc::channel();
+        let (send, recv) = channel::unbounded();
         let send_queues = conf.send_to;
         let rx_recv = Stack::new();
         rx_recv.push(recv);
@@ -129,7 +129,7 @@ impl Service for MultiQueue {
     //
     #[dbg]
     fn subscribe(&self, receiver_name: &str, points: &[SubscriptionCriteria]) -> (Sender<Point>, Receiver<Point>) {
-        let (send, recv) = mpsc::channel();
+        let (send, recv) = channel::unbounded();
         let receiver_hash = PointTxId::from_str(receiver_name);
         self.receiver_dictionary.insert(receiver_hash, receiver_name.to_string());
         if points.is_empty() {

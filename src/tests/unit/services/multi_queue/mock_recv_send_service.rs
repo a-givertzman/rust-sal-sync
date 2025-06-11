@@ -3,13 +3,13 @@ use log::{info, warn, trace};
 use sal_core::{dbg::Dbg, error::Error};
 use std::{
     collections::HashMap, fmt::Debug, str::FromStr,
-    sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{self, Receiver, Sender}, Arc},
+    sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc},
     thread::{self, JoinHandle},
 };
 use testing::entities::test_value::Value;
-use crate::services::{
-    entity::{Name, Object, Point, PointTxId, ToPoint}, types::{Mutex, RwLock}, LinkName, Service, Services, RECV_TIMEOUT
-};
+use crate::{services::{
+    entity::{Name, Object, Point, PointTxId, ToPoint}, LinkName, Service, Services, RECV_TIMEOUT
+}, sync::{channel::{self, Receiver, Sender}, Mutex, RwLock}};
 ///
 /// 
 pub struct MockRecvSendService {
@@ -33,7 +33,7 @@ impl MockRecvSendService {
     pub fn new(parent: impl Into<String>, rx_queue: &str, send_to: &str, services: Arc<Services>, test_data: Vec<Value>, recv_limit: Option<usize>) -> Self {
         let parent = parent.into();
         let me = format!("MockRecvSendService{}", COUNT.fetch_add(1, Ordering::Relaxed));
-        let (send, recv) = mpsc::channel::<Point>();
+        let (send, recv) = channel::unbounded();
         Self {
             dbg: Dbg::new(&parent, &me),
             name: Name::new(parent, me),
@@ -83,7 +83,7 @@ impl Debug for MockRecvSendService {
 impl Service for MockRecvSendService {
     //
     //
-    fn get_link(&self, name: &str) -> std::sync::mpsc::Sender<Point> {
+    fn get_link(&self, name: &str) -> Sender<Point> {
         match self.rx_send.get(name) {
             Some(send) => send.clone(),
             None => panic!("{}.run | link '{:?}' - not found", self.dbg, name),

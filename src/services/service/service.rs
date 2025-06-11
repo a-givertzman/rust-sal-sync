@@ -1,9 +1,8 @@
-use std::sync::mpsc::{Sender, Receiver};
 use sal_core::error::Error;
-use crate::services::{
+use crate::{services::{
     entity::{Object, Point, PointConfig},
     subscription::SubscriptionCriteria,
-};
+}, sync::channel::{Receiver, Sender}};
 ///
 /// Interface for application service
 /// - Running in the individual thread
