@@ -4,7 +4,7 @@ mod multi_queue {
     use std::{sync::{Arc, Once}, thread, time::{Duration, Instant}};
     use testing::{entities::test_value::Value, stuff::{max_test_duration::TestDuration, random_test_values::RandomTestValues}};
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use crate::{services::{conf::{ConfTree, ServicesConf}, entity::{Name, Object}, MultiQueue, MultiQueueConf, Service, Services}, tests::unit::services::multi_queue::{mock_recv_service::MockRecvService, mock_send_service::MockSendService}};
+    use crate::{services::{conf::{ConfTree, ServicesConf}, entity::{Name, Object}, MultiQueue, MultiQueueConf, Service, Services}, tests::unit::services::multi_queue::{mock_recv_service::MockRecvService, mock_send_service::MockSendService}, thread_pool::ThreadPool};
     ///
     ///
     static INIT: Once = Once::new();
@@ -41,10 +41,13 @@ mod multi_queue {
         let total_count = iterations * producer_count;
         let mut receivers: Vec<Arc<MockRecvService>> = vec![];
         let mut producers: Vec<MockSendService> = vec![];
+        let thread_pool = ThreadPool::new(dbg, Some(8));
         let services = Arc::new(Services::new(dbg, ServicesConf::new(
-            dbg, 
-            ConfTree::new_root(serde_yaml::Value::Null),
-        )));
+                dbg, 
+                ConfTree::new_root(serde_yaml::Value::Null),
+            ),
+            Some(thread_pool.scheduler())
+        ));
         for i in 0..receiver_count {
             let receiver = Arc::new(MockRecvService::new(
                 dbg,
@@ -67,7 +70,7 @@ mod multi_queue {
         "#, receivers.iter().map(|v| format!("{}.rx-queue", v.name())).collect::<Vec<String>>())).unwrap();
         println!(" Multiqueue conf: {:#?}", conf);
         let conf = MultiQueueConf::from_yaml(dbg, &conf);
-        let mq = Arc::new(MultiQueue::new(conf, services.clone()));
+        let mq = Arc::new(MultiQueue::new(conf, services.clone(), Some(thread_pool.scheduler())));
         println!(" Creating {} - ok", mq.name());
         println!(" Inserting Mock Multiqueue into Services...");
         services.insert(mq.clone());
@@ -120,6 +123,8 @@ mod multi_queue {
         for h in &receivers {
             h.wait().unwrap();
         }
+        mq.exit();
+        services.exit();
         services.wait().unwrap();
         println!("\n Elapsed: {:?}", timer.elapsed());
         println!(" Total test events: {:?}", total_count);
@@ -152,10 +157,13 @@ mod multi_queue {
         let total_count = iterations * producer_count;
         let mut receivers = vec![];
         let mut producers = vec![];
+        let thread_pool = ThreadPool::new(dbg, Some(8));
         let services = Arc::new(Services::new(dbg, ServicesConf::new(
-            dbg, 
-            ConfTree::new_root(serde_yaml::Value::Null),
-        )));
+                dbg, 
+                ConfTree::new_root(serde_yaml::Value::Null),
+            ),
+            Some(thread_pool.scheduler()),
+        ));
         for i in 0..receiver_count {
             let receiver = Arc::new(MockRecvService::new(
                 dbg,
@@ -178,7 +186,7 @@ mod multi_queue {
         "#, receivers.iter().map(|v| format!("{}.rx-queue", v.name())).collect::<Vec<String>>())).unwrap();
         println!(" Multiqueue conf: {:#?}", conf);
         let conf = MultiQueueConf::from_yaml(dbg, &conf);
-        let mq_service = Arc::new(MultiQueue::new(conf, services.clone()));
+        let mq_service = Arc::new(MultiQueue::new(conf, services.clone(), Some(thread_pool.scheduler())));
         println!(" Creating Mock Multiqueue - ok");
         println!(" Inserting Mock Multiqueue into Services...");
         services.insert(mq_service.clone());
@@ -221,6 +229,8 @@ mod multi_queue {
         for h in &receivers {
             h.wait().unwrap();
         }
+        mq_service.exit();
+        services.exit();
         services.wait().unwrap();
         println!("\n Elapsed: {:?}", timer.elapsed());
         println!(" Total test events: {:?}", total_count);

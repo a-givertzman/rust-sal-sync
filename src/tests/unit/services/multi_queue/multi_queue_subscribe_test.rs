@@ -16,7 +16,7 @@ mod multi_queue {
     };
     use crate::{
         services::{conf::{ConfTree, ServicesConf}, MultiQueue, MultiQueueConf, Service, Services},
-        tests::unit::services::multi_queue::{mock_send_service::MockSendService, multi_queue_subscribe_test::MockReceiver},
+        tests::unit::services::multi_queue::{mock_send_service::MockSendService, multi_queue_subscribe_test::MockReceiver}, thread_pool::ThreadPool,
     };
     ///
     ///
@@ -61,11 +61,14 @@ mod multi_queue {
         let conf = serde_yaml::from_str(&conf).unwrap();
         let mq_conf = MultiQueueConf::from_yaml(&dbg, &conf);
         debug!("mqConf: {:?}", mq_conf);
+        let thread_pool = ThreadPool::new(&dbg, Some(8));
         let services = Arc::new(Services::new(&dbg, ServicesConf::new(
-            &dbg, 
-            ConfTree::new_root(serde_yaml::from_str(r#""#).unwrap()),
-        )));
-        let mq_service = Arc::new(MultiQueue::new(mq_conf, services.clone()));
+                &dbg, 
+                ConfTree::new_root(serde_yaml::from_str(r#""#).unwrap()),
+            ),
+            Some(thread_pool.scheduler()),
+        ));
+        let mq_service = Arc::new(MultiQueue::new(mq_conf, services.clone(), Some(thread_pool.scheduler())));
         services.insert(mq_service.clone());
         let mut receivers = vec![];
         for _ in 0..receiver_count {
