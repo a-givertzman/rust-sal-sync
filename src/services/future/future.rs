@@ -1,7 +1,6 @@
-use std::sync::mpsc::{Receiver, Sender};
 use log::error;
 use sal_core::error::Error;
-use crate::{services::types::TypeOf, thread_pool::Scheduler};
+use crate::{services::types::TypeOf, sync::channel::{self, Receiver, Sender}, thread_pool::Scheduler};
 ///
 /// Contains future callback
 pub struct Future<T> {
@@ -15,7 +14,7 @@ impl<T: Send + 'static> Future<T> {
     ///
     /// Returns Future new instance
     pub fn new() -> (Self, Sink<T>) {
-        let (send, recv) = std::sync::mpsc::channel();
+        let (send, recv) = kanal::bounded(1);
         (
             Self { recv },
             Sink::new(send),
@@ -50,7 +49,7 @@ impl<T: Send + 'static> Future<T> {
     where
         F: FnOnce() -> T + Send + 'static 
     {
-        let (send, recv) = std::sync::mpsc::channel();
+        let (send, recv) = channel::bounded(1);
         let h = scheduler.spawn(move || {
             let result = f();
             if let Err(err) = send.send(result) {
