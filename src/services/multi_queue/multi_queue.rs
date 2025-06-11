@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap, fmt::Debug, fs, hash::BuildHasherDefault, io::Write,
     sync::{atomic::{AtomicBool, Ordering}, Arc},
-    thread::{self, JoinHandle},
 };
 use coco::Stack;
 use concat_string::concat_string;
@@ -10,7 +9,7 @@ use crate::{collections::FxDashMap, services::{
     entity::{Name, Object, Point, PointTxId},
     service::{LinkName, Service, RECV_TIMEOUT},
     services::Services, subscription::{SubscriptionCriteria, Subscriptions},
-}, sync::channel::{self, Receiver, Sender}};
+}, sync::channel::{self, Receiver, Sender}, thread_pool::{JoinHandle, Scheduler}};
 use super::multi_queue_conf::MultiQueueConf;
 ///
 /// - Receives points into the MPSC queue in the blocking mode
@@ -25,6 +24,7 @@ pub struct MultiQueue {
     rx_recv: Stack<Receiver<Point>>,
     send_queues: Vec<LinkName>,
     services: Arc<Services>,
+    schrduler: Option<Scheduler>,
     receiver_dictionary: FxDashMap<usize, String>,
     handle: Stack<JoinHandle<()>>,
     is_finished: Arc<AtomicBool>,
@@ -36,7 +36,7 @@ impl MultiQueue {
     ///
     /// Creates new instance of [ApiClient]
     /// - [parent] - the ID if the parent entity
-    pub fn new(conf: MultiQueueConf, services: Arc<Services>) -> Self {
+    pub fn new(conf: MultiQueueConf, services: Arc<Services>, schrduler: Option<Scheduler>) -> Self {
         let dbg = Dbg::new(conf.name.parent(), conf.name.me());
         let (send, recv) = channel::unbounded();
         let send_queues = conf.send_to;
@@ -50,6 +50,7 @@ impl MultiQueue {
             rx_recv,
             send_queues,
             services,
+            schrduler,
             receiver_dictionary: FxDashMap::with_hasher(BuildHasherDefault::default()),
             handle: Stack::new(),
             is_finished: Arc::new(AtomicBool::new(false)),
@@ -95,6 +96,46 @@ impl MultiQueue {
                 }
             }
         }
+    }
+    ///
+    /// Main loop
+    fn run_(dbg: Dbg, name: Name, recv: Receiver<Point>, subscriptions_ref: Arc<Subscriptions>, subscriptions_changed: Arc<AtomicBool>, exit: Arc<AtomicBool>) {
+            log::info!("{}.run | Preparing thread - ok", dbg);
+            let mut subscriptions = subscriptions_ref.clone();
+            loop {
+                if subscriptions_changed.load(Ordering::Relaxed) {
+                    subscriptions_changed.store(false, Ordering::SeqCst);
+                    log::debug!("{}.run | Subscriptions changes detected", dbg);
+                    subscriptions = subscriptions_ref.clone();
+                }
+                match recv.recv_timeout(RECV_TIMEOUT) {
+                    Ok(point) => {
+                        let point_id = SubscriptionCriteria::new(&point.name(), point.cot()).destination();
+                        log::trace!("{}.run | received: \n\t{:?}", dbg, point);
+                        Self::log_point(&dbg, &name, &point_id, &point);
+                        for (receiver_hash, sender) in subscriptions.get(&point_id) {
+                            if receiver_hash != point.tx_id() {
+                                match sender.send(point.clone()) {
+                                    Ok(_) => {
+                                        log::trace!("{}.run | sent to '{}' point: {:?}", dbg, receiver_hash, point);
+                                    }
+                                    Err(err) => {
+                                        log::error!("{}.run | subscriptions '{}', receiver '{}' - send error: {:?}", dbg, point_id, receiver_hash, err);
+                                    }
+                                };
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        log::trace!("{}.run | recv timeout: {:?}", dbg, err);
+                    }
+                }
+                if exit.load(Ordering::SeqCst) {
+                    subscriptions_ref.exit();
+                    break;
+                }
+            }
+            log::info!("{}.run | Exit", dbg);
     }
 }
 //
@@ -216,59 +257,36 @@ impl Service for MultiQueue {
     //
     fn run(&self) -> Result<(), Error> {
         log::info!("{}.run | Starting...", self.dbg);
-        let self_id = self.dbg.clone();
-        let self_name = self.name.clone();
-        let exit = self.exit.clone();
+        let dbg = self.dbg.clone();
+        let name = self.name.clone();
         let recv = self.rx_recv.pop().unwrap();
         let subscriptions_ref = self.subscriptions.clone();
         let subscriptions_changed = self.subscriptions_changed.clone();
         // let receiver_dictionary = self.receiver_dictionary.clone();
         for receiver_name in &self.send_queues {
             let send = self.services.get_link(receiver_name).unwrap_or_else(|err| {
-                panic!("{}.run | services.get_link error: {:#?}", self_id, err);
+                panic!("{}.run | services.get_link error: {:#?}", dbg, err);
             });
             let receiver_hash = PointTxId::from_str(&receiver_name.name());
             self.subscriptions.add_broadcast(receiver_hash, send.clone());
             log::debug!("{}.run | Broadcast subscription registered, receiver: \n\t{} ({})", self.dbg, receiver_name, receiver_hash);
         }
-        let handle = thread::Builder::new().name(format!("{}.run", self_id.clone())).spawn(move || {
-            log::info!("{}.run | Preparing thread - ok", self_id);
-            let mut subscriptions = subscriptions_ref.clone();
-            loop {
-                if subscriptions_changed.load(Ordering::Relaxed) {
-                    subscriptions_changed.store(false, Ordering::SeqCst);
-                    log::debug!("{}.run | Subscriptions changes detected", self_id);
-                    subscriptions = subscriptions_ref.clone();
-                }
-                match recv.recv_timeout(RECV_TIMEOUT) {
-                    Ok(point) => {
-                        let point_id = SubscriptionCriteria::new(&point.name(), point.cot()).destination();
-                        log::trace!("{}.run | received: \n\t{:?}", self_id, point);
-                        Self::log_point(&self_id, &self_name, &point_id, &point);
-                        for (receiver_hash, sender) in subscriptions.get(&point_id) {
-                            if receiver_hash != point.tx_id() {
-                                match sender.send(point.clone()) {
-                                    Ok(_) => {
-                                        log::trace!("{}.run | sent to '{}' point: {:?}", self_id, receiver_hash, point);
-                                    }
-                                    Err(err) => {
-                                        log::error!("{}.run | subscriptions '{}', receiver '{}' - send error: {:?}", self_id, point_id, receiver_hash, err);
-                                    }
-                                };
-                            }
-                        }
-                    }
-                    Err(err) => {
-                        log::trace!("{}.run | recv timeout: {:?}", self_id, err);
-                    }
-                }
-                if exit.load(Ordering::SeqCst) {
-                    subscriptions_ref.exit();
-                    break;
-                }
+        let exit = self.exit.clone();
+        let error = Error::new(&self.dbg, "run");
+        let handle = match &self.schrduler {
+            Some(schrduler) => {
+                schrduler.spawn(move|| {
+                    Self::run_(dbg, name, recv, subscriptions_ref, subscriptions_changed, exit);
+                    Ok(())
+                })
             }
-            log::info!("{}.run | Exit", self_id);
-        });
+            None => {
+                panic!("{}.run | Please pass a Scheduler, std::tread is not supported for now", self.dbg);
+                // thread::Builder::new().name(format!("{}.run", dbg.clone())).spawn(move || {
+                //     Self::run_(dbg, name, recv, subscriptions_ref, subscriptions_changed, exit);
+                // })
+            }
+        };
         match handle {
             Ok(handle) => {
                 log::info!("{}.run | Started", self.dbg);
@@ -276,7 +294,7 @@ impl Service for MultiQueue {
                 Ok(())
             }
             Err(err) => {
-                let err = Error::new(&self.dbg, "run").pass_with("Start failed", err.to_string());
+                let err = error.pass_with("Start failed", err.to_string());
                 log::warn!("{}", err);
                 Err(err)
             }

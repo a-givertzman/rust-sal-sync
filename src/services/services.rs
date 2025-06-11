@@ -6,12 +6,12 @@ use crate::{
         future::{Future, Sink}, retain::{RetainConf, RetainPointId},
         service::{LinkName, Service, ServiceCycle},
         subscription::SubscriptionCriteria,
-    }, sync::channel::{Receiver, Sender},
+    }, sync::channel::{Receiver, Sender}, thread_pool::{JoinHandle, Scheduler},
 };
 use std::{
     collections::HashMap, fmt::Debug,
     sync::{atomic::{AtomicBool, Ordering}, Arc},
-    thread::{self, JoinHandle}, time::Duration,
+    time::Duration,
 };
 use coco::Stack;
 use concat_string::concat_string;
@@ -26,6 +26,7 @@ pub struct Services {
     conf: ServicesConf,
     retain_point_id: Option<Arc<RetainPointId>>,
     points_request: Arc<Stack<(String, Sink<Vec<PointConfig>>)>>,
+    schrduler: Option<Scheduler>,
     handle: Stack<JoinHandle<()>>,
     exit: Arc<AtomicBool>,
 }
@@ -43,7 +44,7 @@ impl Services {
     pub const SLMP_CLIENT: &'static str = "SlmpClient";
     ///
     /// Creates new instance of the Services
-    pub fn new(parent: impl Into<String>, conf: ServicesConf) -> Self {
+    pub fn new(parent: impl Into<String>, conf: ServicesConf, schrduler: Option<Scheduler>) -> Self {
         let parent = parent.into();
         let name = Name::new(&parent, "Services");
         let name_str = name.join();
@@ -57,6 +58,7 @@ impl Services {
             },
             conf: conf,
             points_request: Arc::new(Stack::new()),
+            schrduler,
             handle: Stack::new(),
             exit: Arc::new(AtomicBool::new(false)),
         }
@@ -97,7 +99,8 @@ impl Services {
         let services = self.map.clone();
         let exit = self.exit.clone();
         log::info!("{}.run | Preparing thread...", dbg);
-        let handle = thread::Builder::new().name(format!("{}.run", dbg)).spawn(move || {
+        // let handle = thread::Builder::new().name(format!("{}.run", dbg)).spawn(move || {
+        let handle = self.schrduler.as_ref().unwrap().spawn(move || {
             log::info!("{}.run | Preparing thread - ok", dbg);
             let mut notify = ChangeNotify::new(
                 &dbg,
@@ -151,8 +154,9 @@ impl Services {
                 }
             }
             log::info!("{}.run | Exit", dbg);
+            Ok(())
         });
-        thread::sleep(Duration::from_millis(50));
+        std::thread::sleep(Duration::from_millis(50));
         match handle {
             Ok(handle) => {
                 log::info!("{}.run | Starting - ok", self.dbg);
