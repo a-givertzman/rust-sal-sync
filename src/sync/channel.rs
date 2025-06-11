@@ -1,6 +1,7 @@
 pub type Sender<T> = kanal::Sender<T>;
 pub type Receiver<T> = kanal::Receiver<T>;
 pub type RecvTimeoutError = kanal::ReceiveErrorTimeout;
+pub type SendError = kanal::SendError;
 
 ///
 /// Creates a new sync bounded channel with the requested buffer size,
