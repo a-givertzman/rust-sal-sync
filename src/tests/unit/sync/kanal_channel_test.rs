@@ -47,6 +47,11 @@ mod kanal_channel {
                 s.send(value).unwrap();
                 log::debug!("step {} sent: {:?}", step, value);
             }
+            std::thread::sleep(Duration::from_secs(3));
+            for (step, value) in test_data {
+                s.send(value).unwrap();
+                log::debug!("step {} sent: {:?}", step, value);
+            }
         });
         for event in r {
             log::debug!("received: {:?}", event);

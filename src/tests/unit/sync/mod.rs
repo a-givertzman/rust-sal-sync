@@ -1,1 +1,1 @@
-mod kanal_channel;
+mod kanal_channel_test;
