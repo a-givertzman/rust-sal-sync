@@ -65,7 +65,7 @@ mod services {
         DebugSession::init(LogLevel::Info, Backtrace::Short);
         init_once();
         init_each();
-        let dbg = Dbg::own("test-Services-thread");
+        let dbg = Dbg::own("test-Services-scheduler");
         log::debug!("\n{}", dbg);
         let tasks = 100;
         let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
