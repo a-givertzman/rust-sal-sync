@@ -1,10 +1,10 @@
-use std::{collections::HashMap, fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{self, Receiver, Sender}, Arc}, thread::{self, JoinHandle}};
+use std::{collections::HashMap, fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc}, thread::{self, JoinHandle}};
 use coco::Stack;
 use log::{info, trace, warn};
 use sal_core::{dbg::Dbg, error::Error};
-use crate::services::{
-    entity::{Name, Object, Point}, types::{Mutex, RwLock}, Service, RECV_TIMEOUT
-};
+use crate::{services::{
+    entity::{Name, Object, Point}, Service, RECV_TIMEOUT
+}, sync::{channel::{self, Receiver, Sender}, Mutex, RwLock}};
 ///
 /// Global static counter of FnOut instances
 static COUNT: AtomicUsize = AtomicUsize::new(0);
@@ -25,7 +25,7 @@ pub struct MockRecvService {
 impl MockRecvService {
     pub fn new(parent: impl Into<String>, rx_queue: &str, recv_limit: Option<usize>) -> Self {
         let name = Name::new(parent, format!("MockRecvService{}", COUNT.fetch_add(1, Ordering::Relaxed)));
-        let (send, recv) = mpsc::channel::<Point>();
+        let (send, recv) = channel::unbounded();
         Self {
             dbg: Dbg::new(name.parent(), name.me()),
             name,
@@ -70,7 +70,7 @@ impl Debug for MockRecvService {
 impl Service for MockRecvService {
     //
     //
-    fn get_link(&self, name: &str) -> std::sync::mpsc::Sender<Point> {
+    fn get_link(&self, name: &str) -> Sender<Point> {
         match self.rx_send.get(name) {
             Some(send) => send.clone(),
             None => panic!("{}.run | link '{:?}' - not found", self.dbg, name),

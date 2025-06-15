@@ -4,9 +4,9 @@ mod future {
     use log::debug;
     use rand::Rng;
     use std::{sync::Once, thread::{self}, time::{Duration, Instant}};
-    use testing::stuff::{max_test_duration::TestDuration, wait::WaitTread};
+    use testing::stuff::{max_test_duration::TestDuration};
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use crate::services::future::Future;
+    use crate::{services::future::Future, sync::Wait};
     ///
     ///
     static INIT: Once = Once::new();

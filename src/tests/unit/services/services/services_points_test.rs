@@ -2,7 +2,7 @@
 
 mod services_points {
     use std::{env, sync::{Arc, Once, RwLock}, time::Duration};
-    use testing::stuff::{max_test_duration::TestDuration, wait::WaitTread};
+    use testing::stuff::{max_test_duration::TestDuration};
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
 
     use crate::services::entity::Name;
