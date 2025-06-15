@@ -121,12 +121,14 @@ mod services {
             }
         }
         fn run_(dbg: Dbg, exit: Arc<AtomicBool>) {
+            log::trace!("{dbg} | Start");
             loop {
                 std::thread::sleep(Duration::from_millis(50));
                 if exit.load(Ordering::SeqCst) {
                     break;
                 }
             }
+            log::trace!("{dbg} | Exit");
         }
     }
     impl Object for ServiceMok {
