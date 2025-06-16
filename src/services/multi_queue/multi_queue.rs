@@ -11,7 +11,7 @@ use crate::{
         service::{LinkName, Service, RECV_TIMEOUT},
         services::Services, subscription::{SubscriptionCriteria, Subscriptions},
     },
-    sync::{channel::{self, Receiver, Sender}, WaitBox}, thread_pool::Scheduler,
+    sync::{channel::{self, Receiver, Sender}, Handles}, thread_pool::Scheduler,
 };
 use super::multi_queue_conf::MultiQueueConf;
 ///
@@ -31,8 +31,7 @@ pub struct MultiQueue {
     services: Arc<Services>,
     schrduler: Option<Scheduler>,
     receiver_dictionary: FxDashMap<usize, String>,
-    handle: Stack<Box<dyn WaitBox<()>>>,
-    is_finished: Arc<AtomicBool>,
+    handles: Handles<()>,
     exit: Arc<AtomicBool>,
 }
 //
@@ -57,8 +56,7 @@ impl MultiQueue {
             services,
             schrduler,
             receiver_dictionary: FxDashMap::with_hasher(BuildHasherDefault::default()),
-            handle: Stack::new(),
-            is_finished: Arc::new(AtomicBool::new(false)),
+            handles: Handles::new(&dbg),
             exit: Arc::new(AtomicBool::new(false)),
             dbg,
         }
@@ -278,44 +276,33 @@ impl Service for MultiQueue {
         }
         let exit = self.exit.clone();
         let error = Error::new(&self.dbg, "run");
-        let handle: Box<dyn WaitBox<()>> = match &self.schrduler {
+        match &self.schrduler {
             Some(schrduler) => {
-                let h = schrduler.spawn(move|| {
+                let handle = schrduler.spawn(move|| {
                     Self::run_(dbg, name, recv, subscriptions_ref, subscriptions_changed, exit);
                     Ok(())
                 }).map_err(|err| error.pass_with("Start failed on Scheduler", err.to_string()))?;
-                Box::new(h)
+                self.handles.push(handle);
             }
             None => {
-                let h= std::thread::Builder::new().name(format!("{}.run", dbg.clone())).spawn(move || {
+                let handle= std::thread::Builder::new().name(format!("{}.run", dbg.clone())).spawn(move || {
                     Self::run_(dbg, name, recv, subscriptions_ref, subscriptions_changed, exit);
                 }).map_err(|err| error.pass_with("Start failed on std::thread", err.to_string()))?;
-                Box::new(h)
+                self.handles.push(handle);
             }
         };
         log::info!("{}.run | Started", self.dbg);
-        self.handle.push(handle);
         Ok(())
     }
     //
     //
     fn is_finished(&self) -> bool {
-        self.is_finished.load(Ordering::SeqCst)
+        self.handles.is_finished()
     }
     //
     //
-    #[dbg]
     fn wait(&self) -> Result<(), Error> {
-        while !self.handle.is_empty() {
-            if let Some(handle) = self.handle.pop() {
-                if let Err(err) = handle.wait() {
-                    dbg::warn!("Error: {:?}", err);
-                    return Err(Error::new(&self.dbg, "wait").err(format!("{:?}", err)));
-                }
-            }
-        }
-        self.is_finished.store(true, Ordering::SeqCst);
-        Ok(())
+        self.handles.wait()
     }
     //
     //

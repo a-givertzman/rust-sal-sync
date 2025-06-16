@@ -6,7 +6,7 @@ use crate::{
         future::{Future, Sink}, retain::{RetainConf, RetainPointId},
         service::{LinkName, Service, ServiceCycle},
         subscription::SubscriptionCriteria,
-    }, sync::{channel::{Receiver, Sender}, WaitBox}, thread_pool::Scheduler,
+    }, sync::{channel::{Receiver, Sender}, Handles}, thread_pool::Scheduler,
 };
 use std::{
     collections::HashMap, fmt::Debug, sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Duration
@@ -25,7 +25,7 @@ pub struct Services {
     retain_point_id: Option<Arc<RetainPointId>>,
     points_request: Arc<Stack<(String, Sink<Vec<PointConfig>>)>>,
     schrduler: Option<Scheduler>,
-    handle: Stack<Box<dyn WaitBox<()>>>,
+    handles: Handles<()>,
     exit: Arc<AtomicBool>,
 }
 //
@@ -46,8 +46,8 @@ impl Services {
         let parent = parent.into();
         let name = Name::new(&parent, "Services");
         let name_str = name.join();
+        let dbg = Dbg::new(parent, "Services");
         Self {
-            dbg: Dbg::new(parent, "Services"),
             name,
             map: Arc::new(DashMap::new()),
             retain_point_id: match &conf.retain.point {
@@ -57,7 +57,8 @@ impl Services {
             conf: conf,
             points_request: Arc::new(Stack::new()),
             schrduler,
-            handle: Stack::new(),
+            handles: Handles::new(&dbg),
+            dbg,
             exit: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -96,24 +97,23 @@ impl Services {
         let retain_point_id = self.retain_point_id.clone();
         let services = self.map.clone();
         let exit = self.exit.clone();
-        let handle: Box<dyn WaitBox<()>> = match &self.schrduler {
+        match &self.schrduler {
             Some(schrduler) => {
                 log::debug!("{}.run | Starting Schrduler::thread...", dbg);
-                let h = schrduler.spawn(move || {
+                let handle = schrduler.spawn(move || {
                     Self::run_(dbg, name, points_request, retain_point_id, services, exit);
                     Ok(())
                 })?;
-                Box::new(h)
+                self.handles.push(handle);
             }
             None => {
                 log::debug!("{}.run | Starting std::thread...", dbg);
-                let h = std::thread::Builder::new().name(format!("{}.run", dbg)).spawn(move || {
+                let handle = std::thread::Builder::new().name(format!("{}.run", dbg)).spawn(move || {
                     Self::run_(dbg, name, points_request, retain_point_id, services, exit);
                 }).map_err(|err| Error::new(&self.dbg, "run").err(err.to_string()))?;
-                Box::new(h)
+                self.handles.push(handle);
             }
         };
-        self.handle.push(handle);
         std::thread::sleep(Duration::from_millis(50));
         log::info!("{}.run | Starting - ok", self.dbg);
         Ok(())
@@ -276,12 +276,16 @@ impl Services {
     ///
     /// Returns [Ok] when all [Service]'s are finished
     pub fn wait(&self) -> Result<(), Error> {
-        if let Some(handle) = self.handle.pop() {
-            if let Err(err) = handle.wait() {
-                log::warn!("{}.wait | Error: {:?}", self.dbg, err);
-            }
-        }
-        Ok(())
+        self.handles.wait()
+    }
+    ///
+    /// Checks if finished running.
+    /// 
+    /// To finish call exit
+    /// 
+    /// **Importent! Does not mean all sevices being finished**
+    pub fn is_finished(&self) -> bool {
+        self.handles.is_finished()
     }
     ///
     /// 
