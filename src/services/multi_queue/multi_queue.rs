@@ -5,16 +5,21 @@ use std::{
 use coco::Stack;
 use concat_string::concat_string;
 use sal_core::{dbg::{self, dbg, Dbg}, error::Error};
-use crate::{collections::FxDashMap, services::{
-    entity::{Name, Object, Point, PointTxId},
-    service::{LinkName, Service, RECV_TIMEOUT},
-    services::Services, subscription::{SubscriptionCriteria, Subscriptions},
-}, sync::channel::{self, Receiver, Sender}, thread_pool::{JoinHandle, Scheduler}};
+use crate::{
+    collections::FxDashMap, services::{
+        entity::{Name, Object, Point, PointTxId},
+        service::{LinkName, Service, RECV_TIMEOUT},
+        services::Services, subscription::{SubscriptionCriteria, Subscriptions},
+    },
+    sync::{channel::{self, Receiver, Sender}, WaitBox}, thread_pool::Scheduler,
+};
 use super::multi_queue_conf::MultiQueueConf;
 ///
-/// - Receives points into the MPSC queue in the blocking mode
+/// ### Receive and destribute `Point`'s across multiple services
+/// - Thread safe
+/// - Receives `Point`'s into the MPSC queue in the blocking mode
 /// - If new point received, immediately sends it to the all subscribed consumers
-/// - Keeps all consumers subscriptions in the single map:
+/// - Keeps all consumers subscriptions in the single map
 pub struct MultiQueue {
     dbg: Dbg,
     name: Name,
@@ -26,7 +31,7 @@ pub struct MultiQueue {
     services: Arc<Services>,
     schrduler: Option<Scheduler>,
     receiver_dictionary: FxDashMap<usize, String>,
-    handle: Stack<JoinHandle<()>>,
+    handle: Stack<Box<dyn WaitBox<()>>>,
     is_finished: Arc<AtomicBool>,
     exit: Arc<AtomicBool>,
 }
@@ -273,32 +278,24 @@ impl Service for MultiQueue {
         }
         let exit = self.exit.clone();
         let error = Error::new(&self.dbg, "run");
-        let handle = match &self.schrduler {
+        let handle: Box<dyn WaitBox<()>> = match &self.schrduler {
             Some(schrduler) => {
-                schrduler.spawn(move|| {
+                let h = schrduler.spawn(move|| {
                     Self::run_(dbg, name, recv, subscriptions_ref, subscriptions_changed, exit);
                     Ok(())
-                })
+                }).map_err(|err| error.pass_with("Start failed on Scheduler", err.to_string()))?;
+                Box::new(h)
             }
             None => {
-                panic!("{}.run | Please pass a Scheduler, std::tread is not supported for now", self.dbg);
-                // thread::Builder::new().name(format!("{}.run", dbg.clone())).spawn(move || {
-                //     Self::run_(dbg, name, recv, subscriptions_ref, subscriptions_changed, exit);
-                // })
+                let h= std::thread::Builder::new().name(format!("{}.run", dbg.clone())).spawn(move || {
+                    Self::run_(dbg, name, recv, subscriptions_ref, subscriptions_changed, exit);
+                }).map_err(|err| error.pass_with("Start failed on std::thread", err.to_string()))?;
+                Box::new(h)
             }
         };
-        match handle {
-            Ok(handle) => {
-                log::info!("{}.run | Started", self.dbg);
-                self.handle.push(handle);
-                Ok(())
-            }
-            Err(err) => {
-                let err = error.pass_with("Start failed", err.to_string());
-                log::warn!("{}", err);
-                Err(err)
-            }
-        }
+        log::info!("{}.run | Started", self.dbg);
+        self.handle.push(handle);
+        Ok(())
     }
     //
     //
@@ -309,13 +306,15 @@ impl Service for MultiQueue {
     //
     #[dbg]
     fn wait(&self) -> Result<(), Error> {
-        if let Some(handle) = self.handle.pop() {
-            if let Err(err) = handle.join() {
-                dbg::warn!("Error: {:?}", err);
-                return Err(Error::new(&self.dbg, "wait").err(format!("{:?}", err)));
+        while !self.handle.is_empty() {
+            if let Some(handle) = self.handle.pop() {
+                if let Err(err) = handle.wait() {
+                    dbg::warn!("Error: {:?}", err);
+                    return Err(Error::new(&self.dbg, "wait").err(format!("{:?}", err)));
+                }
             }
-            self.is_finished.store(true, Ordering::SeqCst);
         }
+        self.is_finished.store(true, Ordering::SeqCst);
         Ok(())
     }
     //

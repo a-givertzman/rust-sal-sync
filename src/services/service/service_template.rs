@@ -7,7 +7,7 @@
 //!     parameter: value    # meaning
 //!     parameter: value    # meaning
 //! ```
-use std::{sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}, mpsc::Sender}, thread};
+use std::{sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}}, thread};
 use log::{info, warn};
 use crate::{
     services::entity::{
@@ -18,7 +18,8 @@ use crate::{
         services::Services,
         service::service::Service,
         service::service_handles::ServiceHandles, 
-    }, 
+    },
+    sync::{channel::{self, Receiver, Sender}, WaitBox}, thread_pool::Scheduler,
 };
 ///
 /// Do something ...
@@ -26,7 +27,10 @@ pub struct ServiceName {
     id: String,
     name: Name,
     conf: ServiceNameConfig,
-    services: Arc<Mutex<Services>>,
+    services: Arc<Services>,
+    schrduler: Option<Scheduler>,
+    handle: Stack<Box<dyn WaitBox<()>>>,
+    is_finished: Arc<AtomicBool>,
     exit: Arc<AtomicBool>,
 }
 //
@@ -34,7 +38,7 @@ pub struct ServiceName {
 impl ServiceName {
     //
     /// Crteates new instance of the ServiceName 
-    pub fn new(parent: impl Into<String>, conf: ServiceNameConfig, services: Arc<Mutex<Services>>) -> Self {
+    pub fn new(parent: impl Into<String>, conf: ServiceNameConfig, services: Arc<Services>) -> Self {
         Self {
             id: conf.name.join(),
             name: conf.name,
@@ -47,10 +51,6 @@ impl ServiceName {
 //
 //
 impl Object for ServiceName {
-    fn id(&self) -> &str {
-        &self.id
-    }
-    
     fn name(&self) -> Name {
         self.name.clone()
     }
@@ -79,12 +79,12 @@ impl Service for ServiceName {
     }
     //
     //
-    fn run(&mut self) -> Result<ServiceHandles, Error> {
+    fn run(&mut self) -> Result<(), Error> {
         info!("{}.run | Starting...", self.id);
         let self_id = self.id.clone();
         let exit = self.exit.clone();
         info!("{}.run | Preparing thread...", self_id);
-        let handle = thread::Builder::new().name(format!("{}.run", self_id.clone())).spawn(move || {
+        let handle = self.scheduler.spawn(move || {
             loop {
                 if exit.load(Ordering::SeqCst) {
                     break;

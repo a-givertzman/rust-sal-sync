@@ -26,16 +26,135 @@ mod multi_queue {
     ///  - ...
     fn init_each() -> () {}
     ///
-    /// Test MultiQueue for - static link
-    /// - action: read
+    /// Test [MultiQueue] on `std::thread`
     #[test]
-    fn static_read() {
+    fn run_thread() {
         DebugSession::init(LogLevel::Debug, Backtrace::Short);
         init_once();
         init_each();
-        println!();
-        let dbg = "multi_queue_read_test";
-        println!("\n{}", dbg);
+        let dbg = "multi_queue_thread_test";
+        log::debug!("\n{}", dbg);
+        //
+        // can be changed
+        let iterations = 10;
+        let test_data = RandomTestValues::new(
+            dbg,
+            vec![
+                Value::Int(i64::MIN),
+                Value::Int(i64::MAX),
+                Value::Int(-7),
+                Value::Int(0),
+                Value::Int(12),
+                Value::Real(f32::MAX),
+                Value::Real(f32::MIN),
+                Value::Real(f32::MIN_POSITIVE),
+                Value::Real(-f32::MIN_POSITIVE),
+                Value::Real(0.0),
+                Value::Real(1.33),
+                Value::Double(f64::MAX),
+                Value::Double(f64::MIN),
+                Value::Double(f64::MIN_POSITIVE),
+                Value::Double(-f64::MIN_POSITIVE),
+                Value::Bool(true),
+                Value::Bool(false),
+                Value::Bool(false),
+                Value::Bool(true),
+                Value::String("test1".to_string()),
+                Value::String("test1test1test1test1test1test1test1test1test1test1test1test1test1test1test1".to_string()),
+                Value::String("test2".to_string()),
+                Value::String("test2test2test2test2test2test2test2test2test2test2test2test2test2test2test2test2test2test2test2test2test2test2test2test2".to_string()),
+            ],
+            iterations,
+        );
+        let test_data: Vec<Value> = test_data.collect();
+        let test_data_len = test_data.len();
+        let count = 30;
+        let total_count = count * test_data.len();
+        let test_duration = TestDuration::new(dbg, Duration::from_secs(30));
+        test_duration.run().unwrap();
+        let services = Arc::new(Services::new(dbg, ServicesConf::new(
+                dbg, 
+                ConfTree::new_root(serde_yaml::from_str(r#"
+                    retain:
+                        path: assets/testing/retain/
+                        point:
+                            path: point/id.json
+                "#).unwrap()),
+            ),
+            None,
+        ));
+        let mut recv_services = vec![];
+        for _ in 0..count {
+            let recv_service = Arc::new(MockRecvService::new(
+                dbg,
+                "in-queue",
+                Some(iterations),
+            ));
+            services.insert(recv_service.clone());
+            recv_services.push(recv_service);
+        }
+        let mut conf = r#"
+            service MultiQueue:
+                in queue in-queue:
+                    max-length: 10000
+                send-to:
+        "#.to_string();
+        for s in &recv_services {
+            // conf = format!("{}\n                    - /{}/MockRecvService{}.in-queue", conf, self_id, i)
+            conf = format!("{}\n                    - {}.in-queue", conf, s.name().join())
+        }
+        let conf = serde_yaml::from_str(&conf).unwrap();
+        let mq_conf = MultiQueueConf::from_yaml(dbg, &conf);
+        debug!("mqConf: {:?}", mq_conf);
+        let mq_service = Arc::new(MultiQueue::new(mq_conf, services.clone(), None));
+        services.insert(mq_service.clone());
+        let timer = Instant::now();
+        mock_send_service::COUNT.reset(0);
+        let send_service = Arc::new(MockSendService::new(
+            dbg,
+            &format!("/{}/MultiQueue.in-queue", dbg),
+            services.clone(),
+            test_data.clone(),
+            None,
+        ));
+        services.insert(send_service.clone());
+        mq_service.run().unwrap();
+        for service in &mut recv_services {
+            service.run().unwrap();
+        }
+        send_service.run().unwrap();
+        for thd in &recv_services {
+            thd.wait().unwrap();
+        }
+        log::debug!("\nelapsed: {:?}", timer.elapsed());
+        log::debug!("total test events: {:?}", total_count);
+        log::debug!("sent events: {:?}\n", count * send_service.sent().read().len());
+        let mut received = vec![];
+        let target = test_data_len;
+        for recv_service in &recv_services {
+            let len = recv_service.received().read().len();
+            assert!(len == target, "\nresult: {:?}\ntarget: {:?}", len, target);
+            received.push(len);
+        }
+        log::debug!("recv events: {} {:?}", received.iter().sum::<usize>(), received);
+        for service in recv_services {
+            service.exit();
+        }
+        mq_service.exit();
+        services.exit();
+        mq_service.wait().unwrap();
+        services.wait().unwrap();
+        test_duration.exit();
+    }
+    ///
+    /// Test [MultiQueue] on `Scheduler`
+    #[test]
+    fn run_scheduler() {
+        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        init_once();
+        init_each();
+        let dbg = "multi_queue_scheduler_test";
+        log::debug!("\n{}", dbg);
         //
         // can be changed
         let iterations = 10;
@@ -129,9 +248,9 @@ mod multi_queue {
         for thd in &recv_services {
             thd.wait().unwrap();
         }
-        println!("\nelapsed: {:?}", timer.elapsed());
-        println!("total test events: {:?}", total_count);
-        println!("sent events: {:?}\n", count * send_service.sent().read().len());
+        log::debug!("\nelapsed: {:?}", timer.elapsed());
+        log::debug!("total test events: {:?}", total_count);
+        log::debug!("sent events: {:?}\n", count * send_service.sent().read().len());
         let mut received = vec![];
         let target = test_data_len;
         for recv_service in &recv_services {
@@ -139,7 +258,7 @@ mod multi_queue {
             assert!(len == target, "\nresult: {:?}\ntarget: {:?}", len, target);
             received.push(len);
         }
-        println!("recv events: {} {:?}", received.iter().sum::<usize>(), received);
+        log::debug!("recv events: {} {:?}", received.iter().sum::<usize>(), received);
         for service in recv_services {
             service.exit();
         }
