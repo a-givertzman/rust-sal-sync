@@ -24,13 +24,12 @@ use crate::{
 ///
 /// Do something ...
 pub struct ServiceName {
-    id: String,
+    dbg: Dbg,
     name: Name,
     conf: ServiceNameConfig,
     services: Arc<Services>,
     schrduler: Option<Scheduler>,
-    handle: Stack<Box<dyn WaitBox<()>>>,
-    is_finished: Arc<AtomicBool>,
+    handles: Handles<()>,
     exit: Arc<AtomicBool>,
 }
 //
@@ -38,12 +37,14 @@ pub struct ServiceName {
 impl ServiceName {
     //
     /// Crteates new instance of the ServiceName 
-    pub fn new(parent: impl Into<String>, conf: ServiceNameConfig, services: Arc<Services>) -> Self {
+    pub fn new(conf: ServiceNameConfig, services: Arc<Services>) -> Self {
+        let dbg = Dbg::new(conf.name.parent(), conf.name.me());
         Self {
-            id: conf.name.join(),
             name: conf.name,
             conf: conf.clone(),
             services,
+            handles: Handles::new(&dbg),
+            dbg,
             exit: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -80,10 +81,10 @@ impl Service for ServiceName {
     //
     //
     fn run(&mut self) -> Result<(), Error> {
-        info!("{}.run | Starting...", self.id);
-        let self_id = self.id.clone();
+        info!("{}.run | Starting...", self.dbg);
+        let dbg = self.dbg.clone();
         let exit = self.exit.clone();
-        info!("{}.run | Preparing thread...", self_id);
+        info!("{}.run | Preparing thread...", dbg);
         let handle = self.scheduler.spawn(move || {
             loop {
                 if exit.load(Ordering::SeqCst) {
@@ -94,14 +95,25 @@ impl Service for ServiceName {
         match handle {
             Ok(handle) => {
                 info!("{}.run | Starting - ok", self.id);
-                Ok(ServiceHandles::new(vec![(self.id.clone(), handle)]))
+                self.handles.push(handle);
+                Ok(())
             }
             Err(err) => {
-                let message = format!("{}.run | Start failed: {:#?}", self.id, err);
+                let err = Error::new(&self.dbg, "run").pass_with("Start failed", err.to_string);
                 warn!("{}", message);
                 Err(message)
             }
         }
+    }
+    //
+    //
+    fn is_finished(&self) -> bool {
+        self.handles.is_finished()
+    }
+    //
+    //
+    fn wait(&self) -> Result<(), Error> {
+        self.handles.wait()
     }
     //
     //
