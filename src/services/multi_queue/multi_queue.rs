@@ -29,7 +29,7 @@ pub struct MultiQueue {
     rx_recv: Stack<Receiver<Point>>,
     send_queues: Vec<LinkName>,
     services: Arc<Services>,
-    schrduler: Option<Scheduler>,
+    scheduler: Option<Scheduler>,
     receiver_dictionary: FxDashMap<usize, String>,
     handles: Handles<()>,
     exit: Arc<AtomicBool>,
@@ -40,7 +40,7 @@ impl MultiQueue {
     ///
     /// Creates new instance of [ApiClient]
     /// - [parent] - the ID if the parent entity
-    pub fn new(conf: MultiQueueConf, services: Arc<Services>, schrduler: Option<Scheduler>) -> Self {
+    pub fn new(conf: MultiQueueConf, services: Arc<Services>, scheduler: Option<Scheduler>) -> Self {
         let dbg = Dbg::new(conf.name.parent(), conf.name.me());
         let (send, recv) = channel::unbounded();
         let send_queues = conf.send_to;
@@ -54,7 +54,7 @@ impl MultiQueue {
             rx_recv,
             send_queues,
             services,
-            schrduler,
+            scheduler,
             receiver_dictionary: FxDashMap::with_hasher(BuildHasherDefault::default()),
             handles: Handles::new(&dbg),
             exit: Arc::new(AtomicBool::new(false)),
@@ -276,9 +276,9 @@ impl Service for MultiQueue {
         }
         let exit = self.exit.clone();
         let error = Error::new(&self.dbg, "run");
-        match &self.schrduler {
-            Some(schrduler) => {
-                let handle = schrduler.spawn(move|| {
+        match &self.scheduler {
+            Some(scheduler) => {
+                let handle = scheduler.spawn(move|| {
                     Self::run_(dbg, name, recv, subscriptions_ref, subscriptions_changed, exit);
                     Ok(())
                 }).map_err(|err| error.pass_with("Start failed on Scheduler", err.to_string()))?;

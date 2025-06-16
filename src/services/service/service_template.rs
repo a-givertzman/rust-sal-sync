@@ -28,7 +28,7 @@ pub struct ServiceName {
     name: Name,
     conf: ServiceNameConfig,
     services: Arc<Services>,
-    schrduler: Option<Scheduler>,
+    scheduler: Option<Scheduler>,
     handles: Handles<()>,
     exit: Arc<AtomicBool>,
 }

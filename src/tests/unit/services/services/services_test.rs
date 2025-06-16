@@ -101,20 +101,20 @@ mod services {
     struct ServiceMok {
         dbg: Dbg,
         name: Name,
-        schrduler: Option<Scheduler>,
+        scheduler: Option<Scheduler>,
         is_finished: Arc<AtomicBool>,
         handle: Stack<Box<dyn WaitBox<()>>>,
         exit: Arc<AtomicBool>,
     }
     impl ServiceMok {
-        fn new(parent: impl Into<String>, index: usize, schrduler: Option<Scheduler>) -> Self {
+        fn new(parent: impl Into<String>, index: usize, scheduler: Option<Scheduler>) -> Self {
             let parent = parent.into();
             let me = format!("ServiceMok-{index}");
             let name = Name::new(&parent, &me);
             Self {
                 dbg: Dbg::new(parent, me),
                 name,
-                schrduler,
+                scheduler,
                 handle: Stack::new(),
                 is_finished: Arc::new(AtomicBool::new(false)),
                 exit: Arc::new(AtomicBool::new(false)),
@@ -140,9 +140,9 @@ mod services {
         fn run(&self) -> Result<(), sal_core::error::Error> {
             let dbg = self.dbg.clone();
             let exit = self.exit.clone();
-            let h: Box<dyn WaitBox<()>> = match &self.schrduler {
-                Some(schrduler) => {
-                    let h = schrduler.spawn(move|| {
+            let h: Box<dyn WaitBox<()>> = match &self.scheduler {
+                Some(scheduler) => {
+                    let h = scheduler.spawn(move|| {
                         Self::run_(dbg, exit);
                         Ok(())
                     })?;

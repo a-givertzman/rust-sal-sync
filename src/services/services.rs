@@ -24,7 +24,7 @@ pub struct Services {
     conf: ServicesConf,
     retain_point_id: Option<Arc<RetainPointId>>,
     points_request: Arc<Stack<(String, Sink<Vec<PointConfig>>)>>,
-    schrduler: Option<Scheduler>,
+    scheduler: Option<Scheduler>,
     handles: Handles<()>,
     exit: Arc<AtomicBool>,
 }
@@ -42,7 +42,7 @@ impl Services {
     pub const SLMP_CLIENT: &'static str = "SlmpClient";
     ///
     /// Creates new instance of the Services
-    pub fn new(parent: impl Into<String>, conf: ServicesConf, schrduler: Option<Scheduler>) -> Self {
+    pub fn new(parent: impl Into<String>, conf: ServicesConf, scheduler: Option<Scheduler>) -> Self {
         let parent = parent.into();
         let name = Name::new(&parent, "Services");
         let name_str = name.join();
@@ -56,7 +56,7 @@ impl Services {
             },
             conf: conf,
             points_request: Arc::new(Stack::new()),
-            schrduler,
+            scheduler,
             handles: Handles::new(&dbg),
             dbg,
             exit: Arc::new(AtomicBool::new(false)),
@@ -97,10 +97,10 @@ impl Services {
         let retain_point_id = self.retain_point_id.clone();
         let services = self.map.clone();
         let exit = self.exit.clone();
-        match &self.schrduler {
-            Some(schrduler) => {
-                log::debug!("{}.run | Starting Schrduler::thread...", dbg);
-                let handle = schrduler.spawn(move || {
+        match &self.scheduler {
+            Some(scheduler) => {
+                log::debug!("{}.run | Starting scheduler::thread...", dbg);
+                let handle = scheduler.spawn(move || {
                     Self::run_(dbg, name, points_request, retain_point_id, services, exit);
                     Ok(())
                 })?;
