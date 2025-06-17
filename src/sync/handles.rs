@@ -26,6 +26,20 @@ impl<T> Handles<T> {
         }
     }
     ///
+    /// Returns [Handles] new instance
+    pub fn from_vec(parent: &Dbg, handles: Vec<impl WaitBox<T> + 'static>) -> Self {
+        let h: Stack<Box<(dyn WaitBox<T>)>> = Stack::new();
+        for handle in handles {
+            h.push(Box::new(handle));
+        }
+        Self {
+            dbg: Dbg::new(parent, "Handles"),
+            len: AtomicUsize::new(0),
+            handle: h,
+            is_finished: Arc::new(AtomicBool::new(false)),
+        }
+    }
+    ///
     /// 
     pub fn push(&self, handle: impl WaitBox<T> + 'static) {
         self.handle.push(Box::new(handle));
