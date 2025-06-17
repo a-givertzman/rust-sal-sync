@@ -5,8 +5,7 @@ mod scheduler {
     use sal_core::dbg::Dbg;
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-
-    use crate::thread_pool::ThreadPool;
+    use crate::{sync::Handles, thread_pool::ThreadPool};
     ///
     ///
     static INIT: Once = Once::new();
@@ -50,7 +49,7 @@ mod scheduler {
         }
         std::thread::sleep(Duration::from_millis(load * (threads + 1)));
         log::debug!("Jobs sheduled: {threads} in: {:?}", time.elapsed());
-        thread_pool.join().unwrap();
+        thread_pool.shutdown().unwrap();
         log::debug!("Total elapsed: {:?}", time.elapsed());
         let target = threads as usize;
         let result = result.load(Ordering::SeqCst);
@@ -73,19 +72,21 @@ mod scheduler {
         let scheduler = thread_pool.scheduler();
         let time = Instant::now();
         let result = Arc::new(AtomicUsize::new(0));
+        let handles = Handles::new(&dbg);
         for i in 0..threads {
             let dbg_ = Dbg::new(&dbg, format!("thread{i}"));
             let result = result.clone();
-            scheduler.spawn(move || {
+            let handle = scheduler.spawn(move || {
                 log::debug!("{dbg_}", );
                 std::thread::sleep(Duration::from_secs(1));
                 result.fetch_add(1, Ordering::SeqCst);
                 Ok(())
             }).unwrap();
+            handles.push(handle);
         }
         log::debug!("Jobs sheduled: {threads} in: {:?}", time.elapsed());
-        std::thread::sleep(Duration::from_millis(100));
-        thread_pool.join().unwrap();
+        handles.wait().unwrap();
+        thread_pool.shutdown().unwrap();
         log::debug!("All Jobs done ({threads})");
         log::debug!("Total elapsed: {:?}", time.elapsed());
         let target = threads;

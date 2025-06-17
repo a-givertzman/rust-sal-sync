@@ -30,24 +30,27 @@ impl Worker {
         let id = size.load(Ordering::SeqCst);
         let dbg = Dbg::new(&parent, format!("Worker({id})"));
         size.fetch_add(1, Ordering::SeqCst);
-        log::debug!("{dbg}.new | New one created, catacity: {}, size: {}, free: {}", capacity.load(Ordering::SeqCst), size.load(Ordering::SeqCst), 1 + free.load(Ordering::SeqCst));
+        log::debug!("{dbg}.new | Created, capacity: {}, size: {}, free: {}", capacity.load(Ordering::SeqCst), size.load(Ordering::SeqCst), free.load(Ordering::SeqCst));
         let thread = std::thread::spawn(move || loop {
             // let error = Error::new(&dbg, "new");
-            free.fetch_add(1, Ordering::SeqCst);
-            if free.load(Ordering::SeqCst) < 2 {
-                Self::extend(&parent, &dbg, receiver.clone(), capacity.clone(), size.clone(), free.clone(), workers.clone());
-            }
             let receiver_lock = receiver.lock();
             let job = match receiver_lock {
-                Ok(receiver) => {
-                    let job = receiver.recv();
+                Ok(recv) => {
+                    let job = recv.recv();
                     match job {
                         Ok(job) => match job {
                             Job::Task(job) => {
+                                free.fetch_add(1, Ordering::SeqCst);
+                                if (free.load(Ordering::SeqCst) < 2) & (size.load(Ordering::SeqCst) < capacity.load(Ordering::SeqCst)) {
+                                    Self::extend(&parent, &dbg, receiver.clone(), capacity.clone(), size.clone(), free.clone(), workers.clone());
+                                }
                                 // let job = receiver.lock().unwrap().recv().unwrap();
                                 Some(job)
                             }
-                            Job::Shutdown => break,
+                            Job::Shutdown => {
+                                log::info!("{dbg}.new | Exit");
+                                break;
+                            }
                         }
                         Err(err) => {
                             log::error!("{dbg}.new | Recv error, channel closed, details: \n\t{:?}", err);
@@ -88,7 +91,7 @@ impl Worker {
     ) {
         let parent = parent.into();
         let new_workers = size.load(Ordering::SeqCst) * 2;
-        log::debug!("{dbg}.extend | Creating {new_workers} new workers...");
+        log::debug!("{dbg}.extend | Trying to creating {new_workers} new workers...");
         for _ in 0..new_workers {
             if size.load(Ordering::SeqCst) < capacity.load(Ordering::SeqCst) {
                 workers.push(Worker::new(

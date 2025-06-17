@@ -5,3 +5,4 @@ mod multi_queue_read_test;
 mod multi_queue_read_write_test;
 mod multi_queue_subscribe_test;
 mod multi_queue_performance_test;
+mod multi_queue_test;

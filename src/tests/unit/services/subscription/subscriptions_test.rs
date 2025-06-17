@@ -2,10 +2,10 @@
 
 mod subscriptions {
     use log::debug;
-    use std::{sync::{mpsc, Once}, thread, time::Duration};
+    use std::{sync::Once, thread, time::Duration};
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use crate::services::{entity::Point, Subscriptions};
+    use crate::{services::{entity::Point, Subscriptions}, sync::channel::{self, RecvTimeoutError}};
     ///
     ///
     static INIT: Once = Once::new();
@@ -45,7 +45,7 @@ mod subscriptions {
             (test_receivers[2], vec!["/Destination/Point3"]),
         ];
         for (receiver_id, destinations) in test_data.clone() {
-            let (send, recv) = mpsc::channel();
+            let (send, recv) = channel::unbounded();
             for dest in destinations.clone() {
                 subscriptions.add_multicast(receiver_id, dest, send.clone());
             }
@@ -66,8 +66,8 @@ mod subscriptions {
                             // target.retain(|dest| dest.to_owned() != result);
                         }
                         Err(err) => match err {
-                            mpsc::RecvTimeoutError::Timeout => break,//panic!("{}.receive_thread | Not received points: {:?}", self_id, target),
-                            mpsc::RecvTimeoutError::Disconnected => panic!("{}.receive_thread | Receive error for receiver_id {}", self_id, receiver_id),
+                            RecvTimeoutError::Timeout => break,//panic!("{}.receive_thread | Not received points: {:?}", self_id, target),
+                            _ => panic!("{}.receive_thread | Receive error for receiver_id {}", self_id, receiver_id),
                         },
                     };
                     if destinations.is_empty() {

@@ -1,9 +1,7 @@
-use std::sync::mpsc::{Sender, Receiver};
 use sal_core::error::Error;
-use crate::services::{
-    entity::{Object, Point, PointConfig},
-    subscription::SubscriptionCriteria,
-};
+use crate::{services::{
+    entity::{Object, Point, PointConfig}, future::Future, subscription::SubscriptionCriteria
+}, sync::channel::{Receiver, Sender}};
 ///
 /// Interface for application service
 /// - Running in the individual thread
@@ -44,8 +42,8 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
         vec![]
     }
     ///
-    /// Returns `Receiver<Point>`, where will be pushed all points by subscription
-    fn gi(&self, _receiver_name: &str, _points: &[SubscriptionCriteria]) -> Receiver<Point> {
+    /// Returns `Future<Point>`, where will be pushed all points by subscription
+    fn gi(&self, _receiver_name: &str, _points: &[SubscriptionCriteria]) -> Future<Vec<Point>> {
         panic!("{}.gi | Does not supported", self.name())
     }
     ///

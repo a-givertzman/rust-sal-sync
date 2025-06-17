@@ -6,7 +6,7 @@ mod trait_service {
     use std::{sync::Once, time::Duration};
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use crate::services::{entity::{Name, Object}, Service, ServiceHandles};
+    use crate::services::{entity::{Name, Object}, Service};
     ///
     ///
     static INIT: Once = Once::new();
@@ -35,7 +35,7 @@ mod trait_service {
         let name = Name::new(&dbg, "ServiceTest");
         let service_test = ServiceTest { name  };
         let result = service_test.run();
-        let target: Result<ServiceHandles<()>, Error> = Err(Error::new("ServiceTest", "run").err("testing"));
+        let target: Result<(), Error> = Err(Error::new("ServiceTest", "run").err("testing"));
         match result {
             Ok(_) => panic!(""),
             Err(result) => {

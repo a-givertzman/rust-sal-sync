@@ -1,6 +1,11 @@
 use sal_core::error::Error;
+///
+/// Provides to join on a thread (block on its termination).
+/// Returns `id` and `name` of associated thread
 
 pub struct JoinHandle<T> {
+    id: String,
+    name: String,
     recv: kanal::Receiver<T>,
 }
 //
@@ -8,8 +13,22 @@ pub struct JoinHandle<T> {
 impl<T> JoinHandle<T> {
     ///
     /// Returns [JoinHandle] new instance
-    pub fn new(recv: kanal::Receiver<T>) -> Self {
-        Self { recv }
+    pub fn new(id: impl Into<String>, name: impl Into<String>, recv: kanal::Receiver<T>) -> Self {
+        Self {
+            id: id.into(),
+            name: name.into(),
+            recv,
+        }
+    }
+    ///
+    /// Gets the thread's unique identifier.
+    pub fn id(&self) -> String {
+        self.id.clone()
+    }
+    /// 
+    /// Gets the thread's name.
+    pub fn name(&self) -> String {
+        self.name.clone()
     }
     ///
     /// Waits for the associated thread to finish.

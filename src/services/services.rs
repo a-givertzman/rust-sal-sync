@@ -6,12 +6,10 @@ use crate::{
         future::{Future, Sink}, retain::{RetainConf, RetainPointId},
         service::{LinkName, Service, ServiceCycle},
         subscription::SubscriptionCriteria,
-    },
+    }, sync::{channel::{Receiver, Sender}, Handles}, thread_pool::Scheduler,
 };
 use std::{
-    collections::HashMap, fmt::Debug,
-    sync::{atomic::{AtomicBool, Ordering}, mpsc::{Receiver, Sender}, Arc},
-    thread::{self, JoinHandle}, time::Duration,
+    collections::HashMap, fmt::Debug, sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Duration
 };
 use coco::Stack;
 use concat_string::concat_string;
@@ -26,7 +24,8 @@ pub struct Services {
     conf: ServicesConf,
     retain_point_id: Option<Arc<RetainPointId>>,
     points_request: Arc<Stack<(String, Sink<Vec<PointConfig>>)>>,
-    handle: Stack<JoinHandle<()>>,
+    scheduler: Option<Scheduler>,
+    handles: Handles<()>,
     exit: Arc<AtomicBool>,
 }
 //
@@ -43,12 +42,12 @@ impl Services {
     pub const SLMP_CLIENT: &'static str = "SlmpClient";
     ///
     /// Creates new instance of the Services
-    pub fn new(parent: impl Into<String>, conf: ServicesConf) -> Self {
+    pub fn new(parent: impl Into<String>, conf: ServicesConf, scheduler: Option<Scheduler>) -> Self {
         let parent = parent.into();
         let name = Name::new(&parent, "Services");
         let name_str = name.join();
+        let dbg = Dbg::new(parent, "Services");
         Self {
-            dbg: Dbg::new(parent, "Services"),
             name,
             map: Arc::new(DashMap::new()),
             retain_point_id: match &conf.retain.point {
@@ -57,7 +56,9 @@ impl Services {
             },
             conf: conf,
             points_request: Arc::new(Stack::new()),
-            handle: Stack::new(),
+            scheduler,
+            handles: Handles::new(&dbg),
+            dbg,
             exit: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -96,76 +97,90 @@ impl Services {
         let retain_point_id = self.retain_point_id.clone();
         let services = self.map.clone();
         let exit = self.exit.clone();
-        log::info!("{}.run | Preparing thread...", dbg);
-        let handle = thread::Builder::new().name(format!("{}.run", dbg)).spawn(move || {
-            log::info!("{}.run | Preparing thread - ok", dbg);
-            let mut notify = ChangeNotify::new(
-                &dbg,
-                NotifyState::Start,
-                vec![
-                    (NotifyState::Start,  Box::new(|message| log::info!("{}", message))),
-                    (NotifyState::Info,   Box::new(|message| log::info!("{}", message))),
-                    (NotifyState::Warn,   Box::new(|message| log::warn!("{}", message))),
-                    (NotifyState::RetainPointNotConfiguredWarn,   Box::new(|message| log::warn!("{}", message))),
-                    (NotifyState::Error,  Box::new(|message| log::error!("{}", message))),
-                    (NotifyState::PointsRequestsAccessError,  Box::new(|message| log::error!("{}", message))),
-                    (NotifyState::PointsRequestsIsEmpty,  Box::new(|message| log::error!("{}", message))),
-                ],
-            );
-            Self::prepare_point_ids(&dbg, &mut notify, &retain_point_id, &services);
-            let mut cycle = ServiceCycle::new(&name.join(), Duration::from_millis(10));
-            loop {
-                cycle.start();
-                if !points_request.is_empty() {
-                    match points_request.pop() {
-                        Some((requester_name, sink)) => {
-                            log::debug!("{}.run | Points requested from: '{}'", dbg, requester_name);
-                            match &retain_point_id {
-                                Some(retain_point_id) => {
-                                    let points = retain_point_id.points()
-                                    .into_iter().filter_map(|(owner, points)| {
-                                        if *owner != requester_name {
-                                            Some(points)
-                                        } else {
-                                            None
-                                        }
-                                    }).flatten().collect();
-                                    sink.add(points);
-                                    log::debug!("{}.run | Points requested from: '{}' - Ok", dbg, requester_name);
-                                }
-                                None => {
-                                    notify.add(NotifyState::RetainPointNotConfiguredWarn, format!("{}.run | Retain->Point - not configured", dbg));
-                                    sink.add(vec![]);
-                                }
+        match &self.scheduler {
+            Some(scheduler) => {
+                log::debug!("{}.run | Starting scheduler::thread...", dbg);
+                let handle = scheduler.spawn(move || {
+                    Self::run_(dbg, name, points_request, retain_point_id, services, exit);
+                    Ok(())
+                })?;
+                self.handles.push(handle);
+            }
+            None => {
+                log::debug!("{}.run | Starting std::thread...", dbg);
+                let handle = std::thread::Builder::new().name(format!("{}.run", dbg)).spawn(move || {
+                    Self::run_(dbg, name, points_request, retain_point_id, services, exit);
+                }).map_err(|err| Error::new(&self.dbg, "run").err(err.to_string()))?;
+                self.handles.push(handle);
+            }
+        };
+        std::thread::sleep(Duration::from_millis(50));
+        log::info!("{}.run | Starting - ok", self.dbg);
+        Ok(())
+    }
+    ///
+    /// Main loop
+    fn run_(
+        dbg: Dbg,
+        name: Name,
+        points_request: Arc<Stack<(String, Sink<Vec<PointConfig>>)>>,
+        retain_point_id: Option<Arc<RetainPointId>>,
+        services: Arc<DashMap<String, Arc<dyn Service + 'static>>>,
+        exit: Arc<AtomicBool>,
+    ) {
+        log::info!("{}.run | Preparing thread - ok", dbg);
+        let mut notify = ChangeNotify::new(
+            &dbg,
+            NotifyState::Start,
+            vec![
+                (NotifyState::Start,  Box::new(|message| log::info!("{}", message))),
+                (NotifyState::Info,   Box::new(|message| log::info!("{}", message))),
+                (NotifyState::Warn,   Box::new(|message| log::warn!("{}", message))),
+                (NotifyState::RetainPointNotConfiguredWarn,   Box::new(|message| log::warn!("{}", message))),
+                (NotifyState::Error,  Box::new(|message| log::error!("{}", message))),
+                (NotifyState::PointsRequestsAccessError,  Box::new(|message| log::error!("{}", message))),
+                (NotifyState::PointsRequestsIsEmpty,  Box::new(|message| log::error!("{}", message))),
+            ],
+        );
+        Self::prepare_point_ids(&dbg, &mut notify, &retain_point_id, &services);
+        let mut cycle = ServiceCycle::new(&name.join(), Duration::from_millis(10));
+        loop {
+            cycle.start();
+            if !points_request.is_empty() {
+                match points_request.pop() {
+                    Some((requester_name, sink)) => {
+                        log::debug!("{}.run | Points requested from: '{}'", dbg, requester_name);
+                        match &retain_point_id {
+                            Some(retain_point_id) => {
+                                let points = retain_point_id.points()
+                                .into_iter().filter_map(|(owner, points)| {
+                                    if *owner != requester_name {
+                                        Some(points)
+                                    } else {
+                                        None
+                                    }
+                                }).flatten().collect();
+                                sink.add(points);
+                                log::debug!("{}.run | Points requested from: '{}' - Ok", dbg, requester_name);
+                            }
+                            None => {
+                                notify.add(NotifyState::RetainPointNotConfiguredWarn, format!("{}.run | Retain->Point - not configured", dbg));
+                                sink.add(vec![]);
                             }
                         }
-                        None => notify.add(NotifyState::PointsRequestsIsEmpty, format!("{}.run | Points requests is empty", dbg)),
                     }
-                }
-                if exit.load(Ordering::SeqCst) {
-                    break;
-                }
-                cycle.wait();
-                if exit.load(Ordering::SeqCst) {
-                    break;
+                    None => notify.add(NotifyState::PointsRequestsIsEmpty, format!("{}.run | Points requests is empty", dbg)),
                 }
             }
-            log::info!("{}.run | Exit", dbg);
-        });
-        thread::sleep(Duration::from_millis(50));
-        match handle {
-            Ok(handle) => {
-                log::info!("{}.run | Starting - ok", self.dbg);
-                self.handle.push(handle);
-                Ok(())
+            if exit.load(Ordering::SeqCst) {
+                break;
             }
-            Err(err) => {
-                let message = format!("{}.run | Start failed: {:#?}", self.dbg, err);
-                log::warn!("{}", message);
-                Err(Error::new(&self.dbg, "run").err(message))
+            cycle.wait();
+            if exit.load(Ordering::SeqCst) {
+                break;
             }
         }
-
+        log::info!("{}.run | Exit", dbg);
     }
     ///
     /// Returns all holding services in the map<service id, service reference>
@@ -250,7 +265,7 @@ impl Services {
     }
     ///
     /// Sends the General Interogation request to all services
-    pub fn gi(&self, _service: &str, _points: &[SubscriptionCriteria]) -> Receiver<Point> {
+    pub fn gi(&self, _service: &str, _points: &[SubscriptionCriteria]) -> Future<Vec<Point>> {
         panic!("{}.gi | Not implemented yet", self.dbg);
     }
     ///
@@ -261,12 +276,16 @@ impl Services {
     ///
     /// Returns [Ok] when all [Service]'s are finished
     pub fn wait(&self) -> Result<(), Error> {
-        if let Some(handle) = self.handle.pop() {
-            if let Err(err) = handle.join() {
-                log::warn!("{}.wait | Error: {:?}", self.dbg, err);
-            }
-        }
-        Ok(())
+        self.handles.wait()
+    }
+    ///
+    /// Checks if finished running.
+    /// 
+    /// To finish call exit
+    /// 
+    /// **Importent! Does not mean all sevices being finished**
+    pub fn is_finished(&self) -> bool {
+        self.handles.is_finished()
     }
     ///
     /// 
