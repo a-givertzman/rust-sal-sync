@@ -5,7 +5,7 @@ mod thread_pool {
     use sal_core::dbg::Dbg;
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use crate::thread_pool::ThreadPool;
+    use crate::{sync::Handles, thread_pool::ThreadPool};
     ///
     ///
     static INIT: Once = Once::new();
@@ -70,18 +70,20 @@ mod thread_pool {
         let thread_pool = ThreadPool::new(&dbg, Some(threads + threads / 3));
         let time = Instant::now();
         let result = Arc::new(AtomicUsize::new(0));
+        let handles = Handles::new(&dbg);
         for i in 0..threads {
             let dbg_ = Dbg::new(&dbg, format!("thread{i}"));
             let result = result.clone();
-            thread_pool.spawn(move || {
+            let handle = thread_pool.spawn(move || {
                 log::debug!("{dbg_}", );
                 std::thread::sleep(Duration::from_millis(100));
                 result.fetch_add(1, Ordering::SeqCst);
                 Ok(())
             }).unwrap();
+            handles.push(handle);
         }
         log::debug!("Jobs sheduled: {threads} in: {:?}", time.elapsed());
-        std::thread::sleep(Duration::from_millis(100));
+        handles.wait().unwrap();
         thread_pool.shutdown().unwrap();
         log::debug!("All Jobs done ({threads})");
         log::debug!("Total elapsed: {:?}", time.elapsed());
