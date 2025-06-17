@@ -17,7 +17,7 @@ pub struct Handles<T> {
 impl<T> Handles<T> {
     ///
     /// Returns [Handles] new instance
-    pub fn new(parent: &Dbg) -> Self {
+    pub fn new(parent: impl Into<String>) -> Self {
         Self {
             dbg: Dbg::new(parent, "Handles"),
             len: AtomicUsize::new(0),
@@ -27,7 +27,7 @@ impl<T> Handles<T> {
     }
     ///
     /// Returns [Handles] new instance
-    pub fn from_vec(parent: &Dbg, handles: Vec<impl WaitBox<T> + 'static>) -> Self {
+    pub fn from_vec(parent: impl Into<String>, handles: Vec<impl WaitBox<T> + 'static>) -> Self {
         let h: Stack<Box<(dyn WaitBox<T>)>> = Stack::new();
         for handle in handles {
             h.push(Box::new(handle));
