@@ -45,12 +45,14 @@ impl<T> Handles<T> {
         while !self.handle.is_empty() {
             if let Some(handle) = self.handle.pop() {
                 index += 1;
-                dbg::debug!("Waiting for {index} of {} ({})...", self.len.load(Ordering::SeqCst), handle.name());
+                // let id = handle.id();
+                let name = handle.name();
+                dbg::debug!("Waiting for {index} of {} ('{}')...", self.len.load(Ordering::SeqCst), name);
                 if let Err(err) = handle.wait() {
                     dbg::warn!("Error: {:?}", err);
-                    return Err(Error::new(&self.dbg, "wait").err(format!("{:?}", err)));
+                    return Err(Error::new(&self.dbg, "wait").pass_with(format!("Error on {index} of {} ('{}')", self.len.load(Ordering::SeqCst), name), err.to_string()));
                 }
-                dbg::info!("Finished {index} of {}", self.len.load(Ordering::SeqCst));
+                dbg::info!("Finished {index} of {} ('{}')", self.len.load(Ordering::SeqCst), name);
             }
         }
         self.is_finished.store(true, Ordering::SeqCst);
