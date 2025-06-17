@@ -1,4 +1,4 @@
-use std::sync::{atomic::{AtomicBool, Ordering}, Arc};
+use std::sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc};
 use coco::Stack;
 use sal_core::{dbg::{self, dbg, Dbg}, error::Error};
 use crate::sync::WaitBox;
@@ -8,6 +8,7 @@ use crate::sync::WaitBox;
 /// - Thread safe
 pub struct Handles<T> {
     dbg: Dbg,
+    len: AtomicUsize,
     handle: Stack<Box<dyn WaitBox<T>>>,
     is_finished: Arc<AtomicBool>,
 }
@@ -19,6 +20,7 @@ impl<T> Handles<T> {
     pub fn new(parent: &Dbg) -> Self {
         Self {
             dbg: Dbg::new(parent, "Handles"),
+            len: AtomicUsize::new(0),
             handle: Stack::new(),
             is_finished: Arc::new(AtomicBool::new(false)),
         }
@@ -27,6 +29,7 @@ impl<T> Handles<T> {
     /// 
     pub fn push(&self, handle: impl WaitBox<T> + 'static) {
         self.handle.push(Box::new(handle));
+        self.len.fetch_add(1, Ordering::SeqCst);
     }
     ///
     /// Returns `true` if all JoinHandles are joined
@@ -38,12 +41,16 @@ impl<T> Handles<T> {
     /// - Blocking call
     #[dbg]
     pub fn wait(&self) -> Result<(), Error> {
+        let mut index = 0;
         while !self.handle.is_empty() {
             if let Some(handle) = self.handle.pop() {
+                index += 1;
+                dbg::debug!("Waiting for {index} of {} ({})...", self.len.load(Ordering::SeqCst), handle.name());
                 if let Err(err) = handle.wait() {
                     dbg::warn!("Error: {:?}", err);
                     return Err(Error::new(&self.dbg, "wait").err(format!("{:?}", err)));
                 }
+                dbg::info!("Finished {index} of {}", self.len.load(Ordering::SeqCst));
             }
         }
         self.is_finished.store(true, Ordering::SeqCst);
