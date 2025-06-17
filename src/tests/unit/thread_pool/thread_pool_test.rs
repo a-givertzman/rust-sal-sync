@@ -48,7 +48,7 @@ mod thread_pool {
         }
         std::thread::sleep(Duration::from_millis(load * (threads + 1)));
         log::debug!("Jobs sheduled: {threads} in: {:?}", time.elapsed());
-        thread_pool.join().unwrap();
+        thread_pool.shutdown().unwrap();
         log::debug!("Total elapsed: {:?}", time.elapsed());
         let target = threads as usize;
         let result = result.load(Ordering::SeqCst);
@@ -82,7 +82,7 @@ mod thread_pool {
         }
         log::debug!("Jobs sheduled: {threads} in: {:?}", time.elapsed());
         std::thread::sleep(Duration::from_millis(100));
-        thread_pool.join().unwrap();
+        thread_pool.shutdown().unwrap();
         log::debug!("All Jobs done ({threads})");
         log::debug!("Total elapsed: {:?}", time.elapsed());
         let target = threads;

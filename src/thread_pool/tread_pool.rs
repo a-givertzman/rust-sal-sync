@@ -3,7 +3,10 @@ use coco::Stack;
 use sal_core::{dbg::Dbg, error::Error};
 use super::{job::Job, scheduler::Scheduler, worker::Worker, JoinHandle};
 ///
-/// 
+/// Provides ready to execute specified number of threads
+/// - From start has only 1 or 2 prepared treads
+/// - If all prepared threads are busy, new treds will be added to pool
+/// - Number of threads limited by capacity, by default 64
 pub struct ThreadPool {
     workers: Arc<Stack<Worker>>,
     sender: kanal::Sender<Job>,
@@ -19,10 +22,11 @@ pub struct ThreadPool {
 impl ThreadPool {
     ///
     /// Returns [ThreadPool] new instance
+    /// - `capacity` maximum number of threads, by default 64
     pub fn new(parent: impl Into<String>, capacity: Option<usize>) -> Self {
         let dbg = Dbg::new(parent, "ThreadPool");
         let default_capacity = 64;
-        let capacity = match capacity {
+        let capacity_ = match capacity {
             Some(capacity) => {
                 if capacity == 0 {
                     log::warn!("{dbg} | Capacity of th ThreadPool cant be zero, used default {default_capacity}");
@@ -33,7 +37,7 @@ impl ThreadPool {
             }
             None => default_capacity,
         };
-        let capacity = Arc::new(AtomicUsize::new(capacity));
+        let capacity = Arc::new(AtomicUsize::new(capacity_));
         let size = Arc::new(AtomicUsize::new(0));
         let free = Arc::new(AtomicUsize::new(0));
         let (sender, receiver) = kanal::unbounded();
@@ -132,7 +136,14 @@ impl ThreadPool {
         workers
     }
     ///
-    /// 
+    /// Sends `Shutdown` signal to all scheduled tasks and join them.
+    /// This means all tasks will finish current jobs and then exit.
+    pub fn join(&self) -> Result<(), Error> {
+        self.shutdown()
+    }
+    ///
+    /// Sends `Shutdown` signal to all scheduled tasks and join them.
+    /// This means all tasks will finish current jobs and then exit.
     pub fn shutdown(&self) -> Result<(), Error> {
         let error = Error::new("ThreadPool", "shutdown");
         let mut errors = vec![];
@@ -163,18 +174,11 @@ impl ThreadPool {
         }
         Ok(())
     }
-    ///
-    /// 
-    pub fn join(&self) -> Result<(), Error> {
-        self.shutdown()
-    }
 }
 //
 //
 impl Drop for ThreadPool {
     fn drop(&mut self) {
-        if !self.workers.is_empty() {
-            let _ = self.shutdown();
-        }
+        let _ = self.shutdown();
     }
 }
