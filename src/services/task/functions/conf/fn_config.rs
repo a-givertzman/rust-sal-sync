@@ -300,11 +300,8 @@ impl FnConfig {
     }
     ///
     /// Returns custom parameter by it's name if exists, else none
-    pub fn param(&self, name: &str) -> Result<&FnConfKind, String> {
-        match self.inputs.get(name) {
-            Some(param) => Ok(param),
-            None => Err(format!("FnConfig.param | parameter {:?} not fount in the {:?}", name, self.name)),
-        }
+    pub fn param(&self, name: impl AsRef<str>) -> Option<&FnConfKind> {
+        self.inputs.get(name.as_ref())
     }
     ///
     /// Returns ConfTree by keyword or Err
