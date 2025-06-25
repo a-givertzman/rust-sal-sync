@@ -81,6 +81,7 @@ mod thread_pool {
                 Ok(())
             }).unwrap();
             handles.push(handle);
+            std::thread::sleep(Duration::from_millis(4));
         }
         log::debug!("Jobs sheduled: {threads} in: {:?}", time.elapsed());
         handles.wait().unwrap();

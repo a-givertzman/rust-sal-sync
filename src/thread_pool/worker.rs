@@ -33,6 +33,7 @@ impl Worker {
         log::debug!("{dbg}.new | Created, capacity: {}, size: {}, free: {}", capacity.load(Ordering::SeqCst), size.load(Ordering::SeqCst), free.load(Ordering::SeqCst));
         let thread = std::thread::spawn(move || loop {
             // let error = Error::new(&dbg, "new");
+            free.fetch_add(1, Ordering::SeqCst);
             let receiver_lock = receiver.lock();
             let job = match receiver_lock {
                 Ok(recv) => {
@@ -40,7 +41,6 @@ impl Worker {
                     match job {
                         Ok(job) => match job {
                             Job::Task(job) => {
-                                free.fetch_add(1, Ordering::SeqCst);
                                 if (free.load(Ordering::SeqCst) < 2) & (size.load(Ordering::SeqCst) < capacity.load(Ordering::SeqCst)) {
                                     Self::extend(&parent, &dbg, receiver.clone(), capacity.clone(), size.clone(), free.clone(), workers.clone());
                                 }
@@ -48,7 +48,8 @@ impl Worker {
                                 Some(job)
                             }
                             Job::Shutdown => {
-                                log::info!("{dbg}.new | Exit");
+                                let busy = size.load(Ordering::SeqCst) - free.load(Ordering::SeqCst);
+                                log::info!("{dbg}.new | Exit, busy {busy}");
                                 break;
                             }
                         }
@@ -71,7 +72,8 @@ impl Worker {
                     if let Err(err) = done.send(()) {
                         log::trace!("{dbg}.new | Send 'Done' error: {:?}", err);
                     }
-                    log::debug!("{dbg}.new | Done job...");
+                    let busy = size.load(Ordering::SeqCst) - free.load(Ordering::SeqCst) - 1;
+                    log::debug!("{dbg}.new | Done job {id}, busy {busy}");
                 }
                 None => {}
             }
