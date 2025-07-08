@@ -1,15 +1,14 @@
-use coco::Stack;
 use log::{info, warn, trace};
 use sal_core::{dbg::Dbg, error::Error};
 use std::{
     collections::HashMap, fmt::Debug, str::FromStr,
     sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc},
-    thread::{self, JoinHandle},
+    thread::{self},
 };
 use testing::entities::test_value::Value;
 use crate::{services::{
     entity::{Name, Object, Point, PointTxId, ToPoint}, LinkName, Service, Services, RECV_TIMEOUT
-}, sync::{channel::{self, Receiver, Sender}, Mutex, RwLock}};
+}, sync::{channel::{self, Receiver, Sender}, Handles, Mutex, RwLock}};
 ///
 /// 
 pub struct MockRecvSendService {
@@ -23,8 +22,7 @@ pub struct MockRecvSendService {
     sent: Arc<RwLock<Vec<Point>>>,
     received: Arc<RwLock<Vec<Point>>>,
     recv_limit: Option<usize>,
-    handles: Stack<(String, JoinHandle<()>)>,
-    is_finished: Arc<AtomicBool>,
+    handles: Handles<()>,
     exit: Arc<AtomicBool>,
 }
 //
@@ -33,9 +31,9 @@ impl MockRecvSendService {
     pub fn new(parent: impl Into<String>, rx_queue: &str, send_to: &str, services: Arc<Services>, test_data: Vec<Value>, recv_limit: Option<usize>) -> Self {
         let parent = parent.into();
         let me = format!("MockRecvSendService{}", COUNT.fetch_add(1, Ordering::Relaxed));
+        let dbg = Dbg::new(&parent, &me);
         let (send, recv) = channel::unbounded();
         Self {
-            dbg: Dbg::new(&parent, &me),
             name: Name::new(parent, me),
             rx_send: HashMap::from([(rx_queue.to_string(), send)]),
             rx_recv: Mutex::new(Some(recv)),
@@ -45,9 +43,9 @@ impl MockRecvSendService {
             sent: Arc::new(RwLock::new(vec![])),
             received: Arc::new(RwLock::new(vec![])),
             recv_limit,
-            handles: Stack::new(),
-            is_finished: Arc::new(AtomicBool::new(false)),
+            handles: Handles::new(&dbg),
             exit: Arc::new(AtomicBool::new(false)),
+            dbg,
         }
     }
     ///
@@ -165,16 +163,16 @@ impl Service for MockRecvSendService {
         });
         match (handle_recv, handle_send) {
             (Ok(handle_recv), Ok(handle_send)) => {
-                self.handles.push((format!("{}/read", self.dbg), handle_recv));
-                self.handles.push((format!("{}/write", self.dbg), handle_send));
+                self.handles.push(handle_recv);
+                self.handles.push(handle_send);
                 Ok(())
             }
             (Ok(handle_recv), Err(err)) => {
-                self.handles.push((format!("{}/read", self.dbg), handle_recv));
+                self.handles.push(handle_recv);
                 Err(Error::new(&self.dbg, "run").err(format!("Error starting inner thread 'recv': {:#?}", err)))
             }
             (Err(err), Ok(handle_send)) => {
-                self.handles.push((format!("{}/write", self.dbg), handle_send));
+                self.handles.push(handle_send);
                 Err(Error::new(&self.dbg, "run").err(format!("Error starting inner thread 'send': {:#?}", err)))
             }
             (Err(read_err), Err(write_err)) => Err(Error::new(&self.dbg, "run").err(format!("Error starting inner thread: \n\t  recv: {:#?}\n\t send: {:#?}", read_err, write_err))),
@@ -183,21 +181,12 @@ impl Service for MockRecvSendService {
     //
     //
     fn is_finished(&self) -> bool {
-        self.is_finished.load(Ordering::SeqCst)
+        self.handles.is_finished()
     }
     //
     //
     fn wait(&self) -> Result<(), Error> {
-        let dbg = self.dbg.clone();
-        while !self.handles.is_empty() {
-            if let Some((id, handle)) = self.handles.pop() {
-                if let Err(err) = handle.join() {
-                    log::warn!("{dbg}.wait | Wait for '{id}' error: {:?}", err);
-                }
-            }
-        }
-        self.is_finished.store(true, Ordering::SeqCst);
-        Ok(())
+        self.handles.wait()
     }
     //
     //

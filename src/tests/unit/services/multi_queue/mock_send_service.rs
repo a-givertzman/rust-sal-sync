@@ -1,11 +1,10 @@
-use std::{fmt::Debug, str::FromStr, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc}, thread::{self, JoinHandle}, time::Duration};
-use coco::Stack;
+use std::{fmt::Debug, str::FromStr, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc}, thread::{self}, time::Duration};
 use log::{info, warn, trace};
 use sal_core::{dbg::Dbg, error::Error};
 use testing::entities::test_value::Value;
 use crate::{services::{
     entity::{Name, Object, Point, ToPoint}, LinkName, Service, Services
-}, sync::{channel::Sender, RwLock}};
+}, sync::{channel::Sender, Handles, RwLock}};
 ///
 ///
 pub struct MockSendService {
@@ -16,7 +15,7 @@ pub struct MockSendService {
     test_data: Vec<Value>,
     sent: Arc<RwLock<Vec<Point>>>,
     delay: Option<Duration>,
-    handle: Stack<JoinHandle<()>>,
+    handle: Handles<()>,
     exit: Arc<AtomicBool>,
 }
 //
@@ -24,16 +23,17 @@ pub struct MockSendService {
 impl MockSendService {
     pub fn new(parent: impl Into<String>, send_to: &str, services: Arc<Services>, test_data: Vec<Value>, delay: Option<Duration>) -> Self {
         let name = Name::new(parent, format!("MockSendService{}", COUNT.fetch_add(1, Ordering::Relaxed)));
+        let dbg = Dbg::new(name.parent(), name.me());
         Self {
-            dbg: Dbg::new(name.parent(), name.me()),
             name,
             send_to: LinkName::from_str(send_to).unwrap(),
             services,
             test_data,
             sent: Arc::new(RwLock::new(vec![])),
             delay,
-            handle: Stack::new(),
+            handle: Handles::new(&dbg),
             exit: Arc::new(AtomicBool::new(false)),
+            dbg,
         }
     }
     ///
@@ -128,18 +128,12 @@ impl Service for MockSendService {
     //
     //
     fn wait(&self) -> Result<(), Error> {
-        let dbg = self.dbg.clone();
-        if let Some(handle) = self.handle.pop() {
-            if let Err(err) = handle.join() {
-                log::warn!("{dbg}.wait | Error: {:?}", err);
-            }
-        }
-        Ok(())
+        self.handle.wait()
     }
     //
     //
     fn is_finished(&self) -> bool {
-        todo!()
+        self.handle.is_finished()
     }
     //
     //

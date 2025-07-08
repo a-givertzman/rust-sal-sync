@@ -1,10 +1,9 @@
-use std::{collections::HashMap, fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc}, thread::{self, JoinHandle}};
-use coco::Stack;
+use std::{collections::HashMap, fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc}, thread::{self}};
 use log::{info, trace, warn};
 use sal_core::{dbg::Dbg, error::Error};
 use crate::{services::{
     entity::{Name, Object, Point}, Service, RECV_TIMEOUT
-}, sync::{channel::{self, Receiver, Sender}, Mutex, RwLock}};
+}, sync::{channel::{self, Receiver, Sender}, Handles, Mutex, RwLock}};
 ///
 /// Global static counter of FnOut instances
 static COUNT: AtomicUsize = AtomicUsize::new(0);
@@ -17,7 +16,7 @@ pub struct MockRecvService {
     rx_recv: Mutex<Option<Receiver<Point>>>,
     received: Arc<RwLock<Vec<Point>>>,
     recv_limit: Option<usize>,
-    handle: Stack<JoinHandle<()>>,
+    handle: Handles<()>,
     exit: Arc<AtomicBool>,
 }
 //
@@ -26,15 +25,16 @@ impl MockRecvService {
     pub fn new(parent: impl Into<String>, rx_queue: &str, recv_limit: Option<usize>) -> Self {
         let name = Name::new(parent, format!("MockRecvService{}", COUNT.fetch_add(1, Ordering::Relaxed)));
         let (send, recv) = channel::unbounded();
+        let dbg = Dbg::new(name.parent(), name.me());
         Self {
-            dbg: Dbg::new(name.parent(), name.me()),
             name,
             rx_send: HashMap::from([(rx_queue.to_string(), send)]),
             rx_recv: Mutex::new(Some(recv)),
             received: Arc::new(RwLock::new(vec![])),
             recv_limit,
-            handle: Stack::new(),
+            handle: Handles::new(&dbg),
             exit: Arc::new(AtomicBool::new(false)),
+            dbg,
         }
     }
     ///
@@ -139,18 +139,12 @@ impl Service for MockRecvService {
     //
     //
     fn wait(&self) -> Result<(), Error> {
-        let dbg = self.dbg.clone();
-        if let Some(handle) = self.handle.pop() {
-            if let Err(err) = handle.join() {
-                log::warn!("{dbg}.wait | Error: {:?}", err);
-            }
-        }
-        Ok(())
+        self.handle.wait()
     }
     //
     //
     fn is_finished(&self) -> bool {
-        todo!()
+        self.handle.is_finished()
     }
     //
     //

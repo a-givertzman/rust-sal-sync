@@ -1,11 +1,11 @@
-use coco::Stack;
+use crossbeam::queue::SegQueue;
 
 ///
 /// Contains single value
 /// - Thread safe
 /// - Beheaves like `Option`
 pub struct Owner<T> {
-    val: Stack<T>
+    val: SegQueue<T>
 }
 //
 //
@@ -13,7 +13,7 @@ impl<T> Owner<T> {
     ///
     /// Returns [Owner] new instance, containing specified `value`
     pub fn new(value: T) -> Self {
-        let val = Stack::new();
+        let val = SegQueue::new();
         val.push(value);
         Self {
             val,
@@ -23,7 +23,7 @@ impl<T> Owner<T> {
     /// Returns [Owner] new instance, containing `None`
     pub fn empty() -> Self {
         Self {
-            val: Stack::new(),
+            val: SegQueue::new(),
         }
     }
     ///

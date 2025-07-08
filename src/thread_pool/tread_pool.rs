@@ -1,5 +1,5 @@
 use std::sync::{atomic::{AtomicUsize, Ordering}, Arc, Mutex};
-use coco::Stack;
+use crossbeam::queue::SegQueue;
 use sal_core::{dbg::Dbg, error::Error};
 use super::{job::Job, scheduler::Scheduler, worker::Worker, JoinHandle};
 ///
@@ -8,7 +8,7 @@ use super::{job::Job, scheduler::Scheduler, worker::Worker, JoinHandle};
 /// - If all prepared threads are busy, new treds will be added to pool
 /// - Number of threads limited by capacity, by default 64
 pub struct ThreadPool {
-    workers: Arc<Stack<Worker>>,
+    workers: Arc<SegQueue<Worker>>,
     sender: kanal::Sender<Job>,
     /// Maximum possible number of [Worker]'s
     capacity: Arc<AtomicUsize>,
@@ -42,7 +42,7 @@ impl ThreadPool {
         let free = Arc::new(AtomicUsize::new(0));
         let (sender, receiver) = kanal::unbounded();
         let receiver = Arc::new(Mutex::new(receiver));
-        let workers = Arc::new(Stack::new());
+        let workers = Arc::new(SegQueue::new());
         for _ in 0..if capacity.load(Ordering::SeqCst) > 1 { 2 } else { 1 } {
             workers.push(Worker::new(
                 &dbg,

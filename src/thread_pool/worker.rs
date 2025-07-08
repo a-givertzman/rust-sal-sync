@@ -1,5 +1,5 @@
 use std::sync::{atomic::{AtomicUsize, Ordering}, Arc, Mutex};
-use coco::Stack;
+use crossbeam::queue::SegQueue;
 use sal_core::{dbg::Dbg, error::Error};
 use super::job::Job;
 ///
@@ -24,7 +24,7 @@ impl Worker {
         capacity: Arc<AtomicUsize>,
         size: Arc<AtomicUsize>,
         free: Arc<AtomicUsize>,
-        workers: Arc<Stack<Worker>>,
+        workers: Arc<SegQueue<Worker>>,
     ) -> Worker {
         let parent = parent.into();
         let id = size.load(Ordering::SeqCst);
@@ -89,7 +89,7 @@ impl Worker {
         capacity: Arc<AtomicUsize>,
         size: Arc<AtomicUsize>,
         free: Arc<AtomicUsize>,
-        workers: Arc<Stack<Worker>>
+        workers: Arc<SegQueue<Worker>>
     ) {
         let parent = parent.into();
         let new_workers = size.load(Ordering::SeqCst) * 2;

@@ -1,6 +1,5 @@
 use std::{cmp::Ordering, str::FromStr};
-
-use concat_in_place::strcat;
+use concat_string::concat_string;
 ///
 ///
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -30,7 +29,7 @@ impl FromStr for Status {
             "obsolete" => Ok(Status::Obsolete),
             "timeinvalid" => Ok(Status::TimeInvalid),
             "invalid" => Ok(Status::Invalid),
-            _ => Err(strcat!("Status.from_str | Unknown status '" input "'")),
+            _ => Err(concat_string!("Status.from_str | Unknown status '", input, "'")),
         }
     }
 }

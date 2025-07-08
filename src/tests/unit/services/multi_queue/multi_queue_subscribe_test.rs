@@ -1,154 +1,145 @@
-use std::{fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc}, thread::{self, JoinHandle}, time::Duration};
-use coco::Stack;
+use std::{fmt::Debug, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc, Once}, thread::{self}, time::{Duration, Instant}};
 use log::{info, trace, warn};
 use sal_core::{dbg::Dbg, error::Error};
-use crate::{services::{entity::{Name, Object, Point}, Service, Services}, sync::{channel::RecvTimeoutError, RwLock}};
+use crate::{
+    services::{conf::{ConfTree, ServicesConf}, entity::{Name, Object, Point}, MultiQueue, MultiQueueConf, Service, Services}, sync::{channel::RecvTimeoutError, Handles, RwLock}, tests::unit::services::multi_queue::mock_send_service::MockSendService, thread_pool::ThreadPool
+};
+use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
+use testing::{
+    entities::test_value::Value,
+    stuff::{random_test_values::RandomTestValues, max_test_duration::TestDuration},
+};
 #[cfg(test)]
-
-mod multi_queue {
-    use log::debug;
-    use sal_core::dbg::Dbg;
-    use std::{sync::{Arc, Once}, thread, time::{Duration, Instant}};
-    use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use testing::{
-        entities::test_value::Value,
-        stuff::{random_test_values::RandomTestValues, max_test_duration::TestDuration},
-    };
-    use crate::{
-        services::{conf::{ConfTree, ServicesConf}, MultiQueue, MultiQueueConf, Service, Services},
-        tests::unit::services::multi_queue::{mock_send_service::MockSendService, multi_queue_subscribe_test::MockReceiver}, thread_pool::ThreadPool,
-    };
-    ///
-    ///
-    static INIT: Once = Once::new();
-    ///
-    /// once called initialisation
-    fn init_once() {
-        INIT.call_once(|| {
-            // implement your initialisation code to be called only once for current test file
-        })
-    }
-    ///
-    /// returns:
-    ///  - ...
-    fn init_each() -> () {}
-    ///
-    /// Test MultiQueue for broadcast subscription
-    /// - events sent by multiple senders
-    ///     - number of events = iterations
-    /// - events received by multiple receivers
-    ///     - each receiver must receive events: iterations * sender_count
-    #[test]
-    fn subscribe_broadcast() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
-        init_once();
-        init_each();
-        println!();
-        let dbg = Dbg::own("multi_queue_subscribe");
-        println!("\n{}", dbg);
-        let sender_count = 10;         // count of MockSendService's
-        let receiver_count = 10;         // count of MockReceiver's
-        let iterations = 1000;          // test data length of the single sender
-        let total_test_events = sender_count * iterations;
-        let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
-        test_duration.run().unwrap();
-        let conf = r#"
-            service MultiQueue:
-                in queue in-queue:
-                    max-length: 10000
-                send-to:  # direct send links - are empty, because only client subscribtions will be used
-        "#.to_string();
-        let conf = serde_yaml::from_str(&conf).unwrap();
-        let mq_conf = MultiQueueConf::from_yaml(&dbg, &conf);
-        debug!("mqConf: {:?}", mq_conf);
-        let thread_pool = ThreadPool::new(&dbg, Some(8));
-        let services = Arc::new(Services::new(&dbg, ServicesConf::new(
-                &dbg, 
-                ConfTree::new_root(serde_yaml::from_str(r#""#).unwrap()),
-            ),
-            Some(thread_pool.scheduler()),
+///
+///
+static INIT: Once = Once::new();
+///
+/// once called initialisation
+fn init_once() {
+    INIT.call_once(|| {
+        // implement your initialisation code to be called only once for current test file
+    })
+}
+///
+/// returns:
+///  - ...
+fn init_each() -> () {}
+///
+/// Test MultiQueue for broadcast subscription
+/// - events sent by multiple senders
+///     - number of events = iterations
+/// - events received by multiple receivers
+///     - each receiver must receive events: iterations * sender_count
+#[test]
+fn subscribe_broadcast() {
+    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    init_once();
+    init_each();
+    println!();
+    let dbg = Dbg::own("multi_queue_subscribe");
+    println!("\n{}", dbg);
+    let sender_count = 10;         // count of MockSendService's
+    let receiver_count = 10;         // count of MockReceiver's
+    let iterations = 1000;          // test data length of the single sender
+    let total_test_events = sender_count * iterations;
+    let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
+    test_duration.run().unwrap();
+    let conf = r#"
+        service MultiQueue:
+            in queue in-queue:
+                max-length: 10000
+            send-to:  # direct send links - are empty, because only client subscribtions will be used
+    "#.to_string();
+    let conf = serde_yaml::from_str(&conf).unwrap();
+    let mq_conf = MultiQueueConf::from_yaml(&dbg, &conf);
+    log::debug!("mqConf: {:?}", mq_conf);
+    let thread_pool = ThreadPool::new(&dbg, Some(8));
+    let services = Arc::new(Services::new(&dbg, ServicesConf::new(
+            &dbg, 
+            ConfTree::new_root(serde_yaml::from_str(r#""#).unwrap()),
+        ),
+        Some(thread_pool.scheduler()),
+    ));
+    let mq_service = Arc::new(MultiQueue::new(mq_conf, services.clone(), Some(thread_pool.scheduler())));
+    services.insert(mq_service.clone());
+    let mut receivers = vec![];
+    for _ in 0..receiver_count {
+        let receiver = Arc::new(MockReceiver::new(
+            &dbg,
+            &format!("/{}/MultiQueue", dbg),
+            services.clone(),
+            Some(total_test_events),
         ));
-        let mq_service = Arc::new(MultiQueue::new(mq_conf, services.clone(), Some(thread_pool.scheduler())));
-        services.insert(mq_service.clone());
-        let mut receivers = vec![];
-        for _ in 0..receiver_count {
-            let receiver = Arc::new(MockReceiver::new(
-                &dbg,
-                &format!("/{}/MultiQueue", dbg),
-                services.clone(),
-                Some(total_test_events),
-            ));
-            services.insert(receiver.clone());
-            receivers.push(receiver);
-        }
-        mq_service.run().unwrap();
-        for receiver in &receivers {
-            receiver.run().unwrap();
-        }
-        println!("All MockReceiver's threads - started");
-        thread::sleep(Duration::from_millis(100));
-        let mut senders = vec![];
-        let time = Instant::now();
-        for i in 0..sender_count {
-            let dynamic_test_data = RandomTestValues::new(
-                &dbg,
-                vec![
-                    Value::String(format!("dynamic01{}", i)),
-                    Value::String(format!("dynamic02{}", i)),
-                    Value::String(format!("dynamic03{}", i)),
-                    Value::String(format!("dynamic04{}", i)),
-                    Value::String(format!("dynamic05{}", i)),
-                    Value::String(format!("dynamic06{}", i)),
-                    Value::String(format!("dynamic07{}", i)),
-                ],
-                iterations,
-            );
-            let dynamic_test_data: Vec<Value> = dynamic_test_data.collect();
-            let sender = Arc::new(MockSendService::new(
-                &dbg,
-                &format!("/{}/MultiQueue.in-queue", dbg),
-                services.clone(),
-                dynamic_test_data.clone(),
-                None,
-            ));
-            services.insert(sender.clone());
-            senders.push(sender.clone());
-        }
-        services.run().unwrap();
-        for sender in &senders {
-            sender.run().unwrap();
-        }
-        for s in &senders {
-            s.wait().unwrap()
-        }
-        for r in &receivers {
-            r.wait().unwrap();
-        }
-        for receiver in &receivers {
-            receiver.exit();
-        }
-        let elapsed = time.elapsed();
-        println!("Total elapsed: {:?}", elapsed);
-        println!("Total test events: {:?}", total_test_events);
-        println!("Elapsed per event: {:?}", elapsed.div_f64(total_test_events as f64));
-        let target = iterations;
-        for sender in senders {
-            let sent = sender.sent();
-            let result = sent.read().len();
-            println!("\t {} sent: {:?}", sender.id(), result);
-            assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
-        }
-        let target = total_test_events;
-        for receiver in receivers {
-            let result = receiver.received.read().len();
-            assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
-        }
-        mq_service.exit();
-        services.exit();
-        mq_service.wait().unwrap();
-        services.wait().unwrap();
-        test_duration.exit();
+        services.insert(receiver.clone());
+        receivers.push(receiver);
     }
+    mq_service.run().unwrap();
+    for receiver in &receivers {
+        receiver.run().unwrap();
+    }
+    println!("All MockReceiver's threads - started");
+    thread::sleep(Duration::from_millis(100));
+    let mut senders = vec![];
+    let time = Instant::now();
+    for i in 0..sender_count {
+        let dynamic_test_data = RandomTestValues::new(
+            &dbg,
+            vec![
+                Value::String(format!("dynamic01{}", i)),
+                Value::String(format!("dynamic02{}", i)),
+                Value::String(format!("dynamic03{}", i)),
+                Value::String(format!("dynamic04{}", i)),
+                Value::String(format!("dynamic05{}", i)),
+                Value::String(format!("dynamic06{}", i)),
+                Value::String(format!("dynamic07{}", i)),
+            ],
+            iterations,
+        );
+        let dynamic_test_data: Vec<Value> = dynamic_test_data.collect();
+        let sender = Arc::new(MockSendService::new(
+            &dbg,
+            &format!("/{}/MultiQueue.in-queue", dbg),
+            services.clone(),
+            dynamic_test_data.clone(),
+            None,
+        ));
+        services.insert(sender.clone());
+        senders.push(sender.clone());
+    }
+    services.run().unwrap();
+    for sender in &senders {
+        sender.run().unwrap();
+    }
+    for s in &senders {
+        s.wait().unwrap()
+    }
+    for r in &receivers {
+        r.wait().unwrap();
+    }
+    for receiver in &receivers {
+        receiver.exit();
+    }
+    let elapsed = time.elapsed();
+    println!("Total elapsed: {:?}", elapsed);
+    println!("Total test events: {:?}", total_test_events);
+    println!("Elapsed per event: {:?}", elapsed.div_f64(total_test_events as f64));
+    let target = iterations;
+    for sender in senders {
+        let sent = sender.sent();
+        let result = sent.read().len();
+        println!("\t {} sent: {:?}", sender.id(), result);
+        assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
+    }
+    let target = total_test_events;
+    for receiver in receivers {
+        let result = receiver.received.read().len();
+        assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
+    }
+    mq_service.exit();
+    services.exit();
+    mq_service.wait().unwrap();
+    services.wait().unwrap();
+    test_duration.exit();
 }
 
 ///
@@ -160,7 +151,7 @@ struct MockReceiver {
     services: Arc<Services>,
     received: Arc<RwLock<Vec<Point>>>,
     recv_limit: Option<usize>,
-    handle: Stack<JoinHandle<()>>,
+    handle: Handles<()>,
     exit: Arc<AtomicBool>,
 }
 //
@@ -168,15 +159,16 @@ struct MockReceiver {
 impl MockReceiver {
     pub fn new(parent: impl Into<String>, subscribe: &str, services: Arc<Services>, recv_limit: Option<usize>) -> Self {
         let name = Name::new(parent, format!("MockReceiver{}", COUNT.fetch_add(1, Ordering::Relaxed)));
+        let dbg = Dbg::new(name.parent(), name.me());
         Self {
-            dbg: Dbg::new(name.parent(), name.me()),
             name,
             subscribe: subscribe.to_owned(),
             services,
             received: Arc::new(RwLock::new(vec![])),
             recv_limit,
-            handle: Stack::new(),
+            handle: Handles::new(&dbg),
             exit: Arc::new(AtomicBool::new(false)),
+            dbg,
         }
     }
 }
@@ -267,18 +259,12 @@ impl Service for MockReceiver {
     //
     //
     fn wait(&self) -> Result<(), Error> {
-        let dbg = self.dbg.clone();
-        if let Some(handle) = self.handle.pop() {
-            if let Err(err) = handle.join() {
-                log::warn!("{dbg}.wait | Error: {:?}", err);
-            }
-        }
-        Ok(())
+        self.handle.wait()
     }
     //
     //
     fn is_finished(&self) -> bool {
-        todo!()
+        self.handle.is_finished()
     }
     //
     //

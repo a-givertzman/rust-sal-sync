@@ -1,4 +1,4 @@
-use concat_in_place::{self, strcat};
+use concat_string::concat_string;
 use crate::services::entity::Cot;
 ///
 /// Detailed definition of the subscription;
@@ -35,7 +35,7 @@ impl SubscriptionCriteria {
     pub fn dest(cot: &Cot, name: &str) -> String {
         match cot {
             Cot::All => name.to_owned(),
-            _        => strcat!(cot.as_str() ":" name),
+            _        => concat_string!(cot, ":", name),
         }
     }
     ///

@@ -2,7 +2,6 @@ use std::{
     collections::HashMap, fmt::Debug, fs, hash::BuildHasherDefault, io::Write,
     sync::{atomic::{AtomicBool, Ordering}, Arc},
 };
-use coco::Stack;
 use concat_string::concat_string;
 use sal_core::{dbg::{self, dbg, Dbg}, error::Error};
 use crate::{
@@ -11,7 +10,7 @@ use crate::{
         service::{LinkName, Service, RECV_TIMEOUT},
         services::Services, subscription::{SubscriptionCriteria, Subscriptions},
     },
-    sync::{channel::{self, Receiver, Sender}, Handles}, thread_pool::Scheduler,
+    sync::{channel::{self, Receiver, Sender}, Handles, Owner}, thread_pool::Scheduler,
 };
 use super::multi_queue_conf::MultiQueueConf;
 ///
@@ -26,7 +25,7 @@ pub struct MultiQueue {
     subscriptions: Arc<Subscriptions>,
     subscriptions_changed: Arc<AtomicBool>,
     rx_send: HashMap<String, Sender<Point>>,
-    rx_recv: Stack<Receiver<Point>>,
+    rx_recv: Owner<Receiver<Point>>,
     send_queues: Vec<LinkName>,
     services: Arc<Services>,
     scheduler: Option<Scheduler>,
@@ -44,14 +43,12 @@ impl MultiQueue {
         let dbg = Dbg::new(conf.name.parent(), conf.name.me());
         let (send, recv) = channel::unbounded();
         let send_queues = conf.send_to;
-        let rx_recv = Stack::new();
-        rx_recv.push(recv);
         Self {
             name: conf.name.clone(),
             subscriptions: Arc::new(Subscriptions::new(&dbg)),
             subscriptions_changed: Arc::new(AtomicBool::new(false)),
             rx_send: HashMap::from([(conf.rx, send)]),
-            rx_recv,
+            rx_recv: Owner::new(recv),
             send_queues,
             services,
             scheduler,
@@ -262,7 +259,7 @@ impl Service for MultiQueue {
         log::info!("{}.run | Starting...", self.dbg);
         let dbg = self.dbg.clone();
         let name = self.name.clone();
-        let recv = self.rx_recv.pop().unwrap();
+        let recv = self.rx_recv.take().unwrap();
         let subscriptions_ref = self.subscriptions.clone();
         let subscriptions_changed = self.subscriptions_changed.clone();
         // let receiver_dictionary = self.receiver_dictionary.clone();

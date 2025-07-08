@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use concat_in_place::strcat;
+use concat_string::concat_string;
 ///
 /// Contains Name of the Link (Channel / Queue) in the separate format
 /// Service.Link -> Service & Link
@@ -18,7 +18,7 @@ impl LinkName {
         let service = service.into();
         let link = link.into();
         Self {
-            name: strcat!(service.as_str() "." link.as_str()),
+            name: concat_string!(service, ".", link),
             service,
             link,
         }

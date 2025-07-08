@@ -1,5 +1,5 @@
 use std::sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc};
-use coco::Stack;
+use crossbeam::queue::SegQueue;
 use sal_core::{dbg::{self, dbg, Dbg}, error::Error};
 use crate::sync::WaitBox;
 
@@ -9,7 +9,7 @@ use crate::sync::WaitBox;
 pub struct Handles<T> {
     dbg: Dbg,
     len: AtomicUsize,
-    handle: Stack<Box<dyn WaitBox<T>>>,
+    handle: SegQueue<Box<dyn WaitBox<T>>>,
     is_finished: Arc<AtomicBool>,
 }
 //
@@ -21,14 +21,14 @@ impl<T> Handles<T> {
         Self {
             dbg: Dbg::new(parent, "Handles"),
             len: AtomicUsize::new(0),
-            handle: Stack::new(),
+            handle: SegQueue::new(),
             is_finished: Arc::new(AtomicBool::new(false)),
         }
     }
     ///
     /// Returns [Handles] new instance
     pub fn from_vec(parent: impl Into<String>, handles: Vec<impl WaitBox<T> + 'static>) -> Self {
-        let h: Stack<Box<(dyn WaitBox<T>)>> = Stack::new();
+        let h: SegQueue<Box<(dyn WaitBox<T>)>> = SegQueue::new();
         for handle in handles {
             h.push(Box::new(handle));
         }

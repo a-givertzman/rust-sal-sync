@@ -6,12 +6,11 @@ use crate::{
         future::{Future, Sink}, retain::{RetainConf, RetainPointId},
         service::{LinkName, Service, ServiceCycle},
         subscription::SubscriptionCriteria,
-    }, sync::{channel::{Receiver, Sender}, Handles}, thread_pool::Scheduler,
+    }, sync::{channel::{Receiver, Sender}, Handles, Owner}, thread_pool::Scheduler,
 };
 use std::{
     collections::HashMap, fmt::Debug, sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Duration
 };
-use coco::Stack;
 use concat_string::concat_string;
 use dashmap::DashMap;
 use sal_core::{dbg::Dbg, error::Error};
@@ -23,7 +22,7 @@ pub struct Services {
     map: Arc<DashMap<String, Arc<dyn Service>>>,
     conf: ServicesConf,
     retain_point_id: Option<Arc<RetainPointId>>,
-    points_request: Arc<Stack<(String, Sink<Vec<PointConfig>>)>>,
+    points_request: Arc<Owner<(String, Sink<Vec<PointConfig>>)>>,
     scheduler: Option<Scheduler>,
     handles: Handles<()>,
     exit: Arc<AtomicBool>,
@@ -55,7 +54,7 @@ impl Services {
                 None => None,
             },
             conf: conf,
-            points_request: Arc::new(Stack::new()),
+            points_request: Arc::new(Owner::empty()),
             scheduler,
             handles: Handles::new(&dbg),
             dbg,
@@ -123,7 +122,7 @@ impl Services {
     fn run_(
         dbg: Dbg,
         name: Name,
-        points_request: Arc<Stack<(String, Sink<Vec<PointConfig>>)>>,
+        points_request: Arc<Owner<(String, Sink<Vec<PointConfig>>)>>,
         retain_point_id: Option<Arc<RetainPointId>>,
         services: Arc<DashMap<String, Arc<dyn Service + 'static>>>,
         exit: Arc<AtomicBool>,
@@ -147,7 +146,7 @@ impl Services {
         loop {
             cycle.start();
             if !points_request.is_empty() {
-                match points_request.pop() {
+                match points_request.take() {
                     Some((requester_name, sink)) => {
                         log::debug!("{}.run | Points requested from: '{}'", dbg, requester_name);
                         match &retain_point_id {
@@ -260,7 +259,7 @@ impl Services {
     ///  - requester_name - Service name !!!
     pub fn points(&self, requester_name: impl Into<String>) -> Future<Vec<PointConfig>> {
         let (future, sink) = Future::new();
-        self.points_request.push((requester_name.into(), sink));
+        self.points_request.replace((requester_name.into(), sink));
         future
     }
     ///
