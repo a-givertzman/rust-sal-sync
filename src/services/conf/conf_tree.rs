@@ -4,8 +4,7 @@ use serde::de::DeserializeOwned;
 use crate::{
     collections::FxIndexMap,
     services::{
-        entity::{Name, PointConfig},
-        task::functions::{FnConfKeywd, FnConfKindName},
+        conf::ConfDistance, entity::{Name, PointConfig}, task::functions::{FnConfKeywd, FnConfKindName}
     },
 };
 use super::{conf_duration::ConfDuration, conf_keywd::ConfKeywd, conf_kind::ConfKind, diag_keywd::DiagKeywd};
@@ -426,6 +425,36 @@ impl ConfTree {
                         Ok(conf_duration.to_duration())
                     }
                     Err(err) => Err(error.err(format!("Parse {} duration '{}' error: {:?}", key.as_ref(), &value, err))),
+                }
+            }
+            None => Err(error.err(format!("Key {} - not found in: {:#?}", key.as_ref(), self.conf))),
+        }
+    }
+    ///
+    /// Retuirns duration conf by key or Error
+    /// 
+    /// ```yaml
+    /// width:  10 mm     # 10 millimeters
+    /// length: 100um     # 100 micrometers
+    /// depth:  3m        # 3 meters
+    /// height: 3         # 3 meters
+    /// ```
+    pub fn get_distance(&self, key: impl AsRef<str>) -> Result<ConfDistance, Error> {
+        let error = Error::new(&self.id, "get_distance");
+        match ConfTreeGet::<serde_yaml::Value>::get(self, key.as_ref()) {
+            Some(value) => {
+                let value = if value.is_u64() {
+                    value.as_u64().unwrap().to_string()
+                } else if value.is_string() {
+                    value.as_str().unwrap().to_string()
+                } else {
+                    return Err(error.err(format!("Invalid {} distance format: {:?} \n\tin: {:?}", key.as_ref(), &value, self.conf)));
+                };
+                match ConfDistance::from_str(&value) {
+                    Ok(conf_duration) => {
+                        Ok(conf_duration)
+                    }
+                    Err(err) => Err(error.err(format!("Parse {} distance '{}' error: {:?}", key.as_ref(), &value, err))),
                 }
             }
             None => Err(error.err(format!("Key {} - not found in: {:#?}", key.as_ref(), self.conf))),
