@@ -21,7 +21,7 @@ use serde::Deserialize;
 /// - m  - meters, 
 /// - km - kilometers, 
 /// - in - inches
-#[derive(Debug, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 pub enum ConfDistanceUnit {
     Nanometer,
     Micrometer,
@@ -65,7 +65,7 @@ impl FromStr for ConfDistanceUnit {
 /// | 3      |  km    | - 3 kilometers
 /// | 1      |  in    | - 1 inches
 /// ```
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct ConfDistance {
     pub value: f64,
     pub unit: ConfDistanceUnit,
