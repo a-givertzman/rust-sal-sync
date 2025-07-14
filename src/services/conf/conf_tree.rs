@@ -499,31 +499,13 @@ impl ConfTree {
         };
         points
     }
+    ///
+    /// Returns [FnConfKind] build from value by `key`
     pub fn get_fn_config(&self, parent: impl Into<String>, key: impl AsRef<str>, vars: &mut Vec<String>) -> Option<FnConfKind> {
         let parent = parent.into();
         if self.conf.is_mapping() {
             self.get(key.as_ref()).map(|value| {
                 FnConfig::new(&parent, &Name::new("", &parent), &value, vars)
-                // keyword parsed successefully
-                //  - take input name and input Value / Fn from the keyword
-                // if let Some(value) = value.as_str() {
-                //     if let Ok(fn_keyword) = FnConfKeywd::from_str(value) {
-                //         match fn_keyword {
-                //             FnConfKeywd::Point(value) => {
-                //                 return Some(FnConfig {
-                //                     name: value.data,
-                //                     inputs: IndexMap::new(),
-                //                     type_: value.type_,
-                //                     options: value.options,
-                //                 })
-                //             }
-                //             _ => {
-                //                 log::warn!("ConfTree.get | Unknown keyword in: {:?}", value)
-                //             }
-                //         }
-                //     }
-                // }
-                // None
             })
         } else {
             None
