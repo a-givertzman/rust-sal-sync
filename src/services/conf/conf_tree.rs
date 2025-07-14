@@ -5,7 +5,7 @@ use serde::de::DeserializeOwned;
 use crate::{
     collections::FxIndexMap,
     services::{
-        conf::ConfDistance, entity::{Name, PointConf}, task::functions::{FnConfKeywd, FnConfKindName, FnConfig}
+        conf::ConfDistance, entity::{Name, PointConf}, task::functions::{FnConfKeywd, FnConfKind, FnConfKindName, FnConfig}
     },
 };
 use super::{conf_duration::ConfDuration, conf_keywd::ConfKeywd, conf_kind::ConfKind, diag_keywd::DiagKeywd};
@@ -499,6 +499,36 @@ impl ConfTree {
         };
         points
     }
+    pub fn get_fn_config(&self, parent: impl Into<String>, key: impl AsRef<str>, vars: &mut Vec<String>) -> Option<FnConfKind> {
+        let parent = parent.into();
+        if self.conf.is_mapping() {
+            self.get(key.as_ref()).map(|value| {
+                FnConfig::new(&parent, &Name::new("", &parent), &value, vars)
+                // keyword parsed successefully
+                //  - take input name and input Value / Fn from the keyword
+                // if let Some(value) = value.as_str() {
+                //     if let Ok(fn_keyword) = FnConfKeywd::from_str(value) {
+                //         match fn_keyword {
+                //             FnConfKeywd::Point(value) => {
+                //                 return Some(FnConfig {
+                //                     name: value.data,
+                //                     inputs: IndexMap::new(),
+                //                     type_: value.type_,
+                //                     options: value.options,
+                //                 })
+                //             }
+                //             _ => {
+                //                 log::warn!("ConfTree.get | Unknown keyword in: {:?}", value)
+                //             }
+                //         }
+                //     }
+                // }
+                // None
+            })
+        } else {
+            None
+        }
+    }
 }
 
 ///
@@ -621,40 +651,5 @@ impl ConfTreeGet<u64> for ConfTree {
         };
         log::trace!("ConfTree.get | {}: {:?}", key.as_ref(), val);
         val
-    }
-}
-//
-//
-impl ConfTreeGet<FnConfig> for ConfTree {
-    ///
-    /// Returns a sub-node by it's key if exists, else None
-    fn get(&self, key: impl AsRef<str>) -> Option<FnConfig> {
-        if self.conf.is_mapping() {
-            self.conf.as_mapping().unwrap().get(key.as_ref()).map(|value| {
-                // keyword parsed successefully
-                //  - take input name and input Value / Fn from the keyword
-                if let Some(value) = value.as_str() {
-                    if let Ok(fn_keyword) = FnConfKeywd::from_str(value) {
-                        match fn_keyword {
-                            FnConfKeywd::Point(value) => {
-                                return Some(FnConfig {
-                                    name: value.data,
-                                    inputs: IndexMap::new(),
-                                    type_: value.type_,
-                                    options: value.options,
-                                })
-                            }
-                            _ => {
-                                log::warn!("ConfTree.get | Unknown keyword in: {:?}", value)
-                            }
-                        }
-                    }
-                }
-                None
-            });
-            None
-        } else {
-            None
-        }
     }
 }
