@@ -12,7 +12,7 @@ pub struct PointConfFilter {
 }
 // ///
 // /// 
-// impl PointConfigAddress {
+// impl PointConfAddress {
 //     pub fn empty() -> Self {
 //         Self { offset: None, bit: None }
 //     }

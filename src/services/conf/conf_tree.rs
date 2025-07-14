@@ -1,10 +1,11 @@
 use std::{str::FromStr, time::Duration};
+use indexmap::IndexMap;
 use sal_core::error::Error;
 use serde::de::DeserializeOwned;
 use crate::{
     collections::FxIndexMap,
     services::{
-        conf::ConfDistance, entity::{Name, PointConf}, task::functions::{FnConfKeywd, FnConfKindName}
+        conf::ConfDistance, entity::{Name, PointConf}, task::functions::{FnConfKeywd, FnConfKindName, FnConfig}
     },
 };
 use super::{conf_duration::ConfDuration, conf_keywd::ConfKeywd, conf_kind::ConfKind, diag_keywd::DiagKeywd};
@@ -624,12 +625,34 @@ impl ConfTreeGet<u64> for ConfTree {
 }
 //
 //
-impl ConfTreeGet<PointConf> for ConfTree {
+impl ConfTreeGet<FnConfig> for ConfTree {
     ///
     /// Returns a sub-node by it's key if exists, else None
-    fn get(&self, key: impl AsRef<str>) -> Option<PointConf> {
+    fn get(&self, key: impl AsRef<str>) -> Option<FnConfig> {
         if self.conf.is_mapping() {
-            self.conf.as_mapping().unwrap().get(key.as_ref()).map(|value| PointConf::from_yaml("ConfTree", value))
+            self.conf.as_mapping().unwrap().get(key.as_ref()).map(|value| {
+                // keyword parsed successefully
+                //  - take input name and input Value / Fn from the keyword
+                if let Some(value) = value.as_str() {
+                    if let Ok(fn_keyword) = FnConfKeywd::from_str(value) {
+                        match fn_keyword {
+                            FnConfKeywd::Point(value) => {
+                                return Some(FnConfig {
+                                    name: value.data,
+                                    inputs: IndexMap::new(),
+                                    type_: value.type_,
+                                    options: value.options,
+                                })
+                            }
+                            _ => {
+                                log::warn!("ConfTree.get | Unknown keyword in: {:?}", value)
+                            }
+                        }
+                    }
+                }
+                None
+            });
+            None
         } else {
             None
         }

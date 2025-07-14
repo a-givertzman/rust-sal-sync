@@ -59,7 +59,7 @@ fn is_none<T: Default + PartialEq>(t: &T) -> bool {
 // 
 impl PointConf {
     ///
-    /// creates PointConfig from serde_yaml::Value of following format:
+    /// creates PointConf from serde_yaml::Value of following format:
     /// ```yaml
     /// PointName:
     ///     id: usize               # unique identificator for database
@@ -75,7 +75,7 @@ impl PointConf {
     ///     comment: Test Point 
     /// ```
     pub fn new(parent: impl Into<String>, conf_tree: &ConfTree) -> Self {
-        trace!("PointConfig.new | confTree: {:?}", conf_tree);
+        trace!("PointConf.new | confTree: {:?}", conf_tree);
         let mut pc: PointConf = serde_yaml::from_value(conf_tree.conf.clone()).unwrap();
         let keyword = FnConfKeywd::from_str(&conf_tree.key);
         let name = match keyword {
@@ -95,7 +95,7 @@ impl PointConf {
     ///
     /// Creates config from serde_yaml::Value of following format:
     pub fn from_yaml(parent: impl Into<String>, value: &serde_yaml::Value) -> Self {
-        trace!("PointConfig.from_yaml | value: {:?}", value);
+        trace!("PointConf.from_yaml | value: {:?}", value);
         Self::new(parent, &ConfTree::new_root(value.clone()).next().unwrap())
     }
     ///
@@ -107,20 +107,20 @@ impl PointConf {
         serde_yaml::to_value(wrap).unwrap()
     }
     ///
-    /// Converts json into PointConfig
+    /// Converts json into PointConf
     pub fn from_json(name: &str, value: &serde_json::Value) -> Result<Self, String> {
-        trace!("PointConfig.from_json | value {:#?}", value);
+        trace!("PointConf.from_json | value {:#?}", value);
         match serde_json::from_value(value.clone()) {
             Ok(map) => {
                 let  mut map: Self = map;
                 map.name = name.to_owned();
                 Ok(map)
             }
-            Err(err) => Err(format!("PointConfig.from_json | Error: {:?}", err)),
+            Err(err) => Err(format!("PointConf.from_json | Error: {:?}", err)),
         }
     }
     ///
-    /// Returns json containing internally taggged PointConfig
+    /// Returns json containing internally taggged PointConf
     pub fn to_json(&self) -> serde_json::Value {
         let result: serde_json::Value = serde_json::to_value(self).unwrap();
         let mut wrap = HashMap::new();

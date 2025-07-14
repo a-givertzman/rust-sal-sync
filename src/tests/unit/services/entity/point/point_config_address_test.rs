@@ -20,7 +20,7 @@ fn init_once() {
 ///  - ...
 fn init_each() -> () {}
 ///
-/// Testing PointConfigAddress::empty
+/// Testing PointConfAddress::empty
 #[test]
 fn empty() {
     DebugSession::init(LogLevel::Debug, Backtrace::Short);
@@ -36,7 +36,7 @@ fn empty() {
     test_duration.exit();
 }
 ///
-/// Testing PointConfigType::serialize yaml
+/// Testing PointConfType::serialize yaml
 #[test]
 fn serialize_yaml() {
     DebugSession::init(LogLevel::Debug, Backtrace::Short);
@@ -61,13 +61,13 @@ fn serialize_yaml() {
     for (step, target, value) in test_data {
         let result = serde_yaml::to_value(&value).unwrap();
         let target: serde_yaml::Value = serde_yaml::from_str(&target).unwrap();
-        debug!("Step: {}  |  Serialized yaml PointConfigAddress: {:?}", step, result);
+        debug!("Step: {}  |  Serialized yaml PointConfAddress: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }
     test_duration.exit();
 }
 ///
-/// Testing PointConfigType::serialize json
+/// Testing PointConfType::serialize json
 #[test]
 fn serialize_json() {
     DebugSession::init(LogLevel::Debug, Backtrace::Short);
@@ -92,13 +92,13 @@ fn serialize_json() {
     for (step, target, value) in test_data {
         let result = serde_json::to_value(&value).unwrap();
         let target: serde_json::Value = serde_json::from_str(&target).unwrap();
-        debug!("Step: {}  |  Serialized json PointConfigAddress: {:?}", step, result);
+        debug!("Step: {}  |  Serialized json PointConfAddress: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }
     test_duration.exit();
 }
 ///
-/// Testing PointConfigType::deserialize_yaml
+/// Testing PointConfType::deserialize_yaml
 #[test]
 fn deserialize_yaml() {
     DebugSession::init(LogLevel::Debug, Backtrace::Short);
@@ -122,13 +122,13 @@ fn deserialize_yaml() {
     ];
     for (step, value, target) in test_data {
         let result: PointConfAddress = serde_yaml::from_str(value).unwrap();
-        debug!("Step: {}  |  Deserialized yaml PointConfigType: {:?}", step, result);
+        debug!("Step: {}  |  Deserialized yaml PointConfType: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }
     test_duration.exit();
 }
 ///
-/// Testing PointConfigType::deserialize_json
+/// Testing PointConfType::deserialize_json
 #[test]
 fn deserialize_json() {
     DebugSession::init(LogLevel::Debug, Backtrace::Short);
@@ -152,7 +152,7 @@ fn deserialize_json() {
     ];
     for (step, value, target) in test_data {
         let result: PointConfAddress = serde_json::from_str(value).unwrap();
-        debug!("Step: {}  |  Deserialized json PointConfigType: {:?}", step, result);
+        debug!("Step: {}  |  Deserialized json PointConfType: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }
     test_duration.exit();

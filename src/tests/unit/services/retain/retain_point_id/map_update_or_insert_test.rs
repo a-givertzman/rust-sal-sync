@@ -5,7 +5,7 @@ mod map_update_or_insert {
     use std::{collections::HashMap, sync::Once, time::Duration};
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use super::{PointConf, RetainedPointConfig};
+    use super::{PointConf, RetainedPointConf};
     ///
     ///
     static INIT: Once = Once::new();
@@ -47,14 +47,14 @@ mod map_update_or_insert {
         ]);
         let mut retained = HashMap::from([
             ("Service1".into(), HashMap::from([
-                ("Service1.Point1".into(), RetainedPointConfig { id: 11 }),
-                ("Service1.Point2".into(), RetainedPointConfig { id: 12 }),
-                ("Service1.Point3".into(), RetainedPointConfig { id: 13 }),
+                ("Service1.Point1".into(), RetainedPointConf { id: 11 }),
+                ("Service1.Point2".into(), RetainedPointConf { id: 12 }),
+                ("Service1.Point3".into(), RetainedPointConf { id: 13 }),
             ])),
             ("Service2".into(), HashMap::from([
-                ("Service2.Point1".into(), RetainedPointConfig { id: 21 }),
-                ("Service2.Point2".into(), RetainedPointConfig { id: 22 }),
-                ("Service2.Point3".into(), RetainedPointConfig { id: 23 }),
+                ("Service2.Point1".into(), RetainedPointConf { id: 21 }),
+                ("Service2.Point2".into(), RetainedPointConf { id: 22 }),
+                ("Service2.Point3".into(), RetainedPointConf { id: 23 }),
             ])),
         ]);
         let mut update_retained = false;
@@ -74,7 +74,7 @@ mod map_update_or_insert {
                         .max()
                         .map_or(0, |id| id + 1);
                         update_retained = true;
-                        RetainedPointConfig { id }
+                        RetainedPointConf { id }
                     });
                 point.id = retained_point.id;
                 cache
@@ -89,7 +89,7 @@ mod map_update_or_insert {
     }
 }
 ///
-/// The Mok to PointConfig
+/// The Mok to PointConf
 #[derive(Clone, Debug)]
 struct PointConf {
     id: usize,
@@ -98,7 +98,7 @@ struct PointConf {
 ///
 /// Simple container storing the ID
 #[derive(Clone, Debug)]
-struct RetainedPointConfig {
+struct RetainedPointConf {
     pub id: usize,
     // pub name: String,
 }

@@ -29,7 +29,7 @@ mod point_config {
         init_once();
         init_each();
         println!();
-        let self_id = "test PointConfig deserialize";
+        let self_id = "test PointConf deserialize";
         println!("\n{}", self_id);
         let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
         test_duration.run().unwrap();
@@ -147,7 +147,7 @@ mod point_config {
         for (target, conf) in test_data {
             let target: serde_yaml::Value = serde_yaml::from_str(target).unwrap();
             let result = conf.to_yaml();
-            debug!("{} | Serialized PointConfig: {:?}", self_id, json!(result).to_string());
+            debug!("{} | Serialized PointConf: {:?}", self_id, json!(result).to_string());
             // println!("{:?}", json!(result).to_string());
             assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
         }
@@ -289,11 +289,11 @@ mod point_config {
             //             address:
             //                 offset: 0   # 0..65535
             //             comment: Test Point"#,
-            //     PointConfig {
+            //     PointConf {
             //         name: format!("/{}/PointName1", self_id),
-            //         _type: PointConfigType::Int,
-            //         history: PointConfigHistory::Write, alarm: None,
-            //         address: Some(PointConfigAddress { offset: Some(0), bit: None }),
+            //         _type: PointConfType::Int,
+            //         history: PointConfHistory::Write, alarm: None,
+            //         address: Some(PointConfAddress { offset: Some(0), bit: None }),
             //         filters: None,
             //         comment: Some(format!("Test Point")),
             //     },
@@ -305,11 +305,11 @@ mod point_config {
             //             address:
             //                 offset: 0   # 0..65535
             //             comment: Test Point"#,
-            //     PointConfig {
+            //     PointConf {
             //         name: format!("/{}/PointName2", self_id),
-            //         _type: PointConfigType::Int,
-            //         history: PointConfigHistory::None, alarm: Some(4),
-            //         address: Some(PointConfigAddress { offset: Some(0), bit: None }),
+            //         _type: PointConfType::Int,
+            //         history: PointConfHistory::None, alarm: Some(4),
+            //         address: Some(PointConfAddress { offset: Some(0), bit: None }),
             //         filters: None,
             //         comment: Some(format!("Test Point")),
             //     },
@@ -320,11 +320,11 @@ mod point_config {
             //             address:
             //                 offset: 12   # 0..65535
             //             comment: Test Point"#,
-            //     PointConfig {
+            //     PointConf {
             //         name: format!("/{}/PointName3", self_id),
-            //         _type: PointConfigType::Int,
-            //         history: PointConfigHistory::None, alarm: None,
-            //         address: Some(PointConfigAddress { offset: Some(12), bit: None }),
+            //         _type: PointConfType::Int,
+            //         history: PointConfHistory::None, alarm: None,
+            //         address: Some(PointConfAddress { offset: Some(12), bit: None }),
             //         filters: None,
             //         comment: Some(format!("Test Point")),
             //     },

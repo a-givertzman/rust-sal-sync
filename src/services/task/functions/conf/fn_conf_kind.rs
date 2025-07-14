@@ -6,7 +6,7 @@ use crate::services::{conf::ConfTree, entity::PointConf, task::functions::conf::
 ///     - Var - defination of the new variable
 ///     - Const - constant value
 ///     - Point - input from point
-///     - PointConf - [FnPointConfig] of the generated ppoint, contains point configuration and it's source
+///     - PointConf - [FnPointConf] of the generated ppoint, contains point configuration and it's source
 ///     - Param - simple custom parameter
 #[derive(Debug, Clone, PartialEq)]
 pub enum FnConfKind {

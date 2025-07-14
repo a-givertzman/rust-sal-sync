@@ -20,7 +20,7 @@ fn init_once() {
 ///  - ...
 fn init_each() -> () {}
 ///
-/// Testing PointConfigType::serialize
+/// Testing PointConfType::serialize
 #[test]
 fn serialize() {
     DebugSession::init(LogLevel::Debug, Backtrace::Short);
@@ -42,17 +42,17 @@ fn serialize() {
     for (step, target, value) in test_data {
         let result = serde_yaml::to_value(&value).unwrap();
         let result = result.as_str().unwrap();
-        debug!("Step: {}  |  Serialized PointConfigType: {:?}", step, result);
+        debug!("Step: {}  |  Serialized PointConfType: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
         let result = serde_json::to_value(&value).unwrap();
         let result = result.as_str().unwrap();
-        debug!("Step: {}  |  Serialized PointConfigType: {:?}", step, result);
+        debug!("Step: {}  |  Serialized PointConfType: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }
     test_duration.exit();
 }
 ///
-/// Testing PointConfigType::deserialize_yaml
+/// Testing PointConfType::deserialize_yaml
 #[test]
 fn deserialize_yaml() {
     DebugSession::init(LogLevel::Debug, Backtrace::Short);
@@ -79,13 +79,13 @@ fn deserialize_yaml() {
     ];
     for (step, value, target) in test_data {
         let result: PointConfType = serde_yaml::from_str(value).unwrap();
-        debug!("Step: {}  |  Deserialized yaml PointConfigType: {:?}", step, result);
+        debug!("Step: {}  |  Deserialized yaml PointConfType: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }
     test_duration.exit();
 }
 ///
-/// Testing PointConfigType::deserialize_json
+/// Testing PointConfType::deserialize_json
 #[test]
 fn deserialize_json() {
     DebugSession::init(LogLevel::Debug, Backtrace::Short);
@@ -112,13 +112,13 @@ fn deserialize_json() {
     ];
     for (step, value, target) in test_data {
         let result: PointConfType = serde_json::from_str(value).unwrap();
-        debug!("Step: {}  |  Deserialized json PointConfigType: {:?}", step, result);
+        debug!("Step: {}  |  Deserialized json PointConfType: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }
     test_duration.exit();
 }
 ///
-/// Testing PointConfigType::to_string
+/// Testing PointConfType::to_string
 #[test]
 fn to_string() {
     DebugSession::init(LogLevel::Debug, Backtrace::Short);
@@ -139,7 +139,7 @@ fn to_string() {
     ];
     for (step, target, value) in test_data {
         let result = value.to_string();
-        debug!("Step: {}  |  Deserialized json PointConfigType: {:?}", step, result);
+        debug!("Step: {}  |  Deserialized json PointConfType: {:?}", step, result);
         assert!(&result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }
     test_duration.exit();

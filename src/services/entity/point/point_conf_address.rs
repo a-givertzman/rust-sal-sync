@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 
 ///
-/// General implementation of the PointConfig.address
+/// General implementation of the `PointConf.address`
 /// For specific protocols can have custom implementations
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PointConfAddress {
