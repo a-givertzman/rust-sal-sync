@@ -1,5 +1,4 @@
 use std::{str::FromStr, time::Duration};
-use indexmap::IndexMap;
 use sal_core::error::Error;
 use serde::de::DeserializeOwned;
 use crate::{
@@ -286,6 +285,30 @@ impl ConfTree {
         }
     }
     ///
+    /// Returns tree node value as vec by it's key if exists
+    pub fn as_vec(&self, key: &str) -> Option<&Vec<serde_yaml::Value>> {
+        if self.conf.is_mapping() {
+            match self.conf.as_mapping().unwrap().get(key) {
+                Some(value) => {
+                    match value.as_sequence() {
+                        Some(value) => Some(value),
+                        None => {
+                            log::warn!("{}.as_vec | Error getting SEQUENCE by key '{}' from node '{:?}'", self.id, key, value);
+                            None
+                        },
+                    }
+                }
+                None => {
+                    log::warn!("{}.as_vec | Key '{}' not found in the node '{:?}'", self.id, key, self.conf);
+                    None
+                },
+            }
+        } else {
+            log::warn!("{}.as_vec | Key '{}' not found in the node '{:?}'", self.id, key, self.conf);
+            None
+        }
+    }
+    ///
     /// removes node by it's key if exists
     /// returns Result<&Self>
     pub fn remove(&mut self, key: &str) -> Result<serde_yaml::Value, Error> {
@@ -500,7 +523,7 @@ impl ConfTree {
         points
     }
     ///
-    /// Returns [FnConfKind] build from value by `key`
+    /// Returns [FnConfKind] build from value by it's `key` if exists
     pub fn get_fn_config(&self, parent: impl Into<String>, key: impl AsRef<str>, vars: &mut Vec<String>) -> Option<FnConfKind> {
         let parent = parent.into();
         if self.conf.is_mapping() {
