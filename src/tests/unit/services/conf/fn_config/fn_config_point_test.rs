@@ -4,7 +4,7 @@ mod tests {
     use std::sync::Once;
     use indexmap::IndexMap;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use crate::services::{entity::{Name, PointConfig, PointConfigHistory, PointConfigType}, task::functions::{FnConfKind, FnConfOptions, FnConfPointType, FnConfig, FnPointConfig}};
+    use crate::services::{entity::{Name, PointConf, PointConfHistory, PointConfType}, task::functions::{FnConfKind, FnConfOptions, FnConfPointType, FnConfig, FnPointConf}};
     ///
     ///
     static INIT: Once = Once::new();
@@ -29,21 +29,21 @@ mod tests {
         let self_id = "test FnConfig | point";
         let self_name = Name::new("", self_id);
         println!("\n{}", self_id);
-        let test_point1 = PointConfig {
+        let test_point1 = PointConf {
             id: 0,
             name: format!("/{}/CraneMovement.BoomUp", self_id),
-            type_: PointConfigType::Int,
-            history: PointConfigHistory::None,
+            type_: PointConfType::Int,
+            history: PointConfHistory::None,
             alarm: None,
             address: None,
             filters: None,
             comment: Some("Some indication".to_string()),
         };
-        let test_point2 = PointConfig {
+        let test_point2 = PointConf {
             id: 0,
             name: format!("/{}/CraneMovement.BoomDown", self_id),
-            type_: PointConfigType::Real,
-            history: PointConfigHistory::Read,
+            type_: PointConfType::Real,
+            history: PointConfHistory::Read,
             alarm: None,
             address: None,
             filters: None,
@@ -78,14 +78,14 @@ mod tests {
                                 const real 0.07
                 "#,
                 FnConfKind::Fn( FnConfig { name: "ToMultiQueue".to_string(), type_: FnConfPointType::Unknown, inputs: IndexMap::from([
-                    ("in1".to_string(), FnConfKind::PointConf( FnPointConfig {
+                    ("in1".to_string(), FnConfKind::PointConf( FnPointConf {
                         conf: test_point1,
                         send_to: None,
                         enable: None,
                         input: Some(Box::new(FnConfKind::Const( FnConfig { name: "0.05".to_string(), type_: FnConfPointType::Real, inputs: IndexMap::new(), options: FnConfOptions::default() } ))),
                         changes_only: None,
                     })),
-                    ("in2".to_string(), FnConfKind::PointConf( FnPointConfig {
+                    ("in2".to_string(), FnConfKind::PointConf( FnPointConf {
                         conf: test_point2,
                         send_to: None,
                         enable: None,

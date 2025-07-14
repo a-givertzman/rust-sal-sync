@@ -1,6 +1,6 @@
 use indexmap::IndexMap;
 use std::{fs, str::FromStr};
-use crate::services::{conf::ConfTree, entity::{Name, PointConfig}, task::functions::conf::{FnConfKeywd, FnConfKind, FnConfKindName, FnConfOptions, FnConfPointType, FnPointConfig}};
+use crate::services::{conf::ConfTree, entity::{Name, PointConf}, task::functions::conf::{FnConfKeywd, FnConfKind, FnConfKindName, FnConfOptions, FnConfPointType, FnPointConf}};
 ///
 /// creates config read from yaml file of following format:
 /// ```yaml
@@ -123,8 +123,8 @@ impl FnConfig {
                                 Err(_) => None,
                             };
                             FnConfKind::PointConf(
-                                FnPointConfig {
-                                    conf: PointConfig::new(parent_name, conf_tree),
+                                FnPointConf {
+                                    conf: PointConf::new(parent_name, conf_tree),
                                     send_to: conf_tree.as_str("send-to").map_or(None, |v| Some(v.to_owned())),
                                     enable,
                                     input,
@@ -329,7 +329,7 @@ impl FnConfig {
     }
     ///
     /// Returns list of configurations of the defined points
-    pub fn points(&self) -> Vec<PointConfig> {
+    pub fn points(&self) -> Vec<PointConf> {
         let mut points = vec![];
         log::trace!("FnConfig.points | requesting points...");
         for (input_name, input_kind) in &self.inputs {

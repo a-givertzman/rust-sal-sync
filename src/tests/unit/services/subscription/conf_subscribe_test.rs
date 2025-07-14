@@ -5,7 +5,7 @@ mod conf_subscribe {
     use testing::stuff::max_test_duration::TestDuration;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
     use crate::services::{
-        entity::{Cot, Name, PointConfig},
+        entity::{Cot, Name, PointConf},
         SubscriptionCriteria,ConfSubscribe,
     };
     ///
@@ -65,7 +65,7 @@ mod conf_subscribe {
         ];
         let points = points.map(|conf| {
             let conf = serde_yaml::from_str(conf).unwrap();
-            PointConfig::from_yaml(&self_name, &conf)
+            PointConf::from_yaml(&self_name, &conf)
         });
         let test_data = [
             (

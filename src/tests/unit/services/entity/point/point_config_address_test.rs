@@ -4,7 +4,7 @@ use std::{sync::Once, time::Duration};
 use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
 use log::debug;
 use testing::stuff::max_test_duration::TestDuration;
-use crate::services::entity::PointConfigAddress;
+use crate::services::entity::PointConfAddress;
 ///
 ///
 static INIT: Once = Once::new();
@@ -30,7 +30,7 @@ fn empty() {
     let self_id = "serialize";
     println!("\n{}", self_id);
     let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
-    let result = PointConfigAddress::empty();
+    let result = PointConfAddress::empty();
     assert!(result.offset == None, "\nresult: {:?}\ntarget: {:?}", result.offset, None::<u32>);
     assert!(result.bit == None, "\nresult: {:?}\ntarget: {:?}", result.bit, None::<u8>);
     test_duration.exit();
@@ -51,12 +51,12 @@ fn serialize_yaml() {
         (01, r#"
             offset: 111
         "#, 
-        PointConfigAddress { offset: Some(111), bit: None }),
+        PointConfAddress { offset: Some(111), bit: None }),
         (02, r#"
             offset: 111
             bit: 3
         "#, 
-        PointConfigAddress { offset: Some(111), bit: Some(3) }),
+        PointConfAddress { offset: Some(111), bit: Some(3) }),
     ];
     for (step, target, value) in test_data {
         let result = serde_yaml::to_value(&value).unwrap();
@@ -82,12 +82,12 @@ fn serialize_json() {
         (01, r#"{
             "offset": 111
         }"#, 
-        PointConfigAddress { offset: Some(111), bit: None }),
+        PointConfAddress { offset: Some(111), bit: None }),
         (02, r#"{
             "offset": 111,
             "bit": 3
         }"#, 
-        PointConfigAddress { offset: Some(111), bit: Some(3) }),
+        PointConfAddress { offset: Some(111), bit: Some(3) }),
     ];
     for (step, target, value) in test_data {
         let result = serde_json::to_value(&value).unwrap();
@@ -113,15 +113,15 @@ fn deserialize_yaml() {
         (01, r#"
             offset: 111
         "#, 
-        PointConfigAddress { offset: Some(111), bit: None }),
+        PointConfAddress { offset: Some(111), bit: None }),
         (02, r#"
             offset: 111
             bit: 3
         "#, 
-        PointConfigAddress { offset: Some(111), bit: Some(3) }),
+        PointConfAddress { offset: Some(111), bit: Some(3) }),
     ];
     for (step, value, target) in test_data {
-        let result: PointConfigAddress = serde_yaml::from_str(value).unwrap();
+        let result: PointConfAddress = serde_yaml::from_str(value).unwrap();
         debug!("Step: {}  |  Deserialized yaml PointConfigType: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }
@@ -143,15 +143,15 @@ fn deserialize_json() {
         (01, r#"{
             "offset": 111
         }"#, 
-        PointConfigAddress { offset: Some(111), bit: None }),
+        PointConfAddress { offset: Some(111), bit: None }),
         (02, r#"{
             "offset": 111,
             "bit": 3
         }"#, 
-        PointConfigAddress { offset: Some(111), bit: Some(3) }),
+        PointConfAddress { offset: Some(111), bit: Some(3) }),
     ];
     for (step, value, target) in test_data {
-        let result: PointConfigAddress = serde_json::from_str(value).unwrap();
+        let result: PointConfAddress = serde_json::from_str(value).unwrap();
         debug!("Step: {}  |  Deserialized json PointConfigType: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }

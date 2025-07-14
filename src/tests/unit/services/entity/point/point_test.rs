@@ -5,7 +5,7 @@ use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
 use log::debug;
 use testing::{entities::test_value::Value, stuff::max_test_duration::TestDuration};
 use crate::services::{
-    entity::{Cot, Point, PointConfigType, PointHlr, Status},
+    entity::{Cot, Point, PointConfType, PointHlr, Status},
     SubscriptionCriteria, types::Bool,
 };
 ///
@@ -220,23 +220,23 @@ fn type_() {
         match value {
             Value::Bool(value) => {
                 let result = Point::Bool(PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp));
-                assert!(result.type_() == PointConfigType::Bool, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfigType::Bool);
+                assert!(result.type_() == PointConfType::Bool, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfType::Bool);
             }
             Value::Int(value) => {
                 let result = Point::Int(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
-                assert!(result.type_() == PointConfigType::Int, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfigType::Int);
+                assert!(result.type_() == PointConfType::Int, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfType::Int);
             }
             Value::Real(value) => {
                 let result = Point::Real(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
-                assert!(result.type_() == PointConfigType::Real, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfigType::Real);
+                assert!(result.type_() == PointConfType::Real, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfType::Real);
             }
             Value::Double(value) => {
                 let result = Point::Double(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
-                assert!(result.type_() == PointConfigType::Double, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfigType::Double);
+                assert!(result.type_() == PointConfType::Double, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfType::Double);
             }
             Value::String(value) => {
                 let result = Point::String(PointHlr::new(tx_id, &name, value.clone(), status, cot, timestamp));
-                assert!(result.type_() == PointConfigType::String, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfigType::String);
+                assert!(result.type_() == PointConfType::String, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfType::String);
             }
         };
     }

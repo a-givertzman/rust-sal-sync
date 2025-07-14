@@ -2,7 +2,7 @@ use crate::{
     kernel::state::ChangeNotify,
     services::{
         conf::ServicesConf,
-        entity::{Name, Object, Point, PointConfig},
+        entity::{Name, Object, Point, PointConf},
         future::{Future, Sink}, retain::{RetainConf, RetainPointId},
         service::{LinkName, Service, ServiceCycle},
         subscription::SubscriptionCriteria,
@@ -22,7 +22,7 @@ pub struct Services {
     map: Arc<DashMap<String, Arc<dyn Service>>>,
     conf: ServicesConf,
     retain_point_id: Option<Arc<RetainPointId>>,
-    points_request: Arc<Owner<(String, Sink<Vec<PointConfig>>)>>,
+    points_request: Arc<Owner<(String, Sink<Vec<PointConf>>)>>,
     scheduler: Option<Scheduler>,
     handles: Handles<()>,
     exit: Arc<AtomicBool>,
@@ -122,7 +122,7 @@ impl Services {
     fn run_(
         dbg: Dbg,
         name: Name,
-        points_request: Arc<Owner<(String, Sink<Vec<PointConfig>>)>>,
+        points_request: Arc<Owner<(String, Sink<Vec<PointConf>>)>>,
         retain_point_id: Option<Arc<RetainPointId>>,
         services: Arc<DashMap<String, Arc<dyn Service + 'static>>>,
         exit: Arc<AtomicBool>,
@@ -257,7 +257,7 @@ impl Services {
     ///
     /// Returns list of point configurations over the all services
     ///  - requester_name - Service name !!!
-    pub fn points(&self, requester_name: impl Into<String>) -> Future<Vec<PointConfig>> {
+    pub fn points(&self, requester_name: impl Into<String>) -> Future<Vec<PointConf>> {
         let (future, sink) = Future::new();
         self.points_request.replace((requester_name.into(), sink));
         future

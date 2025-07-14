@@ -13,7 +13,7 @@ use crate::{
     services::entity::{
         object::Object, point::point::Point, Name,
     }, 
-    conf::ServiceNameConfig,
+    conf::ServiceNameConf,
     services::{
         services::Services,
         service::service::Service,
@@ -26,7 +26,7 @@ use crate::{
 pub struct ServiceName {
     dbg: Dbg,
     name: Name,
-    conf: ServiceNameConfig,
+    conf: ServiceNameConf,
     services: Arc<Services>,
     scheduler: Option<Scheduler>,
     handles: Handles<()>,
@@ -37,7 +37,7 @@ pub struct ServiceName {
 impl ServiceName {
     //
     /// Crteates new instance of the ServiceName 
-    pub fn new(conf: ServiceNameConfig, services: Arc<Services>) -> Self {
+    pub fn new(conf: ServiceNameConf, services: Arc<Services>) -> Self {
         let dbg = Dbg::new(conf.name.parent(), conf.name.me());
         Self {
             name: conf.name,

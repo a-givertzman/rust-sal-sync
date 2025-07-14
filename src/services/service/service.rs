@@ -1,6 +1,6 @@
 use sal_core::error::Error;
 use crate::{services::{
-    entity::{Object, Point, PointConfig}, future::Future, subscription::SubscriptionCriteria
+    entity::{Object, Point, PointConf}, future::Future, subscription::SubscriptionCriteria
 }, sync::channel::{Receiver, Sender}};
 ///
 /// Interface for application service
@@ -38,7 +38,7 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
     fn run(&self) -> Result<(), Error>;
     ///
     /// Returns list of configurations of the defined points
-    fn points(&self) -> Vec<PointConfig> {
+    fn points(&self) -> Vec<PointConf> {
         vec![]
     }
     ///

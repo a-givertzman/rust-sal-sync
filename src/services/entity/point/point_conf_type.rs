@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 /// - Double
 /// - String
 /// - Json
-pub type PointType = PointConfigType;
+pub type PointType = PointConfType;
 ///
 /// Represents a list of [Point] configuration types
 /// - Bool
@@ -17,7 +17,7 @@ pub type PointType = PointConfigType;
 /// - String
 /// - Json
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum PointConfigType {
+pub enum PointConfType {
     #[serde(rename = "Bool")]
     #[serde(alias = "bool", alias = "Bool")]
     Bool,
@@ -39,15 +39,15 @@ pub enum PointConfigType {
 }
 //
 //
-impl ToString for PointConfigType {
+impl ToString for PointConfType {
     fn to_string(&self) -> String {
         match self {
-            PointConfigType::Bool => "Bool".to_owned(),
-            PointConfigType::Int => "Int".to_owned(),
-            PointConfigType::Real => "Real".to_owned(),
-            PointConfigType::Double => "Double".to_owned(),
-            PointConfigType::String => "String".to_owned(),
-            PointConfigType::Json => "Json".to_owned(),
+            PointConfType::Bool => "Bool".to_owned(),
+            PointConfType::Int => "Int".to_owned(),
+            PointConfType::Real => "Real".to_owned(),
+            PointConfType::Double => "Double".to_owned(),
+            PointConfType::String => "String".to_owned(),
+            PointConfType::Json => "Json".to_owned(),
         }
     }
 }

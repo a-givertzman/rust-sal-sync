@@ -5,11 +5,9 @@ use testing::entities::test_value::Value;
 use crate::services::{
         entity::{
             Cot,
-            point::{
-                point_config_type::PointConfigType, point_hlr::PointHlr
-            }, Status
+            point::{PointConfType, PointHlr}, Status
         },
-        subscription::SubscriptionCriteria,
+        SubscriptionCriteria,
         types::{Bool, TypeOf},
     };
 ///
@@ -96,13 +94,13 @@ impl Point {
     }
     ///
     /// Returns type of the containing Point
-    pub fn type_(&self) -> PointConfigType {
+    pub fn type_(&self) -> PointConfType {
         match self {
-            Point::Bool(_) => PointConfigType::Bool,
-            Point::Int(_) => PointConfigType::Int,
-            Point::Real(_) => PointConfigType::Real,
-            Point::Double(_) => PointConfigType::Double,
-            Point::String(_) => PointConfigType::String,
+            Point::Bool(_) => PointConfType::Bool,
+            Point::Int(_) => PointConfType::Int,
+            Point::Real(_) => PointConfType::Real,
+            Point::Double(_) => PointConfType::Double,
+            Point::String(_) => PointConfType::String,
         }
     }
     ///
@@ -499,7 +497,7 @@ impl<'de> Deserialize<'de> for Point {
         #[derive(Debug, Deserialize)]
         struct PointDeserialize {
             #[serde(alias = "type")]
-            pub type_: PointConfigType,
+            pub type_: PointConfType,
             pub value: serde_json::Value,
             pub name: String,
             pub status: i64,  // Status,
@@ -515,7 +513,7 @@ impl<'de> Deserialize<'de> for Point {
             serde::de::Error::custom(format!("Point.deserialize | Error parsing {} timestamp from {:#?}, \n\terror: {:#?}", type_, visitor, err))
         }
         match visitor.type_ {
-            PointConfigType::Bool => {
+            PointConfType::Bool => {
                 let value = visitor.value.as_i64().ok_or_else(|| value_parsing_error::<D>("Point<Bool>", &visitor, "err"))?;
                 Ok(Point::Bool(PointHlr::new(
                     tx_id,
@@ -526,7 +524,7 @@ impl<'de> Deserialize<'de> for Point {
                     visitor.timestamp.parse().map_err(|err| timestamp_parsing_error::<D>("Point<Bool>", &visitor, err))?,
                 )))
             }
-            PointConfigType::Int => {
+            PointConfType::Int => {
                 let value = visitor.value.as_i64().ok_or_else(|| value_parsing_error::<D>("Point<Int>", &visitor, "err"))?;
                 Ok(Point::Int(PointHlr::new(
                     tx_id,
@@ -537,7 +535,7 @@ impl<'de> Deserialize<'de> for Point {
                     visitor.timestamp.parse().map_err(|err| timestamp_parsing_error::<D>("Point<Int>", &visitor, err))?,
                 )))
             }
-            PointConfigType::Real => {
+            PointConfType::Real => {
                 let value = visitor.value.as_f64().ok_or_else(|| value_parsing_error::<D>("Point<Real>", &visitor, "err"))?;
                 Ok(Point::Real(PointHlr::new(
                     tx_id,
@@ -548,7 +546,7 @@ impl<'de> Deserialize<'de> for Point {
                     visitor.timestamp.parse().map_err(|err| timestamp_parsing_error::<D>("Point<Real>", &visitor, err))?,
                 )))
             }
-            PointConfigType::Double => {
+            PointConfType::Double => {
                 let value = visitor.value.as_f64().ok_or_else(|| value_parsing_error::<D>("Point<Double>", &visitor, "err"))?;
                 Ok(Point::Double(PointHlr::new(
                     tx_id,
@@ -559,7 +557,7 @@ impl<'de> Deserialize<'de> for Point {
                     visitor.timestamp.parse().map_err(|err| timestamp_parsing_error::<D>("Point<Double>", &visitor, err))?,
                 )))
             }
-            PointConfigType::String => {
+            PointConfType::String => {
                 Ok(Point::String(PointHlr::new(
                     tx_id,
                     &visitor.name,
@@ -569,7 +567,7 @@ impl<'de> Deserialize<'de> for Point {
                     visitor.timestamp.parse().map_err(|err| timestamp_parsing_error::<D>("Point<String>", &visitor, err))?,
                 )))
             }
-            PointConfigType::Json => {
+            PointConfType::Json => {
                 Err(serde::de::Error::custom("Point.deserialize | Error parsing Point<Json> - Not implemented yet"))
                 // Ok(Point::String(Point::new(
                 //     tx_id,

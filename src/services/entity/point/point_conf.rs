@@ -7,13 +7,13 @@ use crate::services::{
     conf::ConfTree, entity::{
         Name,
         point::{
-            point_config_address::PointConfigAddress, 
-            point_config_filters::PointConfigFilter, 
-            point_config_type::PointConfigType, 
+            point_conf_address::PointConfAddress, 
+            point_conf_filters::PointConfFilter, 
+            point_conf_type::PointConfType, 
         },
     }, task::functions::FnConfKeywd
 };
-use super::point_config_history::PointConfigHistory;
+use super::point_conf_history::PointConfHistory;
 ///
 /// The configuration of the Point
 ///  - id - unique identificator for database;
@@ -30,23 +30,23 @@ use super::point_config_history::PointConfigHistory;
 ///  - filters - threshold filters
 ///  - comment - description text
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct PointConfig {
+pub struct PointConf {
     #[serde(skip)]
     pub id: usize,
     #[serde(skip)]
     pub name: String,
     #[serde(rename = "type")]
     #[serde(alias = "type", alias = "Type")]
-    pub type_: PointConfigType,
+    pub type_: PointConfType,
     #[serde(default)]
     #[serde(skip_serializing_if = "is_none")]
-    pub history: PointConfigHistory,
+    pub history: PointConfHistory,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alarm: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub address: Option<PointConfigAddress>,
+    pub address: Option<PointConfAddress>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub filters: Option<PointConfigFilter>,
+    pub filters: Option<PointConfFilter>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub comment: Option<String>,
 }
@@ -57,7 +57,7 @@ fn is_none<T: Default + PartialEq>(t: &T) -> bool {
 }
 //
 // 
-impl PointConfig {
+impl PointConf {
     ///
     /// creates PointConfig from serde_yaml::Value of following format:
     /// ```yaml
@@ -76,7 +76,7 @@ impl PointConfig {
     /// ```
     pub fn new(parent: impl Into<String>, conf_tree: &ConfTree) -> Self {
         trace!("PointConfig.new | confTree: {:?}", conf_tree);
-        let mut pc: PointConfig = serde_yaml::from_value(conf_tree.conf.clone()).unwrap();
+        let mut pc: PointConf = serde_yaml::from_value(conf_tree.conf.clone()).unwrap();
         let keyword = FnConfKeywd::from_str(&conf_tree.key);
         let name = match keyword {
             Ok(keyword) => keyword.data(),
@@ -94,9 +94,9 @@ impl PointConfig {
     }    
     ///
     /// Creates config from serde_yaml::Value of following format:
-    pub fn from_yaml(parent_name: &Name, value: &serde_yaml::Value) -> Self {
+    pub fn from_yaml(parent: impl Into<String>, value: &serde_yaml::Value) -> Self {
         trace!("PointConfig.from_yaml | value: {:?}", value);
-        Self::new(parent_name, &ConfTree::new_root(value.clone()).next().unwrap())
+        Self::new(parent, &ConfTree::new_root(value.clone()).next().unwrap())
     }
     ///
     /// Returns yaml representation

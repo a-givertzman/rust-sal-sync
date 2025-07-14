@@ -1,4 +1,4 @@
-use crate::services::{entity::PointConfig, task::functions::conf::FnConfKind};
+use crate::services::{entity::PointConf, task::functions::conf::FnConfKind};
 
 ///
 /// Represents configuration of the point in the NestedFn
@@ -7,8 +7,8 @@ use crate::services::{entity::PointConfig, task::functions::conf::FnConfKind};
 ///  - enable: const bool true                 # Optional, default true
 ///  - changes-only: const bool false          # Optional, default false
 #[derive(Debug, PartialEq, Clone)]
-pub struct FnPointConfig {
-    pub conf: PointConfig,
+pub struct FnPointConf {
+    pub conf: PointConf,
     pub send_to: Option<String>,
     pub enable: Option<Box<FnConfKind>>,
     pub input: Option<Box<FnConfKind>>,
@@ -16,10 +16,10 @@ pub struct FnPointConfig {
 }
 //
 // 
-impl FnPointConfig {
+impl FnPointConf {
     ///
     /// Returns list of configurations of the defined points
-    pub fn points(&self) -> Vec<PointConfig> {
+    pub fn points(&self) -> Vec<PointConf> {
         match &self.input {
             Some(input) => {
                 let mut points = input.points();

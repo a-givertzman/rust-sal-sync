@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 ///     - `threshold` - float parameter for data points to be filtered
 ///     - `factor` - integral factor
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct PointConfigFilter {
+pub struct PointConfFilter {
     // #[serde(skip_serializing_if = "Option::is_none")]
     pub threshold: f64,
     #[serde(skip_serializing_if = "Option::is_none")]

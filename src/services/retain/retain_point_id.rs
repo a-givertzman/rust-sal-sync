@@ -1,4 +1,4 @@
-use crate::{collections::FxHashMap, services::entity::{PointConfig, PointConfigType}};
+use crate::{collections::FxHashMap, services::entity::{PointConf, PointConfType}};
 use std::{collections::HashMap, env, ffi::OsStr, fs, hash::BuildHasherDefault, path::{Path, PathBuf}};
 use api_tools::{api::reply::api_reply::ApiReply, client::{api_query::{ApiQuery, ApiQueryKind, ApiQuerySql}, api_request::ApiRequest}};
 use dashmap::DashMap;
@@ -8,7 +8,7 @@ use indexmap::IndexMap;
 use log::{debug, error, info, trace};
 use serde::{Deserialize, Serialize};
 use super::retain_conf::RetainConf;
-type RetainedCahe = FxHashMap<String, FxHashMap<String, RetainedPointConfig>>;
+type RetainedCahe = FxHashMap<String, FxHashMap<String, RetainedPointConf>>;
 ///
 /// Stores unique Point ID
 /// - In the json file
@@ -16,7 +16,7 @@ type RetainedCahe = FxHashMap<String, FxHashMap<String, RetainedPointConfig>>;
 #[derive(Debug)]
 pub struct RetainPointId {
     id: String,
-    cache: DashMap<String, Vec<PointConfig>>,
+    cache: DashMap<String, Vec<PointConf>>,
     path: PathBuf,
     conf: RetainConf,
 }
@@ -49,7 +49,7 @@ impl RetainPointId {
     }
     ///
     /// Inserts collection of [points] owned by [owner]
-    pub fn insert(&self, owner: &str, points: Vec<PointConfig>) {
+    pub fn insert(&self, owner: &str, points: Vec<PointConf>) {
         info!("{}.points | Caching Point's from '{}'...", self.id, owner);
         let mut update_retained = false;
         let mut retained: RetainedCahe = self.read(self.path.clone());
@@ -70,7 +70,7 @@ impl RetainPointId {
                     .max()
                     .map_or(0, |id| id + 1);
                     update_retained = true;
-                    RetainedPointConfig { id, name: point.name.clone(), _type: point.type_.clone() }
+                    RetainedPointConf { id, name: point.name.clone(), _type: point.type_.clone() }
                 }).id;
             self.cache
                 .entry(owner.to_owned())
@@ -85,7 +85,7 @@ impl RetainPointId {
     }
     ///
     /// Returns configuration of the Point's
-    pub fn points(&self) -> IndexMap<String, Vec<PointConfig>> {
+    pub fn points(&self) -> IndexMap<String, Vec<PointConf>> {
         let points = self.cache
             .iter()
             .map(|r| (r.key().clone(), r.value().clone()));
@@ -120,7 +120,7 @@ impl RetainPointId {
     ///     ...
     /// }
     /// ```
-    fn read<P: AsRef<Path> + AsRef<OsStr> + std::fmt::Debug>(&self, path: P) -> FxHashMap<String, FxHashMap<String, RetainedPointConfig>> {
+    fn read<P: AsRef<Path> + AsRef<OsStr> + std::fmt::Debug>(&self, path: P) -> FxHashMap<String, FxHashMap<String, RetainedPointConf>> {
         match fs::read_to_string(&path) {
             Ok(json_string) => {
                 match serde_json::from_str(&json_string) {
@@ -244,10 +244,10 @@ impl RetainPointId {
 ///
 /// Private wroper for Point to be stored
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct RetainedPointConfig {
+struct RetainedPointConf {
     pub id: usize,
     pub name: String,
     #[serde(rename = "type")]
     #[serde(alias = "type", alias = "Type")]
-    pub _type: PointConfigType,
+    pub _type: PointConfType,
 }

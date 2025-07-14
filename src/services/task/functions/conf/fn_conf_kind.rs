@@ -1,4 +1,4 @@
-use crate::services::{conf::ConfTree, entity::PointConfig, task::functions::conf::{FnConfig, FnPointConfig}};
+use crate::services::{conf::ConfTree, entity::PointConf, task::functions::conf::{FnConfig, FnPointConf}};
 
 ///
 /// The kinde of the Function config, incapsulating config it self
@@ -14,7 +14,7 @@ pub enum FnConfKind {
     Var(FnConfig),
     Const(FnConfig),
     Point(FnConfig),
-    PointConf(FnPointConfig),
+    PointConf(FnPointConf),
     Param(ConfTree),
 }
 //
@@ -34,7 +34,7 @@ impl FnConfKind {
     }
     ///
     /// Returns list of configurations of the defined points of the incapsulated config
-    pub fn points(&self) -> Vec<PointConfig> {
+    pub fn points(&self) -> Vec<PointConf> {
         match self {
             FnConfKind::Fn(conf) => conf.points(),
             FnConfKind::Var(conf) => conf.points(),

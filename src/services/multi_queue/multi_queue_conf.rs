@@ -69,7 +69,7 @@ impl MultiQueueConf {
                 Self::new(parent, ConfTree::new(key.as_str().unwrap(), value.clone()))
             }
             None => {
-                panic!("MultiQueueConfig.from_yaml | Format error or empty conf: {:#?}", value)
+                panic!("MultiQueueConf.from_yaml | Format error or empty conf: {:#?}", value)
             }
         }
     }
@@ -84,12 +84,12 @@ impl MultiQueueConf {
                         MultiQueueConf::from_yaml(parent, &config)
                     }
                     Err(err) => {
-                        panic!("MultiQueueConfig.read | Error in config: {:?}\n\terror: {:?}", yaml_string, err)
+                        panic!("MultiQueueConf.read | Error in config: {:?}\n\terror: {:?}", yaml_string, err)
                     }
                 }
             }
             Err(err) => {
-                panic!("MultiQueueConfig.read | File {} reading error: {:?}", path, err)
+                panic!("MultiQueueConf.read | File {} reading error: {:?}", path, err)
             }
         }
     }

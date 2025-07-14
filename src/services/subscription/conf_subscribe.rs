@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use log::trace;
 use crate::services::{
-    entity::{Cot, PointConfig, PointConfigHistory},
+    entity::{Cot, PointConf, PointConfHistory},
     subscription::subscription_criteria::SubscriptionCriteria,
 };
 ///
@@ -54,7 +54,7 @@ impl ConfSubscribe {
     ///     - HashMap:
     ///         - key - service id
     ///         - value - subscriptions
-    pub fn with(&self, points: &[PointConfig]) -> HashMap<String, Option<Vec<SubscriptionCriteria>>> {
+    pub fn with(&self, points: &[PointConf]) -> HashMap<String, Option<Vec<SubscriptionCriteria>>> {
         if self.conf.is_string() {
             let service = self.conf.as_str().unwrap().to_owned();
             HashMap::from([
@@ -105,12 +105,12 @@ impl ConfSubscribe {
 struct Criterias {
     id: String,
     conf: serde_yaml::Value,
-    points: Vec<PointConfig>
+    points: Vec<PointConf>
 }
 //
 // 
 impl Criterias {
-    fn new(parent: &str, conf: &serde_yaml::Value, points: &[PointConfig]) -> Self {
+    fn new(parent: &str, conf: &serde_yaml::Value, points: &[PointConf]) -> Self {
         Self {
             id: format!("{}/Criterias", parent),
             conf: conf.clone(),
@@ -147,7 +147,7 @@ impl Criterias {
     }
     ///
     /// Creates list of Subscriptions based on the given point names, point configs, and filtering criterias
-    fn build_criterias(self_id: &str, options: &serde_yaml::Value, names: &serde_yaml::Value, point_configs: &[PointConfig]) -> Option<Vec<SubscriptionCriteria>> {
+    fn build_criterias(self_id: &str, options: &serde_yaml::Value, names: &serde_yaml::Value, point_configs: &[PointConf]) -> Option<Vec<SubscriptionCriteria>> {
         trace!("{}.build_criterias | options: {:?}", self_id, options);
         trace!("{}.build_criterias | names: {:?}", self_id, names);
         let names = names.as_sequence().unwrap();
@@ -185,7 +185,7 @@ impl Criterias {
     ///
     /// Returns all configs if names is empty, 
     /// otherwise returns configs for given names
-    fn build_point_configs(names: &[serde_yaml::Value], configs: &[PointConfig]) -> Vec<PointConfig> {
+    fn build_point_configs(names: &[serde_yaml::Value], configs: &[PointConf]) -> Vec<PointConf> {
         if names.is_empty() {
             configs.to_vec()
         } else {
@@ -199,22 +199,22 @@ impl Criterias {
     /// Returns true if point_config is accepted by the options:
     ///     - alarm
     ///     - history
-    fn accept(self_id: &str, point_conf: &PointConfig, history: &Option<PointConfigHistory>, alarm: &Option<u64>) -> bool {
+    fn accept(self_id: &str, point_conf: &PointConf, history: &Option<PointConfHistory>, alarm: &Option<u64>) -> bool {
         trace!("{}.accept | history: {:?}\t point.history: {:?}", self_id, history, point_conf.history);
         let mut accepted = true;
         if let Some(history) = history {
             trace!("{}.accept | check history", self_id);
             match history {
-                PointConfigHistory::None => {}
-                PointConfigHistory::Read => {
-                    accepted &= point_conf.history == PointConfigHistory::Read
+                PointConfHistory::None => {}
+                PointConfHistory::Read => {
+                    accepted &= point_conf.history == PointConfHistory::Read
                 }
-                PointConfigHistory::Write => {
-                    accepted &= point_conf.history == PointConfigHistory::Write
+                PointConfHistory::Write => {
+                    accepted &= point_conf.history == PointConfHistory::Write
                 }
-                PointConfigHistory::ReadWrite => {
-                    trace!("{}.accept | point_conf.history != PointConfigHistory::None: {}", self_id, point_conf.history != PointConfigHistory::None);
-                    accepted &= point_conf.history != PointConfigHistory::None;
+                PointConfHistory::ReadWrite => {
+                    trace!("{}.accept | point_conf.history != PointConfHistory::None: {}", self_id, point_conf.history != PointConfHistory::None);
+                    accepted &= point_conf.history != PointConfHistory::None;
                 }
             };
         }

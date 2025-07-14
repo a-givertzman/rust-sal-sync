@@ -4,7 +4,7 @@ use serde::de::DeserializeOwned;
 use crate::{
     collections::FxIndexMap,
     services::{
-        conf::ConfDistance, entity::{Name, PointConfig}, task::functions::{FnConfKeywd, FnConfKindName}
+        conf::ConfDistance, entity::{Name, PointConf}, task::functions::{FnConfKeywd, FnConfKindName}
     },
 };
 use super::{conf_duration::ConfDuration, conf_keywd::ConfKeywd, conf_kind::ConfKind, diag_keywd::DiagKeywd};
@@ -472,7 +472,7 @@ impl ConfTree {
     ///         type: 'Int'
     ///         # history: r                # r / rw - activates history
     /// ```
-    pub fn get_diagnosis(&self, parent: impl Into<String>) -> FxIndexMap<DiagKeywd, PointConfig> {
+    pub fn get_diagnosis(&self, parent: impl Into<String>) -> FxIndexMap<DiagKeywd, PointConf> {
         let mut points = FxIndexMap::default();
         let parent = parent.into();
         match ConfTreeGet::<ConfTree>::get(self, "diagnosis") {
@@ -483,7 +483,7 @@ impl ConfTree {
                         let point_name = Name::new(&parent, keyword.data()).join();
                         let point_conf = conf.get(key).unwrap();
                         log::trace!("{}.get_diagnosis | Point '{}'", self.id, point_name);
-                        let point = PointConfig::new(&parent, &point_conf);
+                        let point = PointConf::new(&parent, &point_conf);
                         let point_name_keywd = DiagKeywd::new(&point.name);
                         points.insert(point_name_keywd, point);
                     } else {
@@ -620,5 +620,18 @@ impl ConfTreeGet<u64> for ConfTree {
         };
         log::trace!("ConfTree.get | {}: {:?}", key.as_ref(), val);
         val
+    }
+}
+//
+//
+impl ConfTreeGet<PointConf> for ConfTree {
+    ///
+    /// Returns a sub-node by it's key if exists, else None
+    fn get(&self, key: impl AsRef<str>) -> Option<PointConf> {
+        if self.conf.is_mapping() {
+            self.conf.as_mapping().unwrap().get(key.as_ref()).map(|value| PointConf::from_yaml("ConfTree", value))
+        } else {
+            None
+        }
     }
 }

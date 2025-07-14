@@ -6,7 +6,7 @@ mod point_config {
     use log::debug;
     use serde_json::json;
     use testing::stuff::max_test_duration::TestDuration;
-    use crate::services::entity::{Name, PointConfig, PointConfigAddress, PointConfigFilter, PointConfigHistory, PointConfigType};
+    use crate::services::entity::{Name, PointConf, PointConfAddress, PointConfFilter, PointConfHistory, PointConfType};
     ///
     ///
     static INIT: Once = Once::new();
@@ -44,13 +44,13 @@ mod point_config {
                         filters:
                             threshold: 5.0    # 5 threshold
                         comment: Test Point Bool"#,
-                PointConfig {
+                PointConf {
                     id: 0,
                     name: format!("Point.Name.0"),
-                    type_: PointConfigType::Bool,
-                    history: PointConfigHistory::None, alarm: Some(0),
-                    address: Some(PointConfigAddress { offset: Some(0), bit: Some(0) }),
-                    filters: Some(PointConfigFilter { threshold: 5.0, factor: None }),
+                    type_: PointConfType::Bool,
+                    history: PointConfHistory::None, alarm: Some(0),
+                    address: Some(PointConfAddress { offset: Some(0), bit: Some(0) }),
+                    filters: Some(PointConfFilter { threshold: 5.0, factor: None }),
                     comment: Some(format!("Test Point Bool")),
                 },
             ),
@@ -65,13 +65,13 @@ mod point_config {
                             threshold: 5.0    # 5 threshold
                             factor: 0.1
                         comment: Test Point Bool"#,
-                PointConfig {
+                PointConf {
                     id: 0,
                     name: format!("Point.Name.0"),
-                    type_: PointConfigType::Bool,
-                    history: PointConfigHistory::None, alarm: Some(0),
-                    address: Some(PointConfigAddress { offset: Some(0), bit: Some(0) }),
-                    filters: Some(PointConfigFilter { threshold: 5.0, factor: Some(0.1) }),
+                    type_: PointConfType::Bool,
+                    history: PointConfHistory::None, alarm: Some(0),
+                    address: Some(PointConfAddress { offset: Some(0), bit: Some(0) }),
+                    filters: Some(PointConfFilter { threshold: 5.0, factor: Some(0.1) }),
                     comment: Some(format!("Test Point Bool")),
                 },
             ),
@@ -82,12 +82,12 @@ mod point_config {
                         address:
                             offset: 0   # 0..65535
                         comment: Test Point"#,
-                PointConfig {
+                PointConf {
                     id: 0,
                     name: format!("PointName1"),
-                    type_: PointConfigType::Int,
-                    history: PointConfigHistory::Read, alarm: None,
-                    address: Some(PointConfigAddress { offset: Some(0), bit: None }),
+                    type_: PointConfType::Int,
+                    history: PointConfHistory::Read, alarm: None,
+                    address: Some(PointConfAddress { offset: Some(0), bit: None }),
                     filters: None,
                     comment: Some(format!("Test Point")),
                 },
@@ -99,12 +99,12 @@ mod point_config {
                         address:
                             offset: 0   # 0..65535
                         comment: Test Point"#,
-                PointConfig {
+                PointConf {
                     id: 0,
                     name: format!("PointName2"),
-                    type_: PointConfigType::Int,
-                    history: PointConfigHistory::None, alarm: Some(4),
-                    address: Some(PointConfigAddress { offset: Some(0), bit: None }),
+                    type_: PointConfType::Int,
+                    history: PointConfHistory::None, alarm: Some(4),
+                    address: Some(PointConfAddress { offset: Some(0), bit: None }),
                     filters: None,
                     comment: Some(format!("Test Point")),
                 },
@@ -116,12 +116,12 @@ mod point_config {
                         address:
                             offset: 12   # 0..65535
                         comment: Test Point"#,
-                PointConfig {
+                PointConf {
                     id: 0,
                     name: format!("PointName3"),
-                    type_: PointConfigType::Int,
-                    history: PointConfigHistory::Write, alarm: None,
-                    address: Some(PointConfigAddress { offset: Some(12), bit: None }),
+                    type_: PointConfType::Int,
+                    history: PointConfHistory::Write, alarm: None,
+                    address: Some(PointConfAddress { offset: Some(12), bit: None }),
                     filters: None,
                     comment: Some(format!("Test Point")),
                 },
@@ -133,12 +133,12 @@ mod point_config {
                         address:
                             offset: 12   # 0..65535
                         comment: Test Point"#,
-                PointConfig {
+                PointConf {
                     id: 0,
                     name: format!("PointName4"),
-                    type_: PointConfigType::Int,
-                    history: PointConfigHistory::ReadWrite, alarm: None,
-                    address: Some(PointConfigAddress { offset: Some(12), bit: None }),
+                    type_: PointConfType::Int,
+                    history: PointConfHistory::ReadWrite, alarm: None,
+                    address: Some(PointConfAddress { offset: Some(12), bit: None }),
                     filters: None,
                     comment: Some(format!("Test Point")),
                 },
@@ -178,13 +178,13 @@ mod point_config {
                         filters:
                             threshold: 5    # 5% threshold
                         comment: Test Point Bool"#,
-                PointConfig {
+                PointConf {
                     id: 0,
                     name: format!("/{}/PointName0", self_id),
-                    type_: PointConfigType::Bool,
-                    history: PointConfigHistory::ReadWrite, alarm: Some(0),
-                    address: Some(PointConfigAddress { offset: Some(0), bit: Some(0) }),
-                    filters: Some(PointConfigFilter { threshold: 5.0, factor: None }),
+                    type_: PointConfType::Bool,
+                    history: PointConfHistory::ReadWrite, alarm: Some(0),
+                    address: Some(PointConfAddress { offset: Some(0), bit: Some(0) }),
+                    filters: Some(PointConfFilter { threshold: 5.0, factor: None }),
                     comment: Some(format!("Test Point Bool")),
                 },
             ),
@@ -195,12 +195,12 @@ mod point_config {
                         address:
                             offset: 0   # 0..65535
                         comment: Test Point"#,
-                PointConfig {
+                PointConf {
                     id: 0,
                     name: format!("/{}/PointName1", self_id),
-                    type_: PointConfigType::Int,
-                    history: PointConfigHistory::Write, alarm: None,
-                    address: Some(PointConfigAddress { offset: Some(0), bit: None }),
+                    type_: PointConfType::Int,
+                    history: PointConfHistory::Write, alarm: None,
+                    address: Some(PointConfAddress { offset: Some(0), bit: None }),
                     filters: None,
                     comment: Some(format!("Test Point")),
                 },
@@ -212,12 +212,12 @@ mod point_config {
                         address:
                             offset: 0   # 0..65535
                         comment: Test Point"#,
-                PointConfig {
+                PointConf {
                     id: 0,
                     name: format!("/{}/PointName2", self_id),
-                    type_: PointConfigType::Int,
-                    history: PointConfigHistory::None, alarm: Some(4),
-                    address: Some(PointConfigAddress { offset: Some(0), bit: None }),
+                    type_: PointConfType::Int,
+                    history: PointConfHistory::None, alarm: Some(4),
+                    address: Some(PointConfAddress { offset: Some(0), bit: None }),
                     filters: None,
                     comment: Some(format!("Test Point")),
                 },
@@ -228,12 +228,12 @@ mod point_config {
                         address:
                             offset: 12   # 0..65535
                         comment: Test Point"#,
-                PointConfig {
+                PointConf {
                     id: 0,
                     name: format!("/{}/PointName3", self_id),
-                    type_: PointConfigType::Int,
-                    history: PointConfigHistory::None, alarm: None,
-                    address: Some(PointConfigAddress { offset: Some(12), bit: None }),
+                    type_: PointConfType::Int,
+                    history: PointConfHistory::None, alarm: None,
+                    address: Some(PointConfAddress { offset: Some(12), bit: None }),
                     filters: None,
                     comment: Some(format!("Test Point")),
                 },
@@ -241,7 +241,7 @@ mod point_config {
         ];
         for (conf, target) in test_data {
             let conf = serde_yaml::from_str(conf).unwrap();
-            let result = PointConfig::from_yaml(&self_name, &conf);
+            let result = PointConf::from_yaml(&self_name, &conf);
             assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
         }
         test_duration.exit();
@@ -272,13 +272,13 @@ mod point_config {
                     "threshold": 5
                 }},
                 "comment": "Test Point Bool"}}"#, self_id),
-                PointConfig {
+                PointConf {
                     id: 0,
                     name: format!("/{}/PointName0", self_id),
-                    type_: PointConfigType::Bool,
-                    history: PointConfigHistory::ReadWrite, alarm: Some(0),
-                    address: Some(PointConfigAddress { offset: Some(0), bit: Some(0) }),
-                    filters: Some(PointConfigFilter { threshold: 5.0, factor: None }),
+                    type_: PointConfType::Bool,
+                    history: PointConfHistory::ReadWrite, alarm: Some(0),
+                    address: Some(PointConfAddress { offset: Some(0), bit: Some(0) }),
+                    filters: Some(PointConfFilter { threshold: 5.0, factor: None }),
                     comment: Some(format!("Test Point Bool")),
                 },
             ),
@@ -333,7 +333,7 @@ mod point_config {
         for (conf, target) in test_data {
             let conf = serde_json::from_str(conf).unwrap();
             // println!("conf: {:#?}", conf);
-            let result = PointConfig::from_json(&target.name, &conf).unwrap();
+            let result = PointConf::from_json(&target.name, &conf).unwrap();
             assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
         }
         test_duration.exit();

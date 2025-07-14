@@ -13,7 +13,7 @@ use serde::{Serialize, Deserialize};
 ///         history: skip - None / r - Read / w - Write / rw - ReadWrite
 /// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum PointConfigHistory {
+pub enum PointConfHistory {
     #[serde(alias = "none", alias = "")]
     None,
     #[serde(rename(serialize = "r"))]
@@ -28,7 +28,7 @@ pub enum PointConfigHistory {
 }
 //
 // 
-impl Default for PointConfigHistory {
+impl Default for PointConfHistory {
     fn default() -> Self {
         Self::None
     }
