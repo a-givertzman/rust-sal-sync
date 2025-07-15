@@ -38,7 +38,7 @@ concat-in-place = "~1.1"
 concat-string = "~1.0"
 #
 # Safe multithreading
-kanal = "0.1"
+kanal = "~0.1"
 crossbeam = "~0.8"
 crossbeam-skiplist = "~0.1"
 coco = "~0.3"
