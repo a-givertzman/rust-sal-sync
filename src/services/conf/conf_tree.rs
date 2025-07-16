@@ -421,7 +421,7 @@ impl ConfTree {
             .get(key.as_ref())
             .ok_or(error.err(format!("key '{}' - not found in: {:#?}", key.as_ref(), self.conf)))?;
         let val = serde_yaml::from_value::<T>(val.to_owned())
-        .map_err(|err| error.err(format!("key '{}' - parse error: {:?} in: {:#?}", key.as_ref(), err, self.conf)));
+        .map_err(|err| error.err(format!("key '{}' - parse error: {:?} in: {:#?}", key.as_ref(), err, val)));
         log::trace!("ConfTree.parse | {}: {:#?}", key.as_ref(), val);
         val
     }
