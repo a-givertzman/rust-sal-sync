@@ -84,6 +84,7 @@ fn aprox_eq_f64() {
         (28, 2, (0.777f64, 0.775f64)),
         (29, 3, (0.7777f64, 0.7775f64)),
         (30, 3, (0.7777f64, 0.7779f64)),
+        (31, 0, (10.0f64, 9.99f64)),
     ];
     for (step, decimals, (value, target)) in test_data {
         let aprox_eq = value.aprox_eq(target, decimals);

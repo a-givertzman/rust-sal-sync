@@ -74,7 +74,6 @@ impl FromStr for ConfKeywd {
     /// Returns [ConfKeywd] from fields
     /// ```ignore
     /// | prefix |  kind  |  name     | sufix     |
-    /// |        |        |           |           |
     /// |--------|--------|-----------|-----------|
     /// | opt    | requir |  requir   |  opt      |
     /// |--------|--------|-----------|-----------|

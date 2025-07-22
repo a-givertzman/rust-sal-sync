@@ -4,7 +4,7 @@ use serde::de::DeserializeOwned;
 use crate::{
     collections::FxIndexMap,
     services::{
-        conf::ConfDistance, entity::{Name, PointConf}, task::functions::{FnConfKeywd, FnConfKind, FnConfKindName, FnConfig}
+        conf::{ConfCustomKeywd, ConfDistance}, entity::{Name, PointConf}, task::functions::{FnConfKeywd, FnConfKind, FnConfKindName, FnConfig}
     },
 };
 use super::{conf_duration::ConfDuration, conf_keywd::ConfKeywd, conf_kind::ConfKind, diag_keywd::DiagKeywd};
@@ -323,7 +323,7 @@ impl ConfTree {
         }
     }
     ///
-    /// Returns general parameter by keyword's `prefix` and `kind`
+    /// Returns general parameter by keyword's (`kind`) and optional `prefix`
     /// - `kind` - a kind of cofiguration entity
     ///
     /// Where keyword looks loke
@@ -336,8 +336,9 @@ impl ConfTree {
     /// | in         | queue    | in-queue    |           |
     /// | out        | queue    | out-queue   |           |
     /// ```
-    pub fn get_by_keywd(&self, prefix: &str, kind: impl Into<String>) -> Result<(ConfKeywd, ConfTree), Error> {
+    pub fn get_by_keywd(&self, prefix: impl Into<String>, kind: impl Into<String>) -> Result<(ConfKeywd, ConfTree), Error> {
         let self_conf = self.clone();
+        let prefix = prefix.into();
         let kind = kind.into();
         let error = Error::new(&self.id, "get_by_keywd");
         for node in self_conf.sub_nodes().unwrap() {
@@ -348,6 +349,31 @@ impl ConfTree {
             }
         }
         Err(error.err(format!("keyword '{} {:?}' - not found", prefix, kind)))
+    }
+    ///
+    /// Returns general parameter by custom `keywd` and optional `prefix`
+    /// - `kind` - a kind of cofiguration entity
+    ///
+    /// Where keyword looks loke
+    /// ```markdown
+    /// | opt        |  requir     |  opt      |
+    /// | ---------- | ----------- | --------- |
+    /// | **prefix** | **Name**    | **Sufix** |
+    /// |            | camera      | Camera1   |
+    /// ```
+    pub fn get_by_custom_keywd(&self, prefix: impl Into<String>, keywd: impl Into<String>) -> Result<(ConfCustomKeywd, ConfTree), Error> {
+        let self_conf = self.clone();
+        let prefix = prefix.into();
+        let keywd = keywd.into();
+        let error = Error::new(&self.id, "get_by_custom_keywd");
+        for node in self_conf.sub_nodes().unwrap() {
+            if let Ok(keyword) = ConfCustomKeywd::from_str(&node.key) {
+                if keyword.keywd() == keywd && keyword.prefix() == prefix {
+                    return Ok((keyword, node))
+                }
+            }
+        }
+        Err(error.err(format!("keyword '{} {}' - not found", prefix, keywd)))
     }
     ///
     /// Returns `in queue` name
