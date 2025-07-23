@@ -3,23 +3,21 @@ use regex::RegexBuilder;
 use sal_core::error::Error;
 use serde::Deserialize;
 ///
-/// # Configuration keyword konsists of 4 fields:
+/// # Configuration keyword konsists of 3 fields:
 /// ```ignore
-/// | prefix |  kind  |  name     | sufix     |
-/// |        |        |           |           |
-/// |--------|--------|-----------|-----------|
-/// | opt    | requir |  requir   |  opt      |
-/// |--------|--------|-----------|-----------|
-/// |        | task   | Task      | Task1     |
-/// |        | service| ApiClient | ApiClient |
-/// | in     | queue  | in-queue  |           |
-/// | out    | queue  | out-queue |           |
+/// | prefix |  name     | sufix     |
+/// |--------|-----------|-----------|
+/// | opt    |  requir   |  opt      |
+/// |--------|-----------|-----------|
+/// |        | camera    | Camera1   |
+/// |        | ApiClient | ApiClient |
+/// | in     | queue     |           |
 /// ````
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq, Hash)]
 pub struct ConfCustomKeywd {
-    pub prefix: String,
-    pub keywd: String,
-    pub sufix: String,
+    prefix: String,
+    keywd: String,
+    sufix: String,
 }
 //
 // 
