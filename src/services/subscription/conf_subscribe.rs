@@ -5,7 +5,8 @@ use crate::services::{
     subscription::subscription_criteria::SubscriptionCriteria,
 };
 ///
-/// Service Configuration, to be subscribed on some service / services, by number of criterias
+/// ## Service Configuration, to be subscribed on some service / services, by number of criterias
+/// ```ignore
 /// ------------------------------------------------------------------------------------------
 /// subscibe: MultiQueue    # - broadcast suscription to the MultiQueue
 /// ------------------------------------------------------------------------------------------
@@ -33,6 +34,7 @@ use crate::services::{
 ///             - /App/Service/Point.Name.2
 ///     AnotherService:                     # - multicast subscription to the AnotherService
 ///         Inf: []                         #   - on all points having Cot::Inf
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct ConfSubscribe {
     id: String,
