@@ -341,12 +341,17 @@ impl ConfTree {
         let prefix = prefix.into();
         let kind = kind.into();
         let error = Error::new(&self.id, "get_by_keywd");
-        for node in self_conf.sub_nodes().unwrap() {
-            if let Ok(keyword) = ConfKeywd::from_str(&node.key) {
-                if keyword.kind() == kind && keyword.prefix() == prefix {
-                    return Ok((keyword, node))
+        match self_conf.sub_nodes() {
+            Some(nodes) => {
+                for node in nodes {
+                    if let Ok(keyword) = ConfKeywd::from_str(&node.key) {
+                        if keyword.kind() == kind && keyword.prefix() == prefix {
+                            return Ok((keyword, node))
+                        }
+                    }
                 }
             }
+            None => return Err(error.err(format!("Conf is not a mapping: {:?}", self.conf))),
         }
         Err(error.err(format!("keyword '{} {:?}' - not found", prefix, kind)))
     }
@@ -366,12 +371,17 @@ impl ConfTree {
         let prefix = prefix.into();
         let keywd = keywd.into();
         let error = Error::new(&self.id, "get_by_custom_keywd");
-        for node in self_conf.sub_nodes().unwrap() {
-            if let Ok(keyword) = ConfCustomKeywd::from_str(&node.key) {
-                if keyword.keywd() == keywd && keyword.prefix() == prefix {
-                    return Ok((keyword, node))
+        match self_conf.sub_nodes() {
+            Some(nodes) => {
+                for node in nodes {
+                    if let Ok(keyword) = ConfCustomKeywd::from_str(&node.key) {
+                        if keyword.keywd() == keywd && keyword.prefix() == prefix {
+                            return Ok((keyword, node))
+                        }
+                    }
                 }
             }
+            None => return Err(error.err(format!("Conf is not a mapping: {:?}", self.conf))),
         }
         Err(error.err(format!("keyword '{} {}' - not found", prefix, keywd)))
     }
