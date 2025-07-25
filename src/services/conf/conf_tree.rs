@@ -170,7 +170,7 @@ impl ConfTree {
         match ConfKeywd::from_str(&self.key) {
             Ok(keywd) => {
                 log::trace!("ConfTree.sufix | Keyword: {:?}", keywd);
-                Ok(keywd.sufix())
+                Ok(keywd.title())
             }
             Err(err) => Err(error.err(format!("Error in {:?}: \n\t{:?}", self.key, err))),
         }

@@ -5,22 +5,21 @@ use serde::Deserialize;
 ///
 /// # Configuration keyword konsists of 4 fields:
 /// ```ignore
-/// | prefix |  kind  |  name     | sufix     |
-/// |        |        |           |           |
-/// |--------|--------|-----------|-----------|
-/// | opt    | requir |  requir   |  opt      |
-/// |--------|--------|-----------|-----------|
-/// |        | task   | Task      | Task1     |
-/// |        | service| ApiClient | ApiClient |
-/// | in     | queue  | in-queue  |           |
-/// | out    | queue  | out-queue |           |
+/// | prefix |  kind  |  name     | title      |
+/// |--------|--------|-----------|----------- |
+/// | opt    | requir |  requir   |  opt       |
+/// |--------|--------|-----------|----------- |
+/// |        | task   | Task      | Task1      |
+/// |        | service| ApiClient | ApiClient1 |
+/// | in     | queue  | in-queue  |            |
+/// | out    | queue  | out-queue |            |
 /// ````
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq, Hash)]
 pub struct ConfKeywd {
     pub prefix: String,
     pub kind: String,
     pub name: String,
-    pub sufix: String,
+    pub title: String,
 }
 //
 // 
@@ -30,7 +29,7 @@ impl ConfKeywd {
     /// ```markdown
     /// | opt        | requir   |  requir     |  opt      |
     /// | ---------- | -------- | ----------- | --------- |
-    /// | **prefix** | kind     | Name        | Sufix     |
+    /// | **prefix** | kind     | Name        | Title     |
     /// ```
     pub fn prefix(&self) -> String {
         self.prefix.clone()
@@ -40,7 +39,7 @@ impl ConfKeywd {
     /// ```markdown
     /// | opt        | requir   |  requir     |  opt      |
     /// | ---------- | -------- | ----------- | --------- |
-    /// | prefix     | **kind** | Name        | Sufix     |
+    /// | prefix     | **kind** | Name        | Title     |
     /// ```
     pub fn kind(&self) -> String {
         self.kind.clone()
@@ -50,20 +49,20 @@ impl ConfKeywd {
     /// ```markdown
     /// | opt        | requir   |  requir     |  opt      |
     /// | ---------- | -------- | ----------- | --------- |
-    /// | prefix     | kind     | **Name**    | Sufix     |
+    /// | prefix     | kind     | **Name**    | Title     |
     /// ```
     pub fn name(&self) -> String {
         self.name.clone()
     }
     ///
-    /// Returns `sufix` field
+    /// Returns `title` field
     /// ```markdown
     /// | opt        | requir   |  requir     |  opt      |
     /// | ---------- | -------- | ----------- | --------- |
-    /// | prefix     | kind     | Name        | **Sufix** |
+    /// | prefix     | kind     | Name        | **Title** |
     /// ```
-    pub fn sufix(&self) -> String {
-        self.sufix.clone()
+    pub fn title(&self) -> String {
+        self.title.clone()
     }
 }
 //
@@ -73,14 +72,14 @@ impl FromStr for ConfKeywd {
     ///
     /// Returns [ConfKeywd] from fields
     /// ```ignore
-    /// | prefix |  kind  |  name     | sufix     |
-    /// |--------|--------|-----------|-----------|
-    /// | opt    | requir |  requir   |  opt      |
-    /// |--------|--------|-----------|-----------|
-    /// |        | task   | Task      | Task1     |
-    /// |        | service| ApiClient | ApiClient |
-    /// | in     | queue  | in-queue  |           |
-    /// | out    | queue  | out-queue |           |
+    /// | prefix |  kind  |  name     | title      |
+    /// |--------|--------|-----------|----------- |
+    /// | opt    | requir |  requir   |  opt       |
+    /// |--------|--------|-----------|----------- |
+    /// |        | task   | Task      | Task1      |
+    /// |        | service| ApiClient | ApiClient1 |
+    /// | in     | queue  | in-queue  |            |
+    /// | out    | queue  | out-queue |            |
     /// ```
     fn from_str(input: &str) -> Result<Self, Error> {
         let error = Error::new("ConfKeywd", "from_str");
@@ -105,7 +104,7 @@ impl FromStr for ConfKeywd {
                     Some(arg) => Ok(arg.as_str().to_string()),
                     None => Err(error.err(format!("Error parsing required `name` from keyword '{}'", &input))),
                 }?;
-                let sufix = match &caps.get(group_sufix) {
+                let title = match &caps.get(group_sufix) {
                     Some(first) => String::from(first.as_str()),
                     None => String::new(),
                 };
@@ -113,11 +112,11 @@ impl FromStr for ConfKeywd {
                     prefix,
                     kind,
                     name,
-                    sufix,
+                    title,
                 })
             }
             None => {
-                Err(error.err(format!("Pattern `prefix Kinde Name sufix` - not found in keyword '{}'", &input)))
+                Err(error.err(format!("Pattern `prefix Kinde Name title` - not found in keyword '{}'", &input)))
             }
         }
     }

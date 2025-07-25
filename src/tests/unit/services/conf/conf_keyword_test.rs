@@ -44,11 +44,11 @@ mod conf_keywd {
             assert!(result.prefix() == target.0, "\nresult: {:?}\ntarget: {:?}", result, target.0);
             assert!(result.kind() == target.1.to_string(), "\nresult: {:?}\ntarget: {:?}", result, target.1);
             assert!(result.name() == target.2, "\nresult: {:?}\ntarget: {:?}", result, target.2);
-            assert!(result.sufix() == target.3, "\nresult: {:?}\ntarget: {:?}", result, target.3);
+            assert!(result.title() == target.3, "\nresult: {:?}\ntarget: {:?}", result, target.3);
             assert!(result.prefix == target.0, "\nresult: {:?}\ntarget: {:?}", result, target.0);
             assert!(result.kind == target.1.to_string(), "\nresult: {:?}\ntarget: {:?}", result, target.1);
             assert!(result.name == target.2, "\nresult: {:?}\ntarget: {:?}", result, target.2);
-            assert!(result.sufix == target.3, "\nresult: {:?}\ntarget: {:?}", result, target.3);
+            assert!(result.title == target.3, "\nresult: {:?}\ntarget: {:?}", result, target.3);
         }
     }
 
