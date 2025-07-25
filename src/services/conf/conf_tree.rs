@@ -104,7 +104,7 @@ impl ConfTree {
     /// ```markdown
     /// | opt        | requir   |  requir     |  opt      |
     /// | ---------- | -------- | ----------- | --------- |
-    /// | **prefix** | kind     | Name        | Sufix     |
+    /// | **prefix** | kind     | Name        | Title     |
     /// ```
     /// 
     /// Will parsed from self `key` as [ConfKeywd]
@@ -123,7 +123,7 @@ impl ConfTree {
     /// ```markdown
     /// | opt        | requir   |  requir     |  opt      |
     /// | ---------- | -------- | ----------- | --------- |
-    /// | prefix     | **kind** | Name        | Sufix     |
+    /// | prefix     | **kind** | Name        | Title     |
     /// ```
     /// 
     /// Will parsed from self `key` as [ConfKeywd]
@@ -142,7 +142,7 @@ impl ConfTree {
     /// ```markdown
     /// | opt        | requir   |  requir     |  opt      |
     /// | ---------- | -------- | ----------- | --------- |
-    /// | prefix     | kind     | **Name**    | Sufix     |
+    /// | prefix     | kind     | **Name**    | Title     |
     /// ```
     /// 
     /// Will parsed from self `key` as [ConfKeywd]
@@ -157,39 +157,39 @@ impl ConfTree {
         }
     }
     ///
-    /// Returns `sufix` field
+    /// Returns `title` field
     /// ```markdown
     /// | opt        | requir   |  requir     |  opt      |
     /// | ---------- | -------- | ----------- | --------- |
-    /// | prefix     | kind     | Name        | **Sufix** |
+    /// | prefix     | kind     | Name        | **Title** |
     /// ```
     /// 
     /// Will parsed from self `key` as [ConfKeywd]
-    pub fn sufix(&self) -> Result<String, Error> {
-        let error = Error::new(&self.id, "sufix");
+    pub fn title(&self) -> Result<String, Error> {
+        let error = Error::new(&self.id, "title");
         match ConfKeywd::from_str(&self.key) {
             Ok(keywd) => {
-                log::trace!("ConfTree.sufix | Keyword: {:?}", keywd);
+                log::trace!("ConfTree.title | Keyword: {:?}", keywd);
                 Ok(keywd.title())
             }
             Err(err) => Err(error.err(format!("Error in {:?}: \n\t{:?}", self.key, err))),
         }
     }
     ///
-    /// Returns `sufix` field if exists and not empty or default
+    /// Returns `title` field if exists and not empty or default
     /// ```markdown
     /// | opt        | requir   |  requir     |  opt      |
     /// | ---------- | -------- | ----------- | --------- |
-    /// | prefix     | kind     | Name        | **Sufix** |
+    /// | prefix     | kind     | Name        | **Title** |
     /// ```
     /// 
     /// Will parsed from self `key` as [ConfKeywd]
     pub fn sufix_or(&self, default: impl Into<String>) -> String {
-        match self.sufix() {
-            Ok(sufix) => if sufix.is_empty() {
+        match self.title() {
+            Ok(title) => if title.is_empty() {
                 default.into()
             } else {
-                sufix
+                title
             }
             Err(_) => default.into(),
         }
@@ -330,7 +330,7 @@ impl ConfTree {
     /// ```markdown
     /// | opt        | requir   |  requir     |  opt      |
     /// | ---------- | -------- | ----------- | --------- |
-    /// | **prefix** | **kind** | Name        | Sufix     |
+    /// | **prefix** | **kind** | Name        | Title     |
     /// |            | task     | Task        | Task1     |
     /// |            | service  | ApiClient   | ApiClient |
     /// | in         | queue    | in-queue    |           |
@@ -363,7 +363,7 @@ impl ConfTree {
     /// ```markdown
     /// | opt        |  requir     |  opt      |
     /// | ---------- | ----------- | --------- |
-    /// | **prefix** | **Name**    | **Sufix** |
+    /// | **prefix** | **Name**    | **Title** |
     /// |            | camera      | Camera1   |
     /// ```
     pub fn get_by_custom_keywd(&self, prefix: impl Into<String>, keywd: impl Into<String>) -> Result<(ConfCustomKeywd, ConfTree), Error> {
