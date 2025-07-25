@@ -30,15 +30,6 @@ pub struct Services {
 //
 //
 impl Services {
-    pub const API_CLIENT: &'static str = "ApiClient";
-    pub const MULTI_QUEUE: &'static str = "MultiQueue";
-    pub const PROFINET_CLIENT: &'static str = "ProfinetClient";
-    pub const TASK: &'static str = "Task";
-    pub const TCP_CLIENT: &'static str = "TcpClient";
-    pub const TCP_SERVER: &'static str = "TcpServer";
-    pub const PRODUCER_SERVICE: &'static str = "ProducerService";
-    pub const CACHE_SERVICE: &'static str = "CacheService";
-    pub const SLMP_CLIENT: &'static str = "SlmpClient";
     ///
     /// Creates new instance of the Services
     pub fn new(parent: impl Into<String>, conf: ServicesConf, scheduler: Option<Scheduler>) -> Self {
