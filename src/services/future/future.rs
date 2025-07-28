@@ -65,6 +65,7 @@ impl<T: Send + 'static> Future<T> {
 }
 ///
 /// Contains `Sender<T>`
+#[derive(Clone)]
 pub struct Sink<T> {
     send: Sender<T>,
 }
