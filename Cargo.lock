@@ -1034,9 +1034,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.5.16"
+version = "0.5.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7251471db004e509f4e75a62cca9435365b5ec7bcdff530d612ac7c87c44a792"
+checksum = "5407465600fb0548f1442edf71dd20683c6ed326200ace4b1ef0763521bb3b77"
 dependencies = [
  "bitflags",
 ]
@@ -1319,7 +1319,7 @@ dependencies = [
 [[package]]
 name = "testing"
 version = "0.1.1"
-source = "git+https://github.com/a-givertzman/rust-testing.git?tag=0.1.2#b1d5d616276a0acfb683a87918ae20a938de1386"
+source = "git+https://github.com/a-givertzman/rust-testing.git?tag=0.1.2#67aea1abec45d8b0e178ad7a4c1ee9679f595ceb"
 dependencies = [
  "env_logger",
  "indexmap",
