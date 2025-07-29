@@ -13,25 +13,28 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
     /// Returns copy of the Sender - service's incoming queue
     #[allow(unused_variables)]
     fn get_link(&self, name: &str) -> Sender<Point> {
-        panic!("{}.get_link | Does not supported", self.name())
+        panic!("{}.get_link | Is not implemented", self.name())
     }
     ///
     /// Returns Receiver
     #[allow(unused_variables)]
-    fn subscribe(&self, receiver_id: &str, points: &[SubscriptionCriteria]) -> (Sender<Point>, Receiver<Point>) {
-        panic!("{}.subscribe | Does not supported", self.name())
+    fn subscribe(&self, recvr_id: &str, points: &[SubscriptionCriteria]) -> (Sender<Point>, Receiver<Point>) {
+        let err = Error::new(&self.name(), "subscribe").err(format!("Request from '{recvr_id}', But not implemented"));
+        panic!("{err}")
     }
     ///
     /// Extends the sucessfully with additiuonal points
     #[allow(unused_variables)]
-    fn extend_subscription(&self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
-        panic!("{}.extend_subscription | Does not supported", self.name())
+    fn extend_subscription(&self, recvr_id: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
+        let err = Error::new(&self.name(), "extend_subscription").err(format!("Request from '{recvr_id}', But not implemented"));
+        panic!("{err}")
     }
     ///
     /// Canceling the subsciption
     #[allow(unused_variables)]
-    fn unsubscribe(&self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
-        panic!("{}.unsubscribe | Does not supported", self.name())
+    fn unsubscribe(&self, recvr_id: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
+        let err = Error::new(&self.name(), "unsubscribe").err(format!("Request from '{recvr_id}', But not implemented"));
+        panic!("{err}")
     }
     ///
     /// Starts service's main loop in the individual thread
@@ -43,8 +46,10 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
     }
     ///
     /// Returns `Future<Point>`, where will be pushed all points by subscription
-    fn gi(&self, _receiver_name: &str, _points: &[SubscriptionCriteria]) -> Future<Vec<Point>> {
-        panic!("{}.gi | Does not supported", self.name())
+    fn gi(&self, recvr_id: &str, points: &[SubscriptionCriteria]) -> Future<Vec<Point>> {
+        let _ = points;
+        let err = Error::new(&self.name(), "gi").err(format!("Request from '{recvr_id}', But not implemented"));
+        panic!("{err}")
     }
     ///
     /// Waits for the [Service] to finish.
@@ -57,7 +62,7 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
     ///   like `std::thread::JoinHandle` - may panic on some platforms 
     ///   if a thread attempts to join itself or otherwise may create a deadlock with joining threads.
     fn wait(&self) -> Result<(), Error> {
-        panic!("{}.wait | Does not supported", self.name())
+        panic!("{}.wait | Is not implemented", self.name())
     }
     ///
     /// Checks if the [Service] has finished running.
