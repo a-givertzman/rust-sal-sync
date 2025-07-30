@@ -375,7 +375,7 @@ impl ConfTree {
             Some(nodes) => {
                 for node in nodes {
                     if let Ok(keyword) = ConfCustomKeywd::from_str(&node.key) {
-                        if keyword.keywd() == keywd && keyword.prefix() == prefix {
+                        if keyword.name() == keywd && keyword.prefix() == prefix {
                             return Ok((keyword, node))
                         }
                     }
