@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use regex::{Regex, RegexBuilder};
+use regex::Regex;
 use sal_core::error::Error;
 use serde::Deserialize;
 ///
