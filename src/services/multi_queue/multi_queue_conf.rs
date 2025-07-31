@@ -4,14 +4,14 @@ use crate::services::{conf::{ConfKind, ConfTree}, entity::Name, service::LinkNam
 /// creates config from serde_yaml::Value of following format:
 /// ```yaml
 /// service MultiQueue:
-///     cycle: 1 ms
-///     reconnect: 1 s  # default 3 s
-///     address: 127.0.0.1:8080
-///     in queue link:
+///     in queue in-queue:
 ///         max-length: 10000
-///     send-to:                  # optional
-///         - MultiQueue.queue
-///                         ...
+///     send-to:                    # optional
+///         - Service0.in-queue
+///         - Service1.in-queue
+///         ...
+///         - ServiceN.in-queue
+/// ```
 #[derive(Debug, PartialEq, Clone)]
 pub struct MultiQueueConf {
     pub(crate) name: Name,
@@ -33,7 +33,7 @@ impl MultiQueueConf {
     ///         - Service1.in-queue
     ///         ...
     ///         - ServiceN.in-queue
-    ///                     ...
+    /// ```
     pub fn new(parent: impl Into<String>, conf: ConfTree) -> MultiQueueConf {
         let me = conf.sufix_or(conf.name().unwrap());
         let dbg = format!("MultiQueueConf({})", me);
@@ -46,13 +46,13 @@ impl MultiQueueConf {
         let send_to = match conf.get_send_to_many() {
             Ok(send_to) => send_to.into_iter().map(|send_to|LinkName::from_str(&send_to).unwrap()).collect(),
             Err(err) => {
-                log::warn!("{}.new | Error: {:#?}", dbg, err);
+                log::info!("{}.new | {:#?}", dbg, err);
                 vec![]
             }
         };
         log::debug!("{}.new | 'send-to': {:?}", dbg, send_to);
         if let Ok((_, _)) = conf.get_by_keywd("out", ConfKind::Queue) {
-            log::error!("{}.new | Parameter 'out queue' - deprecated, use 'send-to' instead in conf: {:#?}", dbg, conf)
+            log::error!("{}.new | Parameter 'out queue' - deprecated, use 'send-to' instead", dbg)
         }
         MultiQueueConf {
             name: self_name,
