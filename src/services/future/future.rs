@@ -33,7 +33,7 @@ impl<T: Send + 'static> Future<T> {
     }
     /// 
     /// Returns future callback
-    pub fn then(&self, on_done: impl Fn(T) -> T, on_err: impl Fn(String) -> T) -> T {
+    pub fn then<O>(&self, on_done: impl Fn(T) -> O, on_err: impl Fn(String) -> O) -> O {
         match self.recv.recv() {
             Ok(event) => {
                 (on_done)(event)
