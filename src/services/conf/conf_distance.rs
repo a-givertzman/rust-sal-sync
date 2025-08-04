@@ -179,7 +179,7 @@ impl FromStr for ConfDistance {
     type Err = String;
     fn from_str(input: &str) -> Result<ConfDistance, String> {
         trace!("ConfDistance.from_str | input: {}", input);
-        let re = r"^[ \t]*([-+]?\d[\d]*\.?[\d]+)[ \t]*(nm|um|mm|cm|m|km|in){0,1}[ \t]*$";
+        let re = r"^[ \t]*([-+]?[\d]*\.?[\d]+)[ \t]*(nm|um|mm|cm|m|km|in){0,1}[ \t]*$";
         let re = RegexBuilder::new(re).multi_line(true).build().unwrap();
         let group_value = 1;
         let group_unit = 2;
