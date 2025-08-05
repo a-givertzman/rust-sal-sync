@@ -1,9 +1,11 @@
-use std::{fs, str::FromStr};
+use std::{fs, str::FromStr, time::Duration};
 use crate::services::{conf::{ConfKind, ConfTree}, entity::Name, service::LinkName};
 ///
 /// creates config from serde_yaml::Value of following format:
 /// ```yaml
 /// service MultiQueue:
+///     wait-started: 10 ms         # optional, next service will wait until current completely started plus specified time
+///     wait-finished: 10 ms        # optional, parent service will wait until current completely finished plus specified time
 ///     in queue in-queue:
 ///         max-length: 10000
 ///     send-to:                    # optional
@@ -15,6 +17,8 @@ use crate::services::{conf::{ConfKind, ConfTree}, entity::Name, service::LinkNam
 #[derive(Debug, PartialEq, Clone)]
 pub struct MultiQueueConf {
     pub(crate) name: Name,
+    pub(crate) wait_started: Option<Duration>,
+    pub(crate) wait_finished: Option<Duration>,
     pub(crate) rx: String,
     pub(crate) rx_max_length: i64,
     pub(crate) send_to: Vec<LinkName>,
@@ -26,6 +30,8 @@ impl MultiQueueConf {
     /// creates config from serde_yaml::Value of following format:
     /// ```yaml
     /// service MultiQueue:
+    ///     wait-started: 10 ms         # optional, next service will wait until current completely started plus specified time
+    ///     wait-finished: 10 ms        # optional, parent service will wait until current completely finished plus specified time
     ///     in queue in-queue:
     ///         max-length: 10000
     ///     send-to:                    # optional
@@ -38,9 +44,13 @@ impl MultiQueueConf {
         let me = conf.sufix_or(conf.name().unwrap());
         let dbg = format!("MultiQueueConf({})", me);
         log::trace!("{}.new | conf: {:?}", dbg, conf);
-        let self_name = Name::new(parent, &me);
-        let dbg = format!("MultiQueueConf({})", self_name);
-        log::debug!("{}.new | self_name: {:?}", dbg, self_name);
+        let name = Name::new(parent, &me);
+        let dbg = format!("MultiQueueConf '{}'", name);
+        log::debug!("{}.new | self_name: {:?}", dbg, name);
+        let wait_started: Option<Duration> = conf.get_duration("wait-started").ok();
+        log::debug!("{}.new | wait-started: {:?}", dbg, wait_started);
+        let wait_finished: Option<Duration> = conf.get_duration("wait-finished").ok();
+        log::debug!("{}.new | wait-finished: {:?}", dbg, wait_finished);
         let (rx, rx_max_length) = conf.get_in_queue().unwrap();
         log::debug!("{}.new | 'in queue': {},\tmax-length: {}", dbg, rx, rx_max_length);
         let send_to = match conf.get_send_to_many() {
@@ -55,7 +65,9 @@ impl MultiQueueConf {
             log::error!("{}.new | Parameter 'out queue' - deprecated, use 'send-to' instead", dbg)
         }
         MultiQueueConf {
-            name: self_name,
+            name,
+            wait_started,
+            wait_finished,
             rx,
             rx_max_length,
             send_to,

@@ -1,14 +1,12 @@
 use std::{
     collections::HashMap, fmt::Debug, fs, hash::BuildHasherDefault, io::Write,
-    sync::{atomic::{AtomicBool, Ordering}, Arc},
+    sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Duration,
 };
 use concat_string::concat_string;
 use sal_core::{dbg::{self, dbg, Dbg}, error::Error};
 use crate::{
     collections::FxDashMap, services::{
-        entity::{Name, Object, Point, PointTxId},
-        service::{LinkName, Service, RECV_TIMEOUT},
-        services::Services, subscription::{SubscriptionCriteria, Subscriptions},
+        entity::{Name, Object, Point, PointTxId}, future::Sink, service::{LinkName, Service, RECV_TIMEOUT}, services::Services, subscription::{SubscriptionCriteria, Subscriptions}, ServiceWaiting
     },
     sync::{channel::{self, Receiver, Sender}, Handles, Owner}, thread_pool::Scheduler,
 };
@@ -22,6 +20,8 @@ use super::multi_queue_conf::MultiQueueConf;
 pub struct MultiQueue {
     dbg: Dbg,
     name: Name,
+    wait_started: Option<Duration>,
+    // wait_finished: Option<Duration>,
     subscriptions: Arc<Subscriptions>,
     subscriptions_changed: Arc<AtomicBool>,
     rx_send: HashMap<String, Sender<Point>>,
@@ -45,6 +45,8 @@ impl MultiQueue {
         let send_queues = conf.send_to;
         Self {
             name: conf.name.clone(),
+            wait_started: conf.wait_started,
+            // wait_finished: conf.wait_finished,
             subscriptions: Arc::new(Subscriptions::new(&dbg)),
             subscriptions_changed: Arc::new(AtomicBool::new(false)),
             rx_send: HashMap::from([(conf.rx, send)]),
@@ -99,13 +101,22 @@ impl MultiQueue {
     }
     ///
     /// Main loop
-    fn run_(dbg: Dbg, name: Name, recv: Receiver<Point>, subscriptions_ref: Arc<Subscriptions>, subscriptions_changed: Arc<AtomicBool>, exit: Arc<AtomicBool>) {
+    fn run_(
+        dbg: Dbg,
+        name: Name,
+        recv: Receiver<Point>,
+        subscriptions_ref: Arc<Subscriptions>,
+        subscriptions_changed: Arc<AtomicBool>,
+        started: Sink<Result<(), Error>>,
+        exit: Arc<AtomicBool>,
+    ) {
             log::info!("{}.run | Preparing thread - ok", dbg);
             let mut subscriptions = subscriptions_ref.clone();
+            started.add(Ok(()));
             loop {
-                if subscriptions_changed.load(Ordering::Relaxed) {
+                if subscriptions_changed.load(Ordering::SeqCst) {
                     subscriptions_changed.store(false, Ordering::SeqCst);
-                    log::debug!("{}.run | Subscriptions changes detected", dbg);
+                    log::debug!("{}.run | Subscriptions changed", dbg);
                     subscriptions = subscriptions_ref.clone();
                 }
                 match recv.recv_timeout(RECV_TIMEOUT) {
@@ -127,7 +138,13 @@ impl MultiQueue {
                         }
                     }
                     Err(err) => {
-                        log::trace!("{}.run | recv timeout: {:?}", dbg, err);
+                        match err {
+                            kanal::ReceiveErrorTimeout::Timeout => {},
+                            _ => {
+                                log::trace!("{}.run | recv error: {:?}", dbg, err);
+                                break;
+                            }
+                        }
                     }
                 }
                 if exit.load(Ordering::SeqCst) {
@@ -271,25 +288,31 @@ impl Service for MultiQueue {
             self.subscriptions.add_broadcast(receiver_hash, send.clone());
             log::debug!("{}.run | Broadcast subscription registered, receiver: \n\t{} ({})", self.dbg, receiver_name, receiver_hash);
         }
+        let service_waiting = ServiceWaiting::new(&name, self.wait_started);
+        let service_release = service_waiting.release();
         let exit = self.exit.clone();
         let error = Error::new(&self.dbg, "run");
         match &self.scheduler {
             Some(scheduler) => {
                 let handle = scheduler.spawn(move|| {
-                    Self::run_(dbg, name, recv, subscriptions_ref, subscriptions_changed, exit);
+                    Self::run_(dbg, name, recv, subscriptions_ref, subscriptions_changed, service_release, exit);
                     Ok(())
                 }).map_err(|err| error.pass_with("Start failed on Scheduler", err.to_string()))?;
                 self.handles.push(handle);
             }
             None => {
                 let handle= std::thread::Builder::new().name(format!("{}.run", dbg.clone())).spawn(move || {
-                    Self::run_(dbg, name, recv, subscriptions_ref, subscriptions_changed, exit);
+                    Self::run_(dbg, name, recv, subscriptions_ref, subscriptions_changed, service_release, exit);
                 }).map_err(|err| error.pass_with("Start failed on std::thread", err.to_string()))?;
                 self.handles.push(handle);
             }
         };
+        let r = match self.wait_started {
+            Some(_) => service_waiting.wait(),
+            None => Ok(()),
+        };
         log::info!("{}.run | Started", self.dbg);
-        Ok(())
+        r
     }
     //
     //

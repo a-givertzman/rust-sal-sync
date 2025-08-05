@@ -18,9 +18,11 @@
 use std::time::Duration;
 mod link_name;
 mod service_cycle;
+mod service_waiting;
 mod service;
 pub const RECV_TIMEOUT: Duration = Duration::from_millis(100);
 
 pub use link_name::*;
 pub use service_cycle::*;
+pub use service_waiting::*;
 pub use service::*;

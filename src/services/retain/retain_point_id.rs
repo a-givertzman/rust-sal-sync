@@ -227,7 +227,7 @@ impl RetainPointId {
                         }
                     }
                     Err(err) => {
-                        let message = concat_string!(self.id, ".send | Error sending API request: {:?}", err);
+                        let message = concat_string!(self.id, ".send | Error sending API request: {:?}", err.to_string());
                         log::warn!("{}", message);
                         Err(message)
                     }

@@ -6,6 +6,8 @@ pub type SendError = kanal::SendError;
 ///
 /// Creates a new sync bounded channel with the requested buffer size,
 /// and returns Sender and Receiver of the channel for type T,
+/// 
+/// For channel with zero size queue, this channel always block until successful send/recv
 pub fn bounded<T>(size: usize) -> (Sender<T>, Receiver<T>) {
     kanal::bounded(size)
 }
