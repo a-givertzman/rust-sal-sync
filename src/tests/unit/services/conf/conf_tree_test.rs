@@ -34,7 +34,7 @@ impl Node {
     }
 }
 ///
-///
+/// Testing [ConfTree] valid configuration
 #[test]
 fn valid() {
     DebugSession::init(LogLevel::Info, Backtrace::Short);
@@ -198,13 +198,13 @@ fn inputs(conf_tree: &ConfTree) -> Node {
     };
 }
 ///
-/// 
+/// Testing [ConfTree].as...()
 #[test]
 fn as_type() {
     DebugSession::init(LogLevel::Info, Backtrace::Short);
     init_once();
     init_each();
-    log::info!("test_config_tree_valid");
+    log::info!("ConfigTree-as...");
     // let (initial, switches) = init_each();
     let test_data: Vec<(&str, IndexMap<&str, Value>)> = vec![
         (
@@ -250,6 +250,55 @@ fn as_type() {
                 Value::Double(target) => assert!(conf.as_f64(key).unwrap() == target, "\nresult: {:?}\ntarget: {:?}", conf.as_f64(key).unwrap(), target),
                 Value::String(target) => assert!(conf.as_str(key).unwrap() == target, "\nresult: {:?}\ntarget: {:?}", conf.as_str(key).unwrap(), target),
             }
+        }
+    }
+}
+///
+/// Testing [ConfTree].nodes()
+#[test]
+fn nodes() {
+    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    init_once();
+    init_each();
+    log::info!("ConfigTree-nodes");
+    // let (initial, switches) = init_each();
+    let test_data = vec![
+        (
+            r#"
+                thread-pool: 12
+                services: 0
+                service MultiQueue: 0
+                service RecvService RecvService0: 0
+                service RecvService RecvService1: 1
+                service FrdmService: 0
+                service SendService SendService0: 0
+            "#,
+            [
+                "thread-pool",
+                "services",
+                "service MultiQueue",
+                "service RecvService RecvService0",
+                "service RecvService RecvService1",
+                "service FrdmService",
+                "service SendService SendService0",
+            ],
+        ),
+
+    ];
+    for (value, targets) in test_data {
+        // log::debug!("test value: {:?}", value);
+        let conf: serde_yaml::Value = serde_yaml::from_str(value).unwrap();
+        log::debug!("test conf: {:?}", conf);
+        let conf = ConfTree::new_root(conf);
+        let mut nodes: Vec<ConfTree> = conf.sub_nodes().unwrap().collect();
+        for node in nodes.iter() {
+            log::debug!("node: {:?}", node.key);
+        }
+        nodes.reverse();
+        for target in targets {
+            let node = nodes.pop().unwrap();
+            let result = node.key;
+            assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target)
         }
     }
 }

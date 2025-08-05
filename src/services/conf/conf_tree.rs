@@ -68,17 +68,14 @@ impl ConfTree {
     ///
     /// iterate across all sub nodes
     pub fn sub_nodes(&self) -> Option<impl Iterator<Item = ConfTree> + '_> {
-        if self.conf.is_mapping() {
-            let iter = self.conf.as_mapping().unwrap().into_iter().map( |(key, value)| {
+        self.conf.as_mapping().map(|m| {
+            m.iter().map( |(key, value)| {
                 ConfTree::new(
                     key.as_str().unwrap(),
                     value.clone(),
                 )
-            });
-            Some(iter)
-        } else {
-            None
-        }
+            })
+        })
     }
     ///
     /// Returns keys, excluding specified
