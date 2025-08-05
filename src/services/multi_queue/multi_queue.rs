@@ -107,12 +107,12 @@ impl MultiQueue {
         recv: Receiver<Point>,
         subscriptions_ref: Arc<Subscriptions>,
         subscriptions_changed: Arc<AtomicBool>,
-        started: Sink<Result<(), Error>>,
+        started: Option<Sink<Result<(), Error>>>,
         exit: Arc<AtomicBool>,
     ) {
             log::info!("{}.run | Preparing thread - ok", dbg);
             let mut subscriptions = subscriptions_ref.clone();
-            started.add(Ok(()));
+            started.map(|started| started.add(Ok(())));
             loop {
                 if subscriptions_changed.load(Ordering::SeqCst) {
                     subscriptions_changed.store(false, Ordering::SeqCst);
@@ -289,7 +289,7 @@ impl Service for MultiQueue {
             log::debug!("{}.run | Broadcast subscription registered, receiver: \n\t{} ({})", self.dbg, receiver_name, receiver_hash);
         }
         let service_waiting = ServiceWaiting::new(&name, self.wait_started);
-        let service_release = service_waiting.release();
+        let service_release = self.wait_started.map(|_| service_waiting.release());
         let exit = self.exit.clone();
         let error = Error::new(&self.dbg, "run");
         match &self.scheduler {

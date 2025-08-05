@@ -57,7 +57,7 @@ fn services_thread() {
     test_duration.exit();
 }
 ///
-/// Testing `Services` on `std::thread`
+/// Testing `Services` on `ThreadPool`
 #[test]
 fn services_scheduler() {
     DebugSession::init(LogLevel::Info, Backtrace::Short);
@@ -89,6 +89,41 @@ fn services_scheduler() {
         task.exit();
         task.wait().unwrap();
     }
+    services.exit();
+    services.wait().unwrap();
+    log::info!("{dbg} | All finished in {:?}", time.elapsed());
+    test_duration.exit();
+}
+///
+/// Testing `Services.all` insertion order
+#[test]
+fn services_all() {
+    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    init_once();
+    init_each();
+    let dbg = Dbg::own("Services-all");
+    log::debug!("\n{}", dbg);
+    let tasks = 7;
+    let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
+    test_duration.run().unwrap();
+    log::trace!("dir: {:?}", env::current_dir());
+    let time = Instant::now();
+    let thread_pool = ThreadPool::new(&dbg, None);
+    let services = Arc::new(Services::new(&dbg, ServicesConf::new(
+        &dbg, 
+        ConfTree::empty(),
+    ), Some(thread_pool.scheduler())));
+    services.run().unwrap();
+    let tasks: Vec<Name> = (0..tasks).map(|i| {
+        let task = Arc::new(ServiceMok::new(&dbg, i, Some(thread_pool.scheduler())));
+        let name = task.name();
+        services.insert(task);
+        name
+    }).collect();
+    // assert!(points_count == target, "\nresult: {:?}\ntarget: {:?}", points_count, target);
+    let result: Vec<String> = services.all().into_iter().map(|(k, _)| k).collect();
+    let target: Vec<String> = tasks.iter().map(|n| n.join()).collect();
+    assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
     services.exit();
     services.wait().unwrap();
     log::info!("{dbg} | All finished in {:?}", time.elapsed());

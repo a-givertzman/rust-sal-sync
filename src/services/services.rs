@@ -1,17 +1,17 @@
 use crate::{
-    kernel::state::ChangeNotify,
-    services::{
+    kernel::state::ChangeNotify, services::{
         conf::ServicesConf,
         entity::{Name, Object, Point, PointConf},
         future::{Future, Sink}, retain::{RetainConf, RetainPointId},
         service::{LinkName, Service, ServiceCycle},
         subscription::SubscriptionCriteria,
-    }, sync::{channel::{Receiver, Sender}, Handles, Owner}, thread_pool::Scheduler,
+    }, sync::{channel::{Receiver, Sender}, Handles, Owner}, thread_pool::Scheduler
 };
 use std::{
-    collections::HashMap, fmt::Debug, sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Duration
+    fmt::Debug, sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Duration
 };
 use concat_string::concat_string;
+use crossbeam_skiplist::SkipSet;
 use dashmap::DashMap;
 use sal_core::{dbg::Dbg, error::Error};
 ///
@@ -20,6 +20,7 @@ pub struct Services {
     dbg: Dbg,
     name: Name,
     map: Arc<DashMap<String, Arc<dyn Service>>>,
+    order: SkipSet<String>,
     conf: ServicesConf,
     retain_point_id: Option<Arc<RetainPointId>>,
     points_request: Arc<Owner<(String, Sink<Vec<PointConf>>)>>,
@@ -40,6 +41,7 @@ impl Services {
         Self {
             name,
             map: Arc::new(DashMap::new()),
+            order: SkipSet::new(),
             retain_point_id: match &conf.retain.point {
                 Some(_) => Some(Arc::new(RetainPointId::new(&name_str, conf.retain.clone()))),
                 None => None,
@@ -173,11 +175,21 @@ impl Services {
         log::info!("{}.run | Exit", dbg);
     }
     ///
-    /// Returns all holding services in the map<service id, service reference>
-    pub fn all(&self) -> HashMap<String, Arc<dyn Service>> {
-        HashMap::from_iter(
-            self.map.iter().map(|r| (r.key().clone(), r.value().clone()))
-        )
+    /// Returns all holding `Service`s in the `Vec<(Service id, Service ref)>`, ordered by insertion
+    pub fn all(&self) -> Vec<(String, Arc<dyn Service>)> {
+        let mut result = vec![];
+        for key in self.order.iter() {
+            match self.map.get(key.value()) {
+                Some(r) => {
+                    result.push((r.key().clone(), r.value().clone()))
+                },
+                None => log::warn!("{}.all | Service '{}' - is not found", self.dbg, key.value()),
+            }
+        }
+        // HashMap::from_iter(
+        //     self.map.iter().map(|r| (r.key().clone(), r.value().clone()))
+        // )
+        result
     }
     ///
     /// Inserts a new service into the collection
@@ -186,7 +198,8 @@ impl Services {
         if self.map.contains_key(&name) {
             panic!("{}.insert | Duplicated service name '{:?}'", self.dbg, name);
         }
-        self.map.insert(name, service);
+        self.map.insert(name.clone(), service);
+        self.order.insert(name);
     }
     ///
     /// Returns Service
