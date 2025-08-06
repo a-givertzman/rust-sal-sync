@@ -5,7 +5,6 @@ use dashmap::DashMap;
 use hashers::fx_hash::FxHasher;
 use concat_string::concat_string;
 use indexmap::IndexMap;
-use log::{debug, error, info, trace};
 use serde::{Deserialize, Serialize};
 use super::retain_conf::RetainConf;
 type RetainedCahe = FxHashMap<String, FxHashMap<String, RetainedPointConf>>;
@@ -50,12 +49,12 @@ impl RetainPointId {
     ///
     /// Inserts collection of [points] owned by [owner]
     pub fn insert(&self, owner: &str, points: Vec<PointConf>) {
-        info!("{}.points | Caching Point's from '{}'...", self.id, owner);
+        log::debug!("{}.points | Caching Point's from '{}'...", self.id, owner);
         let mut update_retained = false;
         let mut retained: RetainedCahe = self.read(self.path.clone());
-        trace!("{}.points | retained: {:#?}", self.id, retained);
+        log::trace!("{}.points | retained: {:#?}", self.id, retained);
         for mut point in points {
-            trace!("{}.points | point: {}...", self.id, point.name);
+            log::trace!("{}.points | point: {}...", self.id, point.name);
             let retained_clone = retained.clone();
             point.id = retained
                 .entry(owner.to_owned())
@@ -81,7 +80,7 @@ impl RetainPointId {
             self.write(&self.path, &retained).unwrap();
             self.sql_write(&retained)
         }
-        info!("{}.points | Caching Point's from '{}' - Ok", self.id, owner);
+        log::debug!("{}.points | Caching Point's from '{}' - Ok", self.id, owner);
     }
     ///
     /// Returns configuration of the Point's
@@ -104,7 +103,7 @@ impl RetainPointId {
                     Ok(_) => Ok(path),
                     Err(err) => {
                         let message = format!("{}.create_dir | Error create path: '{:?}'\n\terror: {:?}", self_id, path, err);
-                        error!("{}", message);
+                        log::error!("{}", message);
                         Err(message)
                     }
                 }
@@ -133,7 +132,7 @@ impl RetainPointId {
                 }
             }
             Err(err) => {
-                debug!("{}.read | File '{:?}' reading error: {:?}", self.id, path, err);
+                log::debug!("{}.read | File '{:?}' reading error: {:?}", self.id, path, err);
             }
         };
         HashMap::with_hasher(BuildHasherDefault::<FxHasher>::default())
@@ -164,7 +163,7 @@ impl RetainPointId {
                 }
             }
             Err(err) => {
-                error!("{:#?}", err);
+                log::error!("{:#?}", err);
                 Err(err)
             }
         }
@@ -211,7 +210,7 @@ impl RetainPointId {
                     Ok(reply) => {
                         if log::max_level() > log::LevelFilter::Debug {
                             let reply_str = std::str::from_utf8(&reply).unwrap();
-                            debug!("{}.send | reply str: {:?}", &self.id, reply_str);
+                            log::debug!("{}.send | reply str: {:?}", &self.id, reply_str);
                         }
                         match serde_json::from_slice(&reply) {
                             Ok(reply) => Ok(reply),
