@@ -1,4 +1,6 @@
 use std::{fs, str::FromStr, time::Duration};
+use sal_core::dbg::Dbg;
+
 use crate::services::{conf::{ConfKind, ConfTree}, entity::Name, service::LinkName};
 ///
 /// creates config from serde_yaml::Value of following format:
@@ -42,17 +44,16 @@ impl MultiQueueConf {
     /// ```
     pub fn new(parent: impl Into<String>, conf: ConfTree) -> MultiQueueConf {
         let me = conf.sufix_or(conf.name().unwrap());
-        let dbg = format!("MultiQueueConf({})", me);
-        log::trace!("{}.new | conf: {:?}", dbg, conf);
         let name = Name::new(parent, &me);
-        let dbg = format!("MultiQueueConf '{}'", name);
-        log::debug!("{}.new | self_name: {:?}", dbg, name);
+        let dbg = Dbg::new(name.parent(), me);
+        log::trace!("{}.new | conf: {:?}", dbg, conf);
+        log::trace!("{}.new | name: {:?}", dbg, name);
         let wait_started: Option<Duration> = conf.get_duration("wait-started").ok();
-        log::debug!("{}.new | wait-started: {:?}", dbg, wait_started);
+        log::trace!("{}.new | wait-started: {:?}", dbg, wait_started);
         let wait_finished: Option<Duration> = conf.get_duration("wait-finished").ok();
-        log::debug!("{}.new | wait-finished: {:?}", dbg, wait_finished);
+        log::trace!("{}.new | wait-finished: {:?}", dbg, wait_finished);
         let (rx, rx_max_length) = conf.get_in_queue().unwrap();
-        log::debug!("{}.new | 'in queue': {},\tmax-length: {}", dbg, rx, rx_max_length);
+        log::trace!("{}.new | 'in queue': {},\tmax-length: {}", dbg, rx, rx_max_length);
         let send_to = match conf.get_send_to_many() {
             Ok(send_to) => send_to.into_iter().map(|send_to|LinkName::from_str(&send_to).unwrap()).collect(),
             Err(err) => {
@@ -60,7 +61,7 @@ impl MultiQueueConf {
                 vec![]
             }
         };
-        log::debug!("{}.new | 'send-to': {:?}", dbg, send_to);
+        log::trace!("{}.new | 'send-to': {:?}", dbg, send_to);
         if let Ok((_, _)) = conf.get_by_keywd("out", ConfKind::Queue) {
             log::error!("{}.new | Parameter 'out queue' - deprecated, use 'send-to' instead", dbg)
         }
