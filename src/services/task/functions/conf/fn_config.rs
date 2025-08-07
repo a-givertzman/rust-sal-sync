@@ -219,39 +219,36 @@ impl FnConfig {
     fn build_inputs(parent_id: impl Into<String>, parent_name: &Name, conf_tree: &ConfTree, vars: &mut Vec<String>) -> IndexMap<String, FnConfKind> {
         let parent_id = parent_id.into();
         let mut inputs = IndexMap::new();
-        match conf_tree.sub_nodes() {
+        if conf_tree.is_mapping() {
             // has inputs in mapping
-            Some(sub_nodes) => {
-                log::trace!("FnConfig.buildInputs | sub nodes - found");
-                for sub_node in sub_nodes {
-                    log::trace!("FnConfig.buildInputs | sub node: {:?}", sub_node);
-                    match FnConfKeywd::from_str(sub_node.key.as_str()) {
-                        Ok(keyword) => {
-                            log::trace!("FnConfig.buildInputs | sub node KEYWORD parsed: {:?}", keyword);
-                            if !keyword.input().is_empty() {
-                                inputs.insert(
-                                    keyword.input(),
-                                    FnConfig::new(&parent_id, parent_name, &sub_node, vars),
-                                );
-                            }
-                        }
-                        Err(_) => {
-                            log::trace!("FnConfig.buildInputs | sub node NO KEYWORD");
+            log::trace!("FnConfig.buildInputs | sub nodes - found");
+            for sub_node in conf_tree.sub_nodes() {
+                log::trace!("FnConfig.buildInputs | sub node: {:?}", sub_node);
+                match FnConfKeywd::from_str(sub_node.key.as_str()) {
+                    Ok(keyword) => {
+                        log::trace!("FnConfig.buildInputs | sub node KEYWORD parsed: {:?}", keyword);
+                        if !keyword.input().is_empty() {
                             inputs.insert(
-                                (sub_node).key.clone(), 
+                                keyword.input(),
                                 FnConfig::new(&parent_id, parent_name, &sub_node, vars),
                             );
                         }
-                    };
-                }
+                    }
+                    Err(_) => {
+                        log::trace!("FnConfig.buildInputs | sub node NO KEYWORD");
+                        inputs.insert(
+                            (sub_node).key.clone(), 
+                            FnConfig::new(&parent_id, parent_name, &sub_node, vars),
+                        );
+                    }
+                };
             }
-            None => {
-                log::trace!("FnConfig.buildInputs | sub node not found, possible Const or Var");
-                inputs.insert(
-                    (conf_tree).key.clone(), 
-                    FnConfig::new(&parent_id, parent_name, conf_tree, vars),
-                );
-            }
+        } else {
+            log::trace!("FnConfig.buildInputs | sub node not found, possible Const or Var");
+            inputs.insert(
+                (conf_tree).key.clone(), 
+                FnConfig::new(&parent_id, parent_name, conf_tree, vars),
+            );
         }
         inputs
     }
@@ -307,7 +304,7 @@ impl FnConfig {
     /// Returns ConfTree by keyword or Err
     fn get_param_by_keyword(conf: &ConfTree, input: &str, kind: u8) -> Result<ConfTree, String> {
         log::trace!("FnConfig.getParamByKeyword | conf: {:?}", conf);
-        for node in conf.sub_nodes().unwrap() {
+        for node in conf.sub_nodes() {
             log::trace!("FnConfig.getParamByKeyword | node: {:?}", node);
             match FnConfKeywd::from_str(&node.key) {
                 Ok(keyword) => {

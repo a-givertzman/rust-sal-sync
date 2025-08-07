@@ -182,20 +182,17 @@ fn valid() {
 }
 
 fn inputs(conf_tree: &ConfTree) -> Node {
-    match conf_tree.sub_nodes() {
-        Some(nodes) => {
-            let mut res: IndexMap<String, Node> = IndexMap::new();
-            for node in nodes {
-                log::debug!("key: {:?}\t|\tnode: {:?}", &node.key, &node.conf);
-                let sub_res = inputs(&node);
-                res.insert(node.key.clone(), sub_res);
-            }
-            return Node::Map(res)
+    if conf_tree.is_mapping() {
+        let mut res: IndexMap<String, Node> = IndexMap::new();
+        for node in conf_tree.sub_nodes() {
+            log::debug!("key: {:?}\t|\tnode: {:?}", &node.key, &node.conf);
+            let sub_res = inputs(&node);
+            res.insert(node.key.clone(), sub_res);
         }
-        None => {
-            return Node::End(conf_tree.clone());
-        }
-    };
+        Node::Map(res)
+    } else {
+        Node::End(conf_tree.clone())
+    }
 }
 ///
 /// Testing [ConfTree].as...()
@@ -290,7 +287,7 @@ fn nodes() {
         let conf: serde_yaml::Value = serde_yaml::from_str(value).unwrap();
         log::debug!("test conf: {:?}", conf);
         let conf = ConfTree::new_root(conf);
-        let mut nodes: Vec<ConfTree> = conf.sub_nodes().unwrap().collect();
+        let mut nodes: Vec<ConfTree> = conf.sub_nodes().collect();
         for node in nodes.iter() {
             log::debug!("node: {:?}", node.key);
         }
