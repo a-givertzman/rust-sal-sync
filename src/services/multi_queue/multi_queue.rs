@@ -125,7 +125,7 @@ impl MultiQueue {
                         log::trace!("{}.run | received: \n\t{:?}", dbg, point);
                         Self::log_point(&dbg, &name, &point_id, &point);
                         for (receiver_hash, sender) in subscriptions.get(&point_id) {
-                            if receiver_hash != point.tx_id() {
+                            if receiver_hash != point.txid() {
                                 match sender.send(point.clone()) {
                                     Ok(_) => {
                                         log::trace!("{}.run | sent to '{}' point: {:?}", dbg, receiver_hash, point);

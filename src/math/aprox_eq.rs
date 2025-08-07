@@ -97,6 +97,15 @@ impl AproxEq<&testing::entities::test_value::Value> for testing::entities::test_
                     }
                 }
             }
+            testing::entities::test_value::Value::Bytes(self_value) => {
+                match other {
+                    testing::entities::test_value::Value::Bytes(other_value) => self_value == other_value,
+                    _ => {
+                        warn!("AproxEq<Value>.aprox_eq | Incompitable types self Value<Bytes> and other {}", other.type_of());
+                        false
+                    }
+                }
+            }
         }
     }
 }

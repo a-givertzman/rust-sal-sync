@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 ///
 /// Represents a list of [Point] configuration types
 /// - Bool
+/// - Bytes
 /// - Int
 /// - Real
 /// - Double
@@ -11,6 +12,7 @@ pub type PointType = PointConfType;
 ///
 /// Represents a list of [Point] configuration types
 /// - Bool
+/// - Bytes
 /// - Int
 /// - Real
 /// - Double
@@ -21,6 +23,9 @@ pub enum PointConfType {
     #[serde(rename = "Bool")]
     #[serde(alias = "bool", alias = "Bool")]
     Bool,
+    #[serde(rename = "Bytes")]
+    #[serde(alias = "bytes", alias = "Bytes")]
+    Bytes,
     #[serde(rename = "Int")]
     #[serde(alias = "int", alias = "Int")]
     Int,
@@ -43,6 +48,7 @@ impl ToString for PointConfType {
     fn to_string(&self) -> String {
         match self {
             PointConfType::Bool => "Bool".to_owned(),
+            PointConfType::Bytes => "Bytes".to_owned(),
             PointConfType::Int => "Int".to_owned(),
             PointConfType::Real => "Real".to_owned(),
             PointConfType::Double => "Double".to_owned(),

@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 use chrono::DateTime;
+use sal_core::error::Error;
 use serde::{Deserialize, Serialize};
 use testing::entities::test_value::Value;
 use crate::services::{
@@ -13,48 +14,59 @@ use crate::services::{
 ///
 ///
 pub trait ToPoint {
-    fn to_point(&self, tx_id: usize, name: &str) -> Point;
+    fn to_point(&self, txid: usize, name: impl Into<String>) -> Point;
 }
 
 impl ToPoint for bool {
-    fn to_point(&self, tx_id: usize, name: &str) -> Point {
-        Point::Bool(PointHlr::new_bool(tx_id, name, *self))
+    fn to_point(&self, txid: usize, name: impl Into<String>) -> Point {
+        Point::Bool(PointHlr::new_bool(txid, name, *self))
     }
 }
 impl ToPoint for i64 {
-    fn to_point(&self, tx_id: usize, name: &str) -> Point {
-        Point::Int(PointHlr::new_int(tx_id, name, *self))
+    fn to_point(&self, txid: usize, name: impl Into<String>) -> Point {
+        Point::Int(PointHlr::new_int(txid, name, *self))
     }
 }
 impl ToPoint for f32 {
-    fn to_point(&self, tx_id: usize, name: &str) -> Point {
-        Point::Real(PointHlr::new_real(tx_id, name, *self))
+    fn to_point(&self, txid: usize, name: impl Into<String>) -> Point {
+        Point::Real(PointHlr::new_real(txid, name, *self))
     }
 }
 impl ToPoint for f64 {
-    fn to_point(&self, tx_id: usize, name: &str) -> Point {
-        Point::Double(PointHlr::new_double(tx_id, name, *self))
+    fn to_point(&self, txid: usize, name: impl Into<String>) -> Point {
+        Point::Double(PointHlr::new_double(txid, name, *self))
     }
 }
 impl ToPoint for &str {
-    fn to_point(&self, tx_id: usize, name: &str) -> Point {
-        Point::String(PointHlr::new_string(tx_id, name, *self))
+    fn to_point(&self, txid: usize, name: impl Into<String>) -> Point {
+        Point::String(PointHlr::new_string(txid, name, *self))
     }
 }
 impl ToPoint for String {
-    fn to_point(&self, tx_id: usize, name: &str) -> Point {
-        Point::String(PointHlr::new_string(tx_id, name, self))
+    fn to_point(&self, txid: usize, name: impl Into<String>) -> Point {
+        Point::String(PointHlr::new_string(txid, name, self))
+    }
+}
+impl ToPoint for Vec<u8> {
+    fn to_point(&self, txid: usize, name: impl Into<String>) -> Point {
+        Point::Bytes(PointHlr::new_bytes(txid, name, self.to_owned()))
+    }
+}
+impl ToPoint for &Vec<u8> {
+    fn to_point(&self, txid: usize, name: impl Into<String>) -> Point {
+        Point::Bytes(PointHlr::new_bytes(txid, name, self.to_vec()))
     }
 }
 
 impl ToPoint for Value {
-    fn to_point(&self, tx_id: usize, name: &str) -> Point {
+    fn to_point(&self, txid: usize, name: impl Into<String>) -> Point {
         match self {
-            Value::Bool(value) => value.to_point(tx_id, name),
-            Value::Int(value) => value.to_point(tx_id, name),
-            Value::Real(value) => value.to_point(tx_id, name),
-            Value::Double(value) => value.to_point(tx_id, name),
-            Value::String(value) => value.to_point(tx_id, name),
+            Value::Bool(value) => value.to_point(txid, name),
+            Value::Int(value) => value.to_point(txid, name),
+            Value::Real(value) => value.to_point(txid, name),
+            Value::Double(value) => value.to_point(txid, name),
+            Value::String(value) => value.to_point(txid, name),
+            Value::Bytes(value) => value.to_point(txid, name)
         }
     }
 }
@@ -68,28 +80,30 @@ pub enum Point {
     Int(PointHlr<i64>),
     Real(PointHlr<f32>),
     Double(PointHlr<f64>),
-    String(PointHlr<String>)
+    String(PointHlr<String>),
+    Bytes(PointHlr<Vec<u8>>),
 }
 //
 //
 impl Point {
     ///
     /// Creates instance of Point
-    ///  - tx_id - identifier of the producer - service
+    ///  - txid - identifier of the producer - service
     ///  - name - the name of the Point
     ///  - value - current value stored in the Point
-    pub fn new<T: ToPoint>(tx_id: usize, name: &str, value: T) -> Self {
-        value.to_point(tx_id, name)
+    pub fn new<T: ToPoint>(txid: usize, name: &str, value: T) -> Self {
+        value.to_point(txid, name)
     }
     ///
     /// Returns transmitter ID of the containing Point
-    pub fn tx_id(&self) -> usize {
+    pub fn txid(&self) -> usize {
         match self {
-            Point::Bool(point) => point.tx_id,
-            Point::Int(point) => point.tx_id,
-            Point::Real(point) => point.tx_id,
-            Point::Double(point) => point.tx_id,
-            Point::String(point) => point.tx_id,
+            Point::Bool(point) => point.txid,
+            Point::Int(point) => point.txid,
+            Point::Real(point) => point.txid,
+            Point::Double(point) => point.txid,
+            Point::String(point) => point.txid,
+            Point::Bytes(point) => point.txid,
         }
     }
     ///
@@ -101,6 +115,7 @@ impl Point {
             Point::Real(_) => PointConfType::Real,
             Point::Double(_) => PointConfType::Double,
             Point::String(_) => PointConfType::String,
+            Point::Bytes(_) => PointConfType::Bytes,
         }
     }
     ///
@@ -112,6 +127,7 @@ impl Point {
             Point::Real(point) => point.name.clone(),
             Point::Double(point) => point.name.clone(),
             Point::String(point) => point.name.clone(),
+            Point::Bytes(point) => point.name.clone(),
         }
     }
     ///
@@ -123,6 +139,7 @@ impl Point {
             Point::Real(point) => SubscriptionCriteria::dest(&point.cot, &point.name),    //concat_string!(point.cot, point.name),
             Point::Double(point) => SubscriptionCriteria::dest(&point.cot, &point.name),    //concat_string!(point.cot, point.name),
             Point::String(point) => SubscriptionCriteria::dest(&point.cot, &point.name),    //concat_string!(point.cot, point.name),
+            Point::Bytes(point) => SubscriptionCriteria::dest(&point.cot, &point.name),    //concat_string!(point.cot, point.name),
         }
     }
     ///
@@ -134,6 +151,7 @@ impl Point {
             Point::Real(point) => Value::Real(point.value),
             Point::Double(point) => Value::Double(point.value),
             Point::String(point) => Value::String(point.value.clone()),
+            Point::Bytes(point) => Value::Bytes(point.value.clone()),
         }
     }
     ///
@@ -146,10 +164,10 @@ impl Point {
     }
     ///
     /// Returns containing `Point<bool>`
-    pub fn try_as_bool(&self) -> Result<PointHlr<Bool>, String> {
+    pub fn try_as_bool(&self) -> Result<PointHlr<Bool>, Error> {
         match self {
             Point::Bool(point) => Ok(point.clone()),
-            _ => Err(format!("Point.try_as_bool | Expected type 'Bool', but found '{:?}' point: '{}'", self.type_(), self.name())),
+            _ => Err(Error::new("Point", "try_as_bool").err(format!("Expected type 'Bool', but found '{:?}' point: '{}'", self.type_(), self.name()))),
         }
     }
     ///
@@ -162,10 +180,10 @@ impl Point {
     }
     ///
     /// Returns containing `Point<i64>`
-    pub fn try_as_int(&self) -> Result<PointHlr<i64>, String> {
+    pub fn try_as_int(&self) -> Result<PointHlr<i64>, Error> {
         match self {
             Point::Int(point) => Ok(point.clone()),
-            _ => Err(format!("Point.try_as_int | Expected type 'Int', but found '{}' point: {}", self.type_of(), self.name())),
+            _ => Err(Error::new("Point", "try_as_int").err(format!("Expected type 'Int', but found '{}' point: {}", self.type_of(), self.name()))),
         }
     }
     ///
@@ -178,10 +196,10 @@ impl Point {
     }
     ///
     /// Returns containing `Point<f32>`
-    pub fn try_as_real(&self) -> Result<PointHlr<f32>, String> {
+    pub fn try_as_real(&self) -> Result<PointHlr<f32>, Error> {
         match self {
             Point::Real(point) => Ok(point.clone()),
-            _ => Err(format!("Point.try_as_real | Expected type 'Real', but found '{:?}' point: '{}'", self.type_(), self.name())),
+            _ => Err(Error::new("Point", "try_as_real").err(format!("Expected type 'Real', but found '{:?}' point: '{}'", self.type_(), self.name()))),
         }
     }
     ///
@@ -194,10 +212,10 @@ impl Point {
     }
     ///
     /// Returns containing `Point<f64>`
-    pub fn try_as_double(&self) -> Result<PointHlr<f64>, String> {
+    pub fn try_as_double(&self) -> Result<PointHlr<f64>, Error> {
         match self {
             Point::Double(point) => Ok(point.clone()),
-            _ => Err(format!("Point.try_as_double | Expected type 'Double', but found '{:?}' point: '{}'", self.type_(), self.name())),
+            _ => Err(Error::new("Point", "try_as_double").err(format!("Expected type 'Double', but found '{:?}' point: '{}'", self.type_(), self.name()))),
         }
     }
     ///
@@ -210,13 +228,28 @@ impl Point {
     }
     ///
     /// Returns containing `Point<String>`
-    pub fn try_as_string(&self) -> Result<PointHlr<String>, String> {
+    pub fn try_as_string(&self) -> Result<PointHlr<String>, Error> {
         match self {
             Point::String(point) => Ok(point.clone()),
-            _ => Err(format!("Point.try_as_string | Expected type 'String', but found '{:?}' point: '{}'", self.type_(), self.name())),
+            _ => Err(Error::new("Point", "try_as_string").err(format!("Expected type 'String', but found '{:?}' point: '{}'", self.type_(), self.name()))),
         }
     }
     ///
+    /// Returns containing `Point<Bytes>`
+    pub fn as_bytes(&self) -> PointHlr<Vec<u8>> {
+        match self {
+            Point::Bytes(point) => point.clone(),
+            _ => panic!("Point.as_bytes | Expected type 'Bytes', but found '{:?}' point: '{}'", self.type_(), self.name()),
+        }
+    }
+    ///
+    /// Returns containing `Point<Bytes>`
+    pub fn try_as_bytes(&self) -> Result<PointHlr<Vec<u8>>, Error> {
+        match self {
+            Point::Bytes(point) => Ok(point.clone()),
+            _ => Err(Error::new("Point", "try_as_bytes").err(format!("Expected type 'String', but found '{:?}' point: '{}'", self.type_(), self.name()))),
+        }
+    }    ///
     /// Returns status of the containing Point
     pub fn status(&self) -> Status {
         match self {
@@ -225,6 +258,7 @@ impl Point {
             Point::Real(point) => point.status,
             Point::Double(point) => point.status,
             Point::String(point) => point.status,
+            Point::Bytes(point) => point.status,
         }
     }
     ///
@@ -236,6 +270,7 @@ impl Point {
             Point::Real(point) => point.cot,
             Point::Double(point) => point.cot,
             Point::String(point) => point.cot,
+            Point::Bytes(point) => point.cot,
         }
     }
     ///
@@ -247,6 +282,7 @@ impl Point {
             Point::Real(point) => point.timestamp,
             Point::Double(point) => point.timestamp,
             Point::String(point) => point.timestamp,
+            Point::Bytes(point) => point.timestamp,
         }
     }
     ///
@@ -258,6 +294,7 @@ impl Point {
             Point::Real(point) => point.value == other.as_real().value,
             Point::Double(point) => point.value == other.as_double().value,
             Point::String(point) => point.value == other.as_string().value,
+            Point::Bytes(point) => point.value == other.as_bytes().value,
         }
     }
     ///
@@ -273,14 +310,15 @@ impl Point {
                 match p.value.parse() {
                     Ok(value) => value,
                     Err(err) => {
-                        panic!("Point({}).to_bool | Error conversion into<bool> value: '{:?}'\n\terror: {:#?}", self.name(), self.value(), err);
+                        panic!("Point({}).to_bool | Error convert to Bool value: '{:?}'\n\terror: {:#?}", self.name(), self.value(), err);
                     }
                 }
             }
+            Point::Bytes(p) => return Point::Bool(p.to_bool())
             // _ => panic!("{}.to_bool | Conversion to Bool for '{}' - is not supported", self.name(),  self.type_of()),
         };
         Point::Bool(PointHlr::new(
-            self.tx_id(),
+            self.txid(),
             &self.name(),
             Bool(value),
             self.status(),
@@ -300,13 +338,14 @@ impl Point {
             Point::String(p) => match p.value.parse() {
                 Ok(value) => value,
                 Err(err) => {
-                    panic!("Point({}).to_int | Error conversion into<i64> value: {:?}\n\terror: {:#?}", self.name(), self.value(), err);
+                    panic!("Point({}).to_int | Error convert to Int value: {:?}\n\terror: {:#?}", self.name(), self.value(), err);
                 }
             }
+            Point::Bytes(p) => return Point::Int(p.to_int())
             // _ => panic!("{}.to_int | Conversion to Int for '{}' - is not supported", self.name(),  self.type_of()),
         };
         Point::Int(PointHlr::new(
-            self.tx_id(),
+            self.txid(),
             &self.name(),
             value,
             self.status(),
@@ -326,13 +365,14 @@ impl Point {
             Point::String(p) => match p.value.parse() {
                 Ok(value) => value,
                 Err(err) => {
-                    panic!("Point({}).to_real | Error conversion into<f32> value: {:?}\n\terror: {:#?}", self.name(), self.value(), err);
+                    panic!("Point({}).to_real | Error convert to Real value: {:?}\n\terror: {:#?}", self.name(), self.value(), err);
                 }
             }
+            Point::Bytes(p) => return Point::Real(p.to_real())
             // _ => panic!("{}.to_real | Conversion to Real for '{}' - is not supported", self.name(),  self.type_of()),
         };
         Point::Real(PointHlr::new(
-            self.tx_id(),
+            self.txid(),
             &self.name(),
             value,
             self.status(),
@@ -352,13 +392,14 @@ impl Point {
             Point::String(p) => match p.value.parse() {
                 Ok(value) => value,
                 Err(err) => {
-                    panic!("Point({}).to_double | Error conversion into<f64> value: {:?}\n\terror: {:#?}", self.name(), self.value(), err);
+                    panic!("Point({}).to_double | Error convert to Double value: {:?}\n\terror: {:#?}", self.name(), self.value(), err);
                 }
             }
+            Point::Bytes(p) => return Point::Double(p.to_double())
             // _ => panic!("{}.to_double | Conversion to Double for '{}' - is not supported", self.name(),  self.type_of()),
         };
         Point::Double(PointHlr::new(
-            self.tx_id(),
+            self.txid(),
             &self.name(),
             value,
             self.status(),
@@ -375,10 +416,11 @@ impl Point {
             Point::Real(p) => p.value.to_string(),
             Point::Double(p) => p.value.to_string(),
             Point::String(p) => p.value.to_owned(),
+            Point::Bytes(p) => return Point::String(p.to_string()),
             // _ => panic!("{}.to_double | Conversion to Double for '{}' - is not supported", self.name(),  self.type_of()),
         };
         Point::String(PointHlr::new(
-            self.tx_id(),
+            self.txid(),
             &self.name(),
             value,
             self.status(),
@@ -485,6 +527,16 @@ impl Serialize for Point {
                     timestamp: point.timestamp.to_rfc3339(),
                 }.serialize(serializer)
             }
+            Point::Bytes(point) => {
+                PointSerialize {
+                    type_: "Bytes",
+                    value: &point.value,
+                    name: &point.name,
+                    status: Into::<u32>::into(point.status),
+                    cot: point.cot,
+                    timestamp: point.timestamp.to_rfc3339(),
+                }.serialize(serializer)
+            }
         }
     }
 }
@@ -504,7 +556,7 @@ impl<'de> Deserialize<'de> for Point {
             pub cot: Cot,
             pub timestamp: String    //DateTime<chrono::Utc>,
         }
-        let tx_id = 0;
+        let txid = 0;
         let visitor = PointDeserialize::deserialize(deserializer)?;
         fn value_parsing_error<'de, D>(type_: &str, visitor: &PointDeserialize, err: impl Debug) -> D::Error where D: serde::Deserializer<'de>{
             serde::de::Error::custom(format!("Point.deserialize | Error parsing {} value from {:#?}, \n\terror: {:#?}", type_, visitor, err))
@@ -516,7 +568,7 @@ impl<'de> Deserialize<'de> for Point {
             PointConfType::Bool => {
                 let value = visitor.value.as_i64().ok_or_else(|| value_parsing_error::<D>("Point<Bool>", &visitor, "err"))?;
                 Ok(Point::Bool(PointHlr::new(
-                    tx_id,
+                    txid,
                     &visitor.name,
                     Bool(value > 0),
                     Status::from(visitor.status),
@@ -527,7 +579,7 @@ impl<'de> Deserialize<'de> for Point {
             PointConfType::Int => {
                 let value = visitor.value.as_i64().ok_or_else(|| value_parsing_error::<D>("Point<Int>", &visitor, "err"))?;
                 Ok(Point::Int(PointHlr::new(
-                    tx_id,
+                    txid,
                     &visitor.name,
                     value,
                     Status::from(visitor.status),
@@ -538,7 +590,7 @@ impl<'de> Deserialize<'de> for Point {
             PointConfType::Real => {
                 let value = visitor.value.as_f64().ok_or_else(|| value_parsing_error::<D>("Point<Real>", &visitor, "err"))?;
                 Ok(Point::Real(PointHlr::new(
-                    tx_id,
+                    txid,
                     &visitor.name,
                     value as f32,
                     Status::from(visitor.status),
@@ -549,7 +601,7 @@ impl<'de> Deserialize<'de> for Point {
             PointConfType::Double => {
                 let value = visitor.value.as_f64().ok_or_else(|| value_parsing_error::<D>("Point<Double>", &visitor, "err"))?;
                 Ok(Point::Double(PointHlr::new(
-                    tx_id,
+                    txid,
                     &visitor.name,
                     value,
                     Status::from(visitor.status),
@@ -559,9 +611,20 @@ impl<'de> Deserialize<'de> for Point {
             }
             PointConfType::String => {
                 Ok(Point::String(PointHlr::new(
-                    tx_id,
+                    txid,
                     &visitor.name,
                     visitor.value.as_str().unwrap().to_owned(),
+                    Status::from(visitor.status),
+                    visitor.cot,
+                    visitor.timestamp.parse().map_err(|err| timestamp_parsing_error::<D>("Point<String>", &visitor, err))?,
+                )))
+            }
+            PointConfType::Bytes => {
+                let value: Vec<u8> = serde_json::from_value(visitor.value.clone()).map_err(|err| value_parsing_error::<D>("Point<Int>", &visitor, err))?;
+                Ok(Point::Bytes(PointHlr::new(
+                    txid,
+                    &visitor.name,
+                    value,
                     Status::from(visitor.status),
                     visitor.cot,
                     visitor.timestamp.parse().map_err(|err| timestamp_parsing_error::<D>("Point<String>", &visitor, err))?,
@@ -570,7 +633,7 @@ impl<'de> Deserialize<'de> for Point {
             PointConfType::Json => {
                 Err(serde::de::Error::custom("Point.deserialize | Error parsing Point<Json> - Not implemented yet"))
                 // Ok(Point::String(Point::new(
-                //     tx_id,
+                //     txid,
                 //     &visitor.name,
                 //     visitor.value.clone(),
                 //     Status::from(visitor.status),
@@ -687,6 +750,9 @@ impl std::cmp::PartialOrd for Point {
             }
             Point::String(self_point) => {
                 self_point.partial_cmp(&other.as_string())
+            }
+            Point::Bytes(self_point) => {
+                self_point.partial_cmp(&other.as_bytes())
             }
             // _ => panic!("Point.partial_cmp | Not supported for type '{:?}'", self.type_of()),
         }

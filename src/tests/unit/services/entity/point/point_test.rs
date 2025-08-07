@@ -75,9 +75,18 @@ fn serialize_json() {
                 "2024-04-08T09:44:43.550386216+00:00".parse().unwrap(),
             ))
         ),
+        (r#"{"cot":"Inf","name":"/App/path/Point.Name.4","status":0,"timestamp":"2024-04-08T09:44:43.550386216+00:00","type":"Bytes","value":[0,1,2,3,120,255]}"#,
+            Point::Bytes(PointHlr::new(
+                0,
+                &format!("/App/path/Point.Name.4"),
+                vec![0,1,2,3,120,255],
+                Status::Ok,
+                Cot::Inf,
+                "2024-04-08T09:44:43.550386216+00:00".parse().unwrap(),
+            ))
+        ),
     ];
     debug!("{} | Serialized Point: {:?}", self_id, lexical::parse::<f32, _>("1234.12345"));
-
     for (target, point) in test_data {
         let target: serde_json::Value = serde_json::from_str(target).unwrap();
         let result = serde_json::to_value(point).unwrap();
@@ -129,6 +138,16 @@ fn deserialize_json() {
                 "2024-04-08T09:44:43.550386216+00:00".parse().unwrap(),
             ))
         ),
+        (r#"{"cot":"Inf","name":"/App/path/Point.Name.4","status":0,"timestamp":"2024-04-08T09:44:43.550386216+00:00","type":"Bytes","value":[0,1,2,3,120,255]}"#,
+            Point::Bytes(PointHlr::new(
+                0,
+                &format!("/App/path/Point.Name.4"),
+                vec![0,1,2,3,120,255],
+                Status::Ok,
+                Cot::Inf,
+                "2024-04-08T09:44:43.550386216+00:00".parse().unwrap(),
+            ))
+        ),
     ];
     for (point_json, target) in test_data {
         debug!("{} | input: {:#?}", self_id, point_json);
@@ -139,9 +158,9 @@ fn deserialize_json() {
     test_duration.exit();
 }
 ///
-/// Testing Point::tx_id
+/// Testing Point::txid
 #[test]
-fn tx_id() {
+fn txid() {
     DebugSession::init(LogLevel::Debug, Backtrace::Short);
     init_once();
     init_each();
@@ -163,28 +182,33 @@ fn tx_id() {
         (11, 11, "/App/Service/Point11", Value::Double(300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (12, 12, "/App/Service/Point12", Value::Double(-300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (13, 13, "/App/Service/Point13", Value::String("101.1".into()), Status::Ok, Cot::default(), chrono::Utc::now()),
+        (14, 14, "/App/Service/Point14", Value::Bytes([1,2,3,4,5,255].into()), Status::Ok, Cot::default(), chrono::Utc::now()),
     ];
     for (step, tx_id, name, value, status, cot, timestamp) in test_data {
         match value {
             Value::Bool(value) => {
-                let result = Point::Bool(PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp));
-                assert!(result.tx_id() == tx_id, "step {} \nresult: {:?}\ntarget: {:?}", step, result.tx_id(), tx_id);
+                let result = Point::Bool(PointHlr::new(tx_id, name, Bool(value), status, cot, timestamp));
+                assert!(result.txid() == tx_id, "step {} \nresult: {:?}\ntarget: {:?}", step, result.txid(), tx_id);
             }
             Value::Int(value) => {
-                let result = Point::Int(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
-                assert!(result.tx_id() == tx_id, "step {} \nresult: {:?}\ntarget: {:?}", step, result.tx_id(), tx_id);
+                let result = Point::Int(PointHlr::new(tx_id, name, value, status, cot, timestamp));
+                assert!(result.txid() == tx_id, "step {} \nresult: {:?}\ntarget: {:?}", step, result.txid(), tx_id);
             }
             Value::Real(value) => {
-                let result = Point::Real(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
-                assert!(result.tx_id() == tx_id, "step {} \nresult: {:?}\ntarget: {:?}", step, result.tx_id(), tx_id);
+                let result = Point::Real(PointHlr::new(tx_id, name, value, status, cot, timestamp));
+                assert!(result.txid() == tx_id, "step {} \nresult: {:?}\ntarget: {:?}", step, result.txid(), tx_id);
             }
             Value::Double(value) => {
-                let result = Point::Double(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
-                assert!(result.tx_id() == tx_id, "step {} \nresult: {:?}\ntarget: {:?}", step, result.tx_id(), tx_id);
+                let result = Point::Double(PointHlr::new(tx_id, name, value, status, cot, timestamp));
+                assert!(result.txid() == tx_id, "step {} \nresult: {:?}\ntarget: {:?}", step, result.txid(), tx_id);
             }
             Value::String(value) => {
-                let result = Point::String(PointHlr::new(tx_id, &name, value.clone(), status, cot, timestamp));
-                assert!(result.tx_id() == tx_id, "step {} \nresult: {:?}\ntarget: {:?}", step, result.tx_id(), tx_id);
+                let result = Point::String(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
+                assert!(result.txid() == tx_id, "step {} \nresult: {:?}\ntarget: {:?}", step, result.txid(), tx_id);
+            }
+            Value::Bytes(value) => {
+                let result = Point::Bytes(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
+                assert!(result.txid() == tx_id, "step {} \nresult: {:?}\ntarget: {:?}", step, result.txid(), tx_id);
             }
         };
     }
@@ -215,28 +239,33 @@ fn type_() {
         (11, 11, "/App/Service/Point11", Value::Double(300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (12, 12, "/App/Service/Point12", Value::Double(-300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (13, 13, "/App/Service/Point13", Value::String("101.1".into()), Status::Ok, Cot::default(), chrono::Utc::now()),
+        (14, 14, "/App/Service/Point14", Value::Bytes([1,2,3,4,5,255].into()), Status::Ok, Cot::default(), chrono::Utc::now()),
     ];
     for (step, tx_id, name, value, status, cot, timestamp) in test_data {
         match value {
             Value::Bool(value) => {
-                let result = Point::Bool(PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp));
+                let result = Point::Bool(PointHlr::new(tx_id, name, Bool(value), status, cot, timestamp));
                 assert!(result.type_() == PointConfType::Bool, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfType::Bool);
             }
             Value::Int(value) => {
-                let result = Point::Int(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Int(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.type_() == PointConfType::Int, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfType::Int);
             }
             Value::Real(value) => {
-                let result = Point::Real(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Real(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.type_() == PointConfType::Real, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfType::Real);
             }
             Value::Double(value) => {
-                let result = Point::Double(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Double(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.type_() == PointConfType::Double, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfType::Double);
             }
             Value::String(value) => {
-                let result = Point::String(PointHlr::new(tx_id, &name, value.clone(), status, cot, timestamp));
+                let result = Point::String(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
                 assert!(result.type_() == PointConfType::String, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfType::String);
+            }
+            Value::Bytes(value) => {
+                let result = Point::Bytes(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
+                assert!(result.type_() == PointConfType::Bytes, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointConfType::String);
             }
         };
     }
@@ -267,27 +296,32 @@ fn name() {
         (11, 11, "/App/Service/Point11", Value::Double(300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (12, 12, "/App/Service/Point12", Value::Double(-300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (13, 13, "/App/Service/Point13", Value::String("101.1".into()), Status::Ok, Cot::default(), chrono::Utc::now()),
+        (14, 14, "/App/Service/Point14", Value::Bytes([1,2,3,4,5,255].into()), Status::Ok, Cot::default(), chrono::Utc::now()),
     ];
     for (step, tx_id, name, value, status, cot, timestamp) in test_data {
         match value {
             Value::Bool(value) => {
-                let result = Point::Bool(PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp));
+                let result = Point::Bool(PointHlr::new(tx_id, name, Bool(value), status, cot, timestamp));
                 assert!(result.name() == name, "step {} \nresult: {:?}\ntarget: {:?}", step, result.name(), name);
             }
             Value::Int(value) => {
-                let result = Point::Int(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Int(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.name() == name, "step {} \nresult: {:?}\ntarget: {:?}", step, result.name(), name);
             }
             Value::Real(value) => {
-                let result = Point::Real(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Real(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.name() == name, "step {} \nresult: {:?}\ntarget: {:?}", step, result.name(), name);
             }
             Value::Double(value) => {
-                let result = Point::Double(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Double(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.name() == name, "step {} \nresult: {:?}\ntarget: {:?}", step, result.name(), name);
             }
             Value::String(value) => {
-                let result = Point::String(PointHlr::new(tx_id, &name, value.clone(), status, cot, timestamp));
+                let result = Point::String(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
+                assert!(result.name() == name, "step {} \nresult: {:?}\ntarget: {:?}", step, result.name(), name);
+            }
+            Value::Bytes(value) => {
+                let result = Point::Bytes(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
                 assert!(result.name() == name, "step {} \nresult: {:?}\ntarget: {:?}", step, result.name(), name);
             }
         };
@@ -319,31 +353,37 @@ fn dest() {
         (11, 11, "/App/Service/Point11", Value::Double(300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (12, 12, "/App/Service/Point12", Value::Double(-300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (13, 13, "/App/Service/Point13", Value::String("101.1".into()), Status::Ok, Cot::default(), chrono::Utc::now()),
+        (14, 14, "/App/Service/Point14", Value::Bytes([1,2,3,4,5,255].into()), Status::Ok, Cot::default(), chrono::Utc::now()),
     ];
     for (step, tx_id, name, value, status, cot, timestamp) in test_data {
         match value {
             Value::Bool(value) => {
-                let result = Point::Bool(PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp));
+                let result = Point::Bool(PointHlr::new(tx_id, name, Bool(value), status, cot, timestamp));
                 let target = SubscriptionCriteria::new(name, cot).destination();
                 assert!(result.dest() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result.name(), target);
             }
             Value::Int(value) => {
-                let result = Point::Int(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Int(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 let target = SubscriptionCriteria::new(name, cot).destination();
                 assert!(result.dest() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result.name(), target);
             }
             Value::Real(value) => {
-                let result = Point::Real(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Real(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 let target = SubscriptionCriteria::new(name, cot).destination();
                 assert!(result.dest() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result.name(), target);
             }
             Value::Double(value) => {
-                let result = Point::Double(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Double(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 let target = SubscriptionCriteria::new(name, cot).destination();
                 assert!(result.dest() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result.name(), target);
             }
             Value::String(value) => {
-                let result = Point::String(PointHlr::new(tx_id, &name, value.clone(), status, cot, timestamp));
+                let result = Point::String(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
+                let target = SubscriptionCriteria::new(name, cot).destination();
+                assert!(result.dest() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result.name(), target);
+            }
+            Value::Bytes(value) => {
+                let result = Point::Bytes(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
                 let target = SubscriptionCriteria::new(name, cot).destination();
                 assert!(result.dest() == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result.name(), target);
             }
@@ -376,27 +416,32 @@ fn value() {
         (11, 11, "/App/Service/Point11", Value::Double(300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (12, 12, "/App/Service/Point12", Value::Double(-300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (13, 13, "/App/Service/Point13", Value::String("101.1".into()), Status::Ok, Cot::default(), chrono::Utc::now()),
+        (14, 14, "/App/Service/Point14", Value::Bytes([1,2,3,4,5,255].into()), Status::Ok, Cot::default(), chrono::Utc::now()),
     ];
     for (step, tx_id, name, value_, status, cot, timestamp) in test_data {
         match value_.clone() {
             Value::Bool(value) => {
-                let result = Point::Bool(PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp));
+                let result = Point::Bool(PointHlr::new(tx_id, name, Bool(value), status, cot, timestamp));
                 assert!(result.value() == value_, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value(), value_);
             }
             Value::Int(value) => {
-                let result = Point::Int(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Int(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.value() == value_, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value(), value_);
             }
             Value::Real(value) => {
-                let result = Point::Real(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Real(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.value() == value_, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value(), value_);
             }
             Value::Double(value) => {
-                let result = Point::Double(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Double(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.value() == value_, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value(), value_);
             }
             Value::String(value) => {
-                let result = Point::String(PointHlr::new(tx_id, &name, value.clone(), status, cot, timestamp));
+                let result = Point::String(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
+                assert!(result.value() == value_, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value(), value_);
+            }
+            Value::Bytes(value) => {
+                let result = Point::Bytes(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
                 assert!(result.value() == value_, "step {} \nresult: {:?}\ntarget: {:?}", step, result.value(), value_);
             }
         };
@@ -428,27 +473,32 @@ fn status() {
         (11, 11, "/App/Service/Point11", Value::Double(300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (12, 12, "/App/Service/Point12", Value::Double(-300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (13, 13, "/App/Service/Point13", Value::String("101.1".into()), Status::Ok, Cot::default(), chrono::Utc::now()),
+        (14, 14, "/App/Service/Point14", Value::Bytes([1,2,3,4,5,255].into()), Status::Ok, Cot::default(), chrono::Utc::now()),
     ];
     for (step, tx_id, name, value, status, cot, timestamp) in test_data {
         match value {
             Value::Bool(value) => {
-                let result = Point::Bool(PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp));
+                let result = Point::Bool(PointHlr::new(tx_id, name, Bool(value), status, cot, timestamp));
                 assert!(result.status() == status, "step {} \nresult: {:?}\ntarget: {:?}", step, result.status(), status);
             }
             Value::Int(value) => {
-                let result = Point::Int(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Int(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.status() == status, "step {} \nresult: {:?}\ntarget: {:?}", step, result.status(), status);
             }
             Value::Real(value) => {
-                let result = Point::Real(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Real(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.status() == status, "step {} \nresult: {:?}\ntarget: {:?}", step, result.status(), status);
             }
             Value::Double(value) => {
-                let result = Point::Double(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Double(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.status() == status, "step {} \nresult: {:?}\ntarget: {:?}", step, result.status(), status);
             }
             Value::String(value) => {
-                let result = Point::String(PointHlr::new(tx_id, &name, value.clone(), status, cot, timestamp));
+                let result = Point::String(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
+                assert!(result.status() == status, "step {} \nresult: {:?}\ntarget: {:?}", step, result.status(), status);
+            }
+            Value::Bytes(value) => {
+                let result = Point::Bytes(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
                 assert!(result.status() == status, "step {} \nresult: {:?}\ntarget: {:?}", step, result.status(), status);
             }
         };
@@ -480,27 +530,32 @@ fn cot() {
         (11, 11, "/App/Service/Point11", Value::Double(300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (12, 12, "/App/Service/Point12", Value::Double(-300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (13, 13, "/App/Service/Point13", Value::String("101.1".into()), Status::Ok, Cot::default(), chrono::Utc::now()),
+        (14, 14, "/App/Service/Point14", Value::Bytes([1,2,3,4,5,255].into()), Status::Ok, Cot::default(), chrono::Utc::now()),
     ];
     for (step, tx_id, name, value, status, cot, timestamp) in test_data {
         match value {
             Value::Bool(value) => {
-                let result = Point::Bool(PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp));
+                let result = Point::Bool(PointHlr::new(tx_id, name, Bool(value), status, cot, timestamp));
                 assert!(result.cot() == cot, "step {} \nresult: {:?}\ntarget: {:?}", step, result.cot(), cot);
             }
             Value::Int(value) => {
-                let result = Point::Int(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Int(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.cot() == cot, "step {} \nresult: {:?}\ntarget: {:?}", step, result.cot(), cot);
             }
             Value::Real(value) => {
-                let result = Point::Real(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Real(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.cot() == cot, "step {} \nresult: {:?}\ntarget: {:?}", step, result.cot(), cot);
             }
             Value::Double(value) => {
-                let result = Point::Double(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Double(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.cot() == cot, "step {} \nresult: {:?}\ntarget: {:?}", step, result.cot(), cot);
             }
             Value::String(value) => {
-                let result = Point::String(PointHlr::new(tx_id, &name, value.clone(), status, cot, timestamp));
+                let result = Point::String(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
+                assert!(result.cot() == cot, "step {} \nresult: {:?}\ntarget: {:?}", step, result.cot(), cot);
+            }
+            Value::Bytes(value) => {
+                let result = Point::Bytes(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
                 assert!(result.cot() == cot, "step {} \nresult: {:?}\ntarget: {:?}", step, result.cot(), cot);
             }
         };
@@ -532,27 +587,32 @@ fn timestamp() {
         (11, 11, "/App/Service/Point11", Value::Double(300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (12, 12, "/App/Service/Point12", Value::Double(-300.2f64), Status::Ok, Cot::default(), chrono::Utc::now()),
         (13, 13, "/App/Service/Point13", Value::String("101.1".into()), Status::Ok, Cot::default(), chrono::Utc::now()),
+        (14, 14, "/App/Service/Point14", Value::Bytes([1,2,3,4,5,255].into()), Status::Ok, Cot::default(), chrono::Utc::now()),
     ];
     for (step, tx_id, name, value, status, cot, timestamp) in test_data {
         match value {
             Value::Bool(value) => {
-                let result = Point::Bool(PointHlr::new(tx_id, &name, Bool(value), status, cot, timestamp));
+                let result = Point::Bool(PointHlr::new(tx_id, name, Bool(value), status, cot, timestamp));
                 assert!(result.timestamp() == timestamp, "step {} \nresult: {:?}\ntarget: {:?}", step, result.timestamp(), timestamp);
             }
             Value::Int(value) => {
-                let result = Point::Int(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Int(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.timestamp() == timestamp, "step {} \nresult: {:?}\ntarget: {:?}", step, result.timestamp(), timestamp);
             }
             Value::Real(value) => {
-                let result = Point::Real(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Real(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.timestamp() == timestamp, "step {} \nresult: {:?}\ntarget: {:?}", step, result.timestamp(), timestamp);
             }
             Value::Double(value) => {
-                let result = Point::Double(PointHlr::new(tx_id, &name, value, status, cot, timestamp));
+                let result = Point::Double(PointHlr::new(tx_id, name, value, status, cot, timestamp));
                 assert!(result.timestamp() == timestamp, "step {} \nresult: {:?}\ntarget: {:?}", step, result.timestamp(), timestamp);
             }
             Value::String(value) => {
-                let result = Point::String(PointHlr::new(tx_id, &name, value.clone(), status, cot, timestamp));
+                let result = Point::String(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
+                assert!(result.timestamp() == timestamp, "step {} \nresult: {:?}\ntarget: {:?}", step, result.timestamp(), timestamp);
+            }
+            Value::Bytes(value) => {
+                let result = Point::Bytes(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
                 assert!(result.timestamp() == timestamp, "step {} \nresult: {:?}\ntarget: {:?}", step, result.timestamp(), timestamp);
             }
         };

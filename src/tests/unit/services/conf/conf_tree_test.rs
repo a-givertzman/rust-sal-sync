@@ -3,7 +3,7 @@ use std::sync::Once;
 use indexmap::IndexMap;
 use testing::entities::test_value::Value;
 use debugging ::session::debug_session::{Backtrace, DebugSession, LogLevel};
-use crate::services::conf::ConfTree;
+use crate::services::conf::{ConfTree, ConfTreeGet};
 ///
 ///
 static INIT: Once = Once::new();
@@ -217,6 +217,7 @@ fn as_type() {
                 string1: /Path/Point.Name/
                 string2: '/Path/Point.Name/'
                 string3: "/Path/Point.Name/"
+                vec1: [0,1,2,255]
             "#,
             IndexMap::from([
                 ("boolTrue", Value::Bool(true)),
@@ -230,6 +231,7 @@ fn as_type() {
                 ("string1", Value::String("/Path/Point.Name/".to_string())),
                 ("string2", Value::String("/Path/Point.Name/".to_string())),
                 ("string3", Value::String("/Path/Point.Name/".to_string())),
+                ("vec1", Value::Bytes(vec![0,1,2,255])),
             ])
         ),
 
@@ -246,6 +248,11 @@ fn as_type() {
                 Value::Real(target) => assert!(conf.as_f32(key).unwrap() == target, "\nresult: {:?}\ntarget: {:?}", conf.as_f32(key).unwrap(), target),
                 Value::Double(target) => assert!(conf.as_f64(key).unwrap() == target, "\nresult: {:?}\ntarget: {:?}", conf.as_f64(key).unwrap(), target),
                 Value::String(target) => assert!(conf.as_str(key).unwrap() == target, "\nresult: {:?}\ntarget: {:?}", conf.as_str(key).unwrap(), target),
+                Value::Bytes(target) => {
+                    let result: serde_yaml::Value = conf.get(key).unwrap();
+                    let result: Vec<u8> = serde_yaml::from_value(result).unwrap();
+                    assert!(result == target, "\nresult: {:?}\ntarget: {:?}", conf.as_str(key).unwrap(), target)
+                }
             }
         }
     }

@@ -7,7 +7,7 @@ use crate::services::{
 /// Holds the unit of the information 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PointHlr<T> {
-    pub tx_id: usize,
+    pub txid: usize,
     pub name: String,
     pub value: T,
     pub status: Status,
@@ -25,10 +25,10 @@ impl<T> PointHlr<T> {
     ///     - status: Status - indicates Ok or some kind of invalidity
     ///     - direction: Direction - the kind of the direction Read / Write
     ///     - timestamp: DateTime<chrono::Utc> - registration timestamp
-    pub fn new(tx_id: usize, name: &str, value: T, status: Status, cot: Cot, timestamp: DateTime<chrono::Utc>) -> PointHlr<T> {
+    pub fn new(txid: usize, name: impl Into<String>, value: T, status: Status, cot: Cot, timestamp: DateTime<chrono::Utc>) -> PointHlr<T> {
         Self {
-            tx_id,
-            name: name.to_owned(),
+            txid,
+            name: name.into(),
             value,
             status,
             cot,
@@ -40,10 +40,10 @@ impl<T> PointHlr<T> {
 // 
 impl PointHlr<Bool> {
     ///
-    /// creates `Point<Bool>` with given `name` & `value`, taking current timestamp, `Status::Ok`, `Direction::Read`
-    pub fn new_bool(tx_id: usize, name: &str, value: bool) -> PointHlr<Bool> {
+    /// Creates `Point<Bool>` with given `name` & `value`, taking current timestamp, `Status::Ok`, `Direction::Read`
+    pub fn new_bool(txid: usize, name: impl Into<String>, value: bool) -> PointHlr<Bool> {
         PointHlr {
-            tx_id,
+            txid,
             name: name.into(),
             value: Bool(value),
             status: Status::Ok,
@@ -55,7 +55,7 @@ impl PointHlr<Bool> {
     /// Returns the Point with the absolute value
     pub fn abs(&self) -> PointHlr<Bool> {
         Self {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value,
             status: self.status,
@@ -67,7 +67,7 @@ impl PointHlr<Bool> {
     /// Returns Point converted to the Bool
     pub fn to_bool(&self) -> PointHlr<Bool> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value,
             status: self.status,
@@ -79,7 +79,7 @@ impl PointHlr<Bool> {
     /// Returns Point converted to the Int
     pub fn to_int(&self) -> PointHlr<i64> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: if self.value.0 {1} else {0},
             status: self.status,
@@ -91,7 +91,7 @@ impl PointHlr<Bool> {
     /// Returns Point converted to the Real
     pub fn to_real(&self) -> PointHlr<f32> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: if self.value.0 {1.0f32} else {0.0f32},
             status: self.status,
@@ -103,7 +103,7 @@ impl PointHlr<Bool> {
     /// Returns Point converted to the Double
     pub fn to_double(&self) -> PointHlr<f64> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: if self.value.0 {1.0f64} else {0.0f64},
             status: self.status,
@@ -115,7 +115,7 @@ impl PointHlr<Bool> {
     /// Returns Point converted to the String
     pub fn to_string(&self) -> PointHlr<String> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value.to_string(),
             status: self.status,
@@ -130,9 +130,9 @@ impl PointHlr<i64> {
     ///
     /// Creates `Point<i64>` with given `name` & `value`,
     /// taking current timestamp, `Status::Ok`, `Direction::Read`
-    pub fn new_int(tx_id: usize, name: &str, value: i64) -> PointHlr<i64> {
+    pub fn new_int(txid: usize, name: impl Into<String>, value: i64) -> PointHlr<i64> {
         PointHlr {
-            tx_id,
+            txid,
             name: name.into(),
             value,
             status: Status::Ok,
@@ -144,7 +144,7 @@ impl PointHlr<i64> {
     /// Returns the Point with the absolute value
     pub fn abs(&self) -> PointHlr<i64> {
         Self {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value.abs(),
             status: self.status,
@@ -156,7 +156,7 @@ impl PointHlr<i64> {
     /// Returns Point converted to the Bool
     pub fn to_bool(&self) -> PointHlr<Bool> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: Bool(self.value > 0),
             status: self.status,
@@ -168,7 +168,7 @@ impl PointHlr<i64> {
     /// Returns Point converted to the Int
     pub fn to_int(&self) -> PointHlr<i64> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value,
             status: self.status,
@@ -180,7 +180,7 @@ impl PointHlr<i64> {
     /// Returns Point converted to the Real
     pub fn to_real(&self) -> PointHlr<f32> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value as f32,
             status: self.status,
@@ -192,7 +192,7 @@ impl PointHlr<i64> {
     /// Returns Point converted to the Double
     pub fn to_double(&self) -> PointHlr<f64> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value as f64,
             status: self.status,
@@ -204,7 +204,7 @@ impl PointHlr<i64> {
     /// Returns Point converted to the String
     pub fn to_string(&self) -> PointHlr<String> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value.to_string(),
             status: self.status,
@@ -220,10 +220,10 @@ impl PointHlr<i64> {
             std::cmp::Ordering::Equal => self.status,
             std::cmp::Ordering::Greater => self.status,
         };
-        let (tx_id, timestamp) = match self.timestamp.cmp(&exp.timestamp) {
-            std::cmp::Ordering::Less => (exp.tx_id, exp.timestamp),
-            std::cmp::Ordering::Equal => (self.tx_id, self.timestamp),
-            std::cmp::Ordering::Greater => (self.tx_id, self.timestamp),
+        let (txid, timestamp) = match self.timestamp.cmp(&exp.timestamp) {
+            std::cmp::Ordering::Less => (exp.txid, exp.timestamp),
+            std::cmp::Ordering::Equal => (self.txid, self.timestamp),
+            std::cmp::Ordering::Greater => (self.txid, self.timestamp),
         };
         let cot = if self.cot == exp.cot {
             self.cot
@@ -231,7 +231,7 @@ impl PointHlr<i64> {
             panic!("Point.pow | Cot's are not equals")
         };
         PointHlr {
-            tx_id,
+            txid,
             name: String::from("Point.Pow"),
             value: self.value.pow(exp.value as u32),
             status,
@@ -244,10 +244,10 @@ impl PointHlr<i64> {
 // 
 impl PointHlr<f32> {
     ///
-    /// creates `Point<f32>` with given `name` & `value`, taking current timestamp, `Status::Ok`, `Direction::Read`
-    pub fn new_real(tx_id: usize, name: &str, value: f32) -> PointHlr<f32> {
+    /// Creates `Point<f32>` with given `name` & `value`, taking current timestamp, `Status::Ok`, `Direction::Read`
+    pub fn new_real(txid: usize, name: impl Into<String>, value: f32) -> PointHlr<f32> {
         PointHlr {
-            tx_id,
+            txid,
             name: name.into(),
             value,
             status: Status::Ok,
@@ -259,7 +259,7 @@ impl PointHlr<f32> {
     /// Returns the Point with the absolute value
     pub fn abs(&self) -> PointHlr<f32> {
         Self {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value.abs(),
             status: self.status,
@@ -271,7 +271,7 @@ impl PointHlr<f32> {
     /// Returns Point converted to the Bool
     pub fn to_bool(&self) -> PointHlr<Bool> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: Bool(self.value > 0.0),
             status: self.status,
@@ -283,7 +283,7 @@ impl PointHlr<f32> {
     /// Returns Point converted to the Int
     pub fn to_int(&self) -> PointHlr<i64> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value.round() as i64,
             status: self.status,
@@ -295,7 +295,7 @@ impl PointHlr<f32> {
     /// Returns Point converted to the Real
     pub fn to_real(&self) -> PointHlr<f32> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value,
             status: self.status,
@@ -307,7 +307,7 @@ impl PointHlr<f32> {
     /// Returns Point converted to the Double
     pub fn to_double(&self) -> PointHlr<f64> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value as f64,
             status: self.status,
@@ -319,7 +319,7 @@ impl PointHlr<f32> {
     /// Returns Point converted to the String
     pub fn to_string(&self) -> PointHlr<String> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value.to_string(),
             status: self.status,
@@ -335,10 +335,10 @@ impl PointHlr<f32> {
             std::cmp::Ordering::Equal => self.status,
             std::cmp::Ordering::Greater => self.status,
         };
-        let (tx_id, timestamp) = match self.timestamp.cmp(&exp.timestamp) {
-            std::cmp::Ordering::Less => (exp.tx_id, exp.timestamp),
-            std::cmp::Ordering::Equal => (self.tx_id, self.timestamp),
-            std::cmp::Ordering::Greater => (self.tx_id, self.timestamp),
+        let (txid, timestamp) = match self.timestamp.cmp(&exp.timestamp) {
+            std::cmp::Ordering::Less => (exp.txid, exp.timestamp),
+            std::cmp::Ordering::Equal => (self.txid, self.timestamp),
+            std::cmp::Ordering::Greater => (self.txid, self.timestamp),
         };
         let cot = if self.cot == exp.cot {
             self.cot
@@ -346,7 +346,7 @@ impl PointHlr<f32> {
             panic!("Point.pow | Cot's are not equals")
         };
         PointHlr {
-            tx_id,
+            txid,
             name: String::from("Point.Pow"),
             value: self.value.powf(exp.value),
             status,
@@ -359,10 +359,10 @@ impl PointHlr<f32> {
 // 
 impl PointHlr<f64> {
     ///
-    /// creates `Point<f64>` with given `name` & `value`, taking current timestamp, `Status::Ok`, `Direction::Read`
-    pub fn new_double(tx_id: usize, name: &str, value: f64) -> PointHlr<f64> {
+    /// Creates `Point<f64>` with given `name` & `value`, taking current timestamp, `Status::Ok`, `Direction::Read`
+    pub fn new_double(txid: usize, name: impl Into<String>, value: f64) -> PointHlr<f64> {
         PointHlr {
-            tx_id,
+            txid,
             name: name.into(),
             value,
             status: Status::Ok,
@@ -374,7 +374,7 @@ impl PointHlr<f64> {
     /// Returns the Point with the absolute value
     pub fn abs(&self) -> PointHlr<f64> {
         Self {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value.abs(),
             status: self.status,
@@ -386,7 +386,7 @@ impl PointHlr<f64> {
     /// Returns Point converted to the Bool
     pub fn to_bool(&self) -> PointHlr<Bool> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: Bool(self.value > 0.0),
             status: self.status,
@@ -398,7 +398,7 @@ impl PointHlr<f64> {
     /// Returns Point converted to the Int
     pub fn to_int(&self) -> PointHlr<i64> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value.round() as i64,
             status: self.status,
@@ -410,7 +410,7 @@ impl PointHlr<f64> {
     /// Returns Point converted to the Real
     pub fn to_real(&self) -> PointHlr<f32> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value as f32,
             status: self.status,
@@ -422,7 +422,7 @@ impl PointHlr<f64> {
     /// Returns Point converted to the Double
     pub fn to_double(&self) -> PointHlr<f64> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value,
             status: self.status,
@@ -434,7 +434,7 @@ impl PointHlr<f64> {
     /// Returns Point converted to the String
     pub fn to_string(&self) -> PointHlr<String> {
         PointHlr {
-            tx_id: self.tx_id,
+            txid: self.txid,
             name: self.name.clone(),
             value: self.value.to_string(),
             status: self.status,
@@ -450,10 +450,10 @@ impl PointHlr<f64> {
             std::cmp::Ordering::Equal => self.status,
             std::cmp::Ordering::Greater => self.status,
         };
-        let (tx_id, timestamp) = match self.timestamp.cmp(&exp.timestamp) {
-            std::cmp::Ordering::Less => (exp.tx_id, exp.timestamp),
-            std::cmp::Ordering::Equal => (self.tx_id, self.timestamp),
-            std::cmp::Ordering::Greater => (self.tx_id, self.timestamp),
+        let (txid, timestamp) = match self.timestamp.cmp(&exp.timestamp) {
+            std::cmp::Ordering::Less => (exp.txid, exp.timestamp),
+            std::cmp::Ordering::Equal => (self.txid, self.timestamp),
+            std::cmp::Ordering::Greater => (self.txid, self.timestamp),
         };
         let cot = if self.cot == exp.cot {
             self.cot
@@ -461,7 +461,7 @@ impl PointHlr<f64> {
             panic!("Point.pow | Cot's are not equals")
         };
         PointHlr {
-            tx_id,
+            txid,
             name: String::from("Point.Pow"),
             value: self.value.powf(exp.value),
             status,
@@ -474,15 +474,111 @@ impl PointHlr<f64> {
 // 
 impl PointHlr<String> {
     ///
-    /// creates `Point<String>`` with given `name` & `value`, taking current timestamp, `Status::Ok`, `Direction::Read`
-    pub fn new_string(tx_id: usize, name: &str, value: impl Into<String>) -> PointHlr<String> {
+    /// Creates `Point<String>`` with given `name` & `value`, taking current timestamp, `Status::Ok`, `Direction::Read`
+    pub fn new_string(txid: usize, name: impl Into<String>, value: impl Into<String>) -> PointHlr<String> {
         PointHlr {
-            tx_id,
+            txid,
             name: name.into(),
             value: value.into(),
             status: Status::Ok,
             cot: Cot::default(),
             timestamp: chrono::offset::Utc::now(),
+        }
+    }
+}
+//
+// 
+impl PointHlr<Vec<u8>> {
+    ///
+    /// Creates `Point<Bytes>`` with given `name` & `value`, taking current timestamp, `Status::Ok`, `Direction::Read`
+    pub fn new_bytes(txid: usize, name: impl Into<String>, value: impl Into<Vec<u8>>) -> PointHlr<Vec<u8>> {
+        PointHlr {
+            txid,
+            name: name.into(),
+            value: value.into(),
+            status: Status::Ok,
+            cot: Cot::default(),
+            timestamp: chrono::offset::Utc::now(),
+        }
+    }
+    ///
+    /// Returns Point converted to the Bool
+    pub fn to_bool(&self) -> PointHlr<Bool> {
+        PointHlr {
+            txid: self.txid,
+            name: self.name.clone(),
+            value: Bool(match self.value.first() {
+                    Some(value) => *value != 0,
+                    None => {
+                        panic!("PointHlr({}).to_bool | Error convert to Bool, no bytes found in: '{:?}'", self.name, self.value);
+                    }
+                }),
+            status: self.status,
+            cot: self.cot,
+            timestamp: self.timestamp,
+        }
+    }
+    ///
+    /// Returns Point converted to the Int
+    pub fn to_int(&self) -> PointHlr<i64> {
+        PointHlr {
+            txid: self.txid,
+            name: self.name.clone(),
+            value: match self.value[0..8].try_into() {
+                Ok(value) => i64::from_be_bytes(value),
+                Err(err) => {
+                    panic!("PointHlr({}).to_int | Error convert to Int value: {:?}\n\terror: {:#?}", self.name, self.value, err);
+                }
+            },
+            status: self.status,
+            cot: self.cot,
+            timestamp: self.timestamp,
+        }
+    }
+    ///
+    /// Returns Point converted to the Real
+    pub fn to_real(&self) -> PointHlr<f32> {
+        PointHlr {
+            txid: self.txid,
+            name: self.name.clone(),
+            value: match self.value[0..4].try_into() {
+                Ok(value) => f32::from_be_bytes(value),
+                Err(err) => {
+                    panic!("PointHlr({}).to_int | Error convert to Int value: {:?}\n\terror: {:#?}", self.name, self.value, err);
+                }
+            },
+            status: self.status,
+            cot: self.cot,
+            timestamp: self.timestamp,
+        }
+    }
+    ///
+    /// Returns Point converted to the Double
+    pub fn to_double(&self) -> PointHlr<f64> {
+        PointHlr {
+            txid: self.txid,
+            name: self.name.clone(),
+            value: match self.value[0..8].try_into() {
+                Ok(value) => f64::from_be_bytes(value),
+                Err(err) => {
+                    panic!("PointHlr({}).to_int | Error convert to Double value: {:?}\n\terror: {:#?}", self.name, self.value, err);
+                }
+            },
+            status: self.status,
+            cot: self.cot,
+            timestamp: self.timestamp,
+        }
+    }
+    ///
+    /// Returns Point converted to the String
+    pub fn to_string(&self) -> PointHlr<String> {
+        PointHlr {
+            txid: self.txid,
+            name: self.name.clone(),
+            value: String::from_utf8_lossy(&self.value).into_owned(),
+            status: self.status,
+            cot: self.cot,
+            timestamp: self.timestamp,
         }
     }
 }
@@ -496,10 +592,10 @@ impl<T: std::ops::Add<Output = T>> std::ops::Add for PointHlr<T> {
             std::cmp::Ordering::Equal => self.status,
             std::cmp::Ordering::Greater => self.status,
         };
-        let (tx_id, timestamp) = match self.timestamp.cmp(&rhs.timestamp) {
-            std::cmp::Ordering::Less => (rhs.tx_id, rhs.timestamp),
-            std::cmp::Ordering::Equal => (self.tx_id, self.timestamp),
-            std::cmp::Ordering::Greater => (self.tx_id, self.timestamp),
+        let (txid, timestamp) = match self.timestamp.cmp(&rhs.timestamp) {
+            std::cmp::Ordering::Less => (rhs.txid, rhs.timestamp),
+            std::cmp::Ordering::Equal => (self.txid, self.timestamp),
+            std::cmp::Ordering::Greater => (self.txid, self.timestamp),
         };
         let cot = if self.cot == rhs.cot {
             self.cot
@@ -507,7 +603,7 @@ impl<T: std::ops::Add<Output = T>> std::ops::Add for PointHlr<T> {
             panic!("Point.add | Cot's are not equals")
         };
         PointHlr {
-            tx_id,
+            txid,
             name: String::from("Point.Add"),
             value: self.value + rhs.value,
             status,
@@ -526,10 +622,10 @@ impl<T: std::ops::Sub<Output = T>> std::ops::Sub for PointHlr<T> {
             std::cmp::Ordering::Equal => self.status,
             std::cmp::Ordering::Greater => self.status,
         };
-        let (tx_id, timestamp) = match self.timestamp.cmp(&rhs.timestamp) {
-            std::cmp::Ordering::Less => (rhs.tx_id, rhs.timestamp),
-            std::cmp::Ordering::Equal => (self.tx_id, self.timestamp),
-            std::cmp::Ordering::Greater => (self.tx_id, self.timestamp),
+        let (txid, timestamp) = match self.timestamp.cmp(&rhs.timestamp) {
+            std::cmp::Ordering::Less => (rhs.txid, rhs.timestamp),
+            std::cmp::Ordering::Equal => (self.txid, self.timestamp),
+            std::cmp::Ordering::Greater => (self.txid, self.timestamp),
         };
         let cot = if self.cot == rhs.cot {
             self.cot
@@ -537,7 +633,7 @@ impl<T: std::ops::Sub<Output = T>> std::ops::Sub for PointHlr<T> {
             panic!("Point.sub | Cot's are not equals")
         };
         PointHlr {
-            tx_id,
+            txid,
             name: String::from("Point.Sub"),
             value: self.value - rhs.value,
             status,
@@ -556,10 +652,10 @@ impl<T: std::ops::Mul<Output = T>> std::ops::Mul for PointHlr<T> {
             std::cmp::Ordering::Equal => self.status,
             std::cmp::Ordering::Greater => self.status,
         };
-        let (tx_id, timestamp) = match self.timestamp.cmp(&rhs.timestamp) {
-            std::cmp::Ordering::Less => (rhs.tx_id, rhs.timestamp),
-            std::cmp::Ordering::Equal => (self.tx_id, self.timestamp),
-            std::cmp::Ordering::Greater => (self.tx_id, self.timestamp),
+        let (txid, timestamp) = match self.timestamp.cmp(&rhs.timestamp) {
+            std::cmp::Ordering::Less => (rhs.txid, rhs.timestamp),
+            std::cmp::Ordering::Equal => (self.txid, self.timestamp),
+            std::cmp::Ordering::Greater => (self.txid, self.timestamp),
         };
         let cot = if self.cot == rhs.cot {
             self.cot
@@ -567,7 +663,7 @@ impl<T: std::ops::Mul<Output = T>> std::ops::Mul for PointHlr<T> {
             panic!("Point.mul | Cot's are not equals")
         };
         PointHlr {
-            tx_id,
+            txid,
             name: String::from("Point.Mul"),
             value: self.value * rhs.value,
             status,
@@ -586,10 +682,10 @@ impl<T: std::ops::Div<Output = T>> std::ops::Div for PointHlr<T> {
             std::cmp::Ordering::Equal => self.status,
             std::cmp::Ordering::Greater => self.status,
         };
-        let (tx_id, timestamp) = match self.timestamp.cmp(&rhs.timestamp) {
-            std::cmp::Ordering::Less => (rhs.tx_id, rhs.timestamp),
-            std::cmp::Ordering::Equal => (self.tx_id, self.timestamp),
-            std::cmp::Ordering::Greater => (self.tx_id, self.timestamp),
+        let (txid, timestamp) = match self.timestamp.cmp(&rhs.timestamp) {
+            std::cmp::Ordering::Less => (rhs.txid, rhs.timestamp),
+            std::cmp::Ordering::Equal => (self.txid, self.timestamp),
+            std::cmp::Ordering::Greater => (self.txid, self.timestamp),
         };
         let cot = if self.cot == rhs.cot {
             self.cot
@@ -597,7 +693,7 @@ impl<T: std::ops::Div<Output = T>> std::ops::Div for PointHlr<T> {
             panic!("Point.div | Cot's are not equals")
         };
         PointHlr {
-            tx_id,
+            txid,
             name: String::from("Point.Div"),
             value: self.value / rhs.value,
             status,
@@ -616,10 +712,10 @@ impl<T: std::ops::BitOr<Output = T>> std::ops::BitOr for PointHlr<T> {
             std::cmp::Ordering::Equal => self.status,
             std::cmp::Ordering::Greater => self.status,
         };
-        let (tx_id, timestamp) = match self.timestamp.cmp(&rhs.timestamp) {
-            std::cmp::Ordering::Less => (rhs.tx_id, rhs.timestamp),
-            std::cmp::Ordering::Equal => (self.tx_id, self.timestamp),
-            std::cmp::Ordering::Greater => (self.tx_id, self.timestamp),
+        let (txid, timestamp) = match self.timestamp.cmp(&rhs.timestamp) {
+            std::cmp::Ordering::Less => (rhs.txid, rhs.timestamp),
+            std::cmp::Ordering::Equal => (self.txid, self.timestamp),
+            std::cmp::Ordering::Greater => (self.txid, self.timestamp),
         };
         let cot = if self.cot == rhs.cot {
             self.cot
@@ -627,7 +723,7 @@ impl<T: std::ops::BitOr<Output = T>> std::ops::BitOr for PointHlr<T> {
             panic!("Point.bitor | Cot's are not equals")
         };
         PointHlr {
-            tx_id,
+            txid,
             name: String::from("Point.BitOr"),
             value: self.value | rhs.value,
             status,
@@ -646,10 +742,10 @@ impl<T: std::ops::BitAnd<Output = T>> std::ops::BitAnd for PointHlr<T> {
             std::cmp::Ordering::Equal => self.status,
             std::cmp::Ordering::Greater => self.status,
         };
-        let (tx_id, timestamp) = match self.timestamp.cmp(&rhs.timestamp) {
-            std::cmp::Ordering::Less => (rhs.tx_id, rhs.timestamp),
-            std::cmp::Ordering::Equal => (self.tx_id, self.timestamp),
-            std::cmp::Ordering::Greater => (self.tx_id, self.timestamp),
+        let (txid, timestamp) = match self.timestamp.cmp(&rhs.timestamp) {
+            std::cmp::Ordering::Less => (rhs.txid, rhs.timestamp),
+            std::cmp::Ordering::Equal => (self.txid, self.timestamp),
+            std::cmp::Ordering::Greater => (self.txid, self.timestamp),
         };
         let cot = if self.cot == rhs.cot {
             self.cot
@@ -657,7 +753,7 @@ impl<T: std::ops::BitAnd<Output = T>> std::ops::BitAnd for PointHlr<T> {
             panic!("Point.bitor | Cot's are not equals")
         };
         PointHlr {
-            tx_id,
+            txid,
             name: String::from("Point.BitOr"),
             value: self.value & rhs.value,
             status,
