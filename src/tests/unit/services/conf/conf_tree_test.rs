@@ -184,7 +184,7 @@ fn valid() {
 fn inputs(conf_tree: &ConfTree) -> Node {
     if conf_tree.is_mapping() {
         let mut res: IndexMap<String, Node> = IndexMap::new();
-        for node in conf_tree.sub_nodes() {
+        for node in conf_tree.nodes() {
             log::debug!("key: {:?}\t|\tnode: {:?}", &node.key, &node.conf);
             let sub_res = inputs(&node);
             res.insert(node.key.clone(), sub_res);
@@ -287,7 +287,7 @@ fn nodes() {
         let conf: serde_yaml::Value = serde_yaml::from_str(value).unwrap();
         log::debug!("test conf: {:?}", conf);
         let conf = ConfTree::new_root(conf);
-        let mut nodes: Vec<ConfTree> = conf.sub_nodes().collect();
+        let mut nodes: Vec<ConfTree> = conf.nodes().collect();
         for node in nodes.iter() {
             log::debug!("node: {:?}", node.key);
         }

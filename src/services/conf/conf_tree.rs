@@ -52,24 +52,33 @@ impl ConfTree {
     ///
     /// iterates across all sub nodes 
     pub fn next(&self) -> Option<ConfTree> {
-        self.sub_nodes().next()
+        self.nodes().next()
     }
     ///
     /// returns count of sub nodes
     pub fn count(&self) -> usize {
-        self.sub_nodes().count()
+        self.nodes().count()
     }
     ///
     /// iterate across all sub nodes
+    #[deprecated(since="0.3.0", note="please use `nodes` instead")]
     pub fn sub_nodes(&self) -> Box<dyn Iterator<Item = ConfTree> + '_> {
-        fn map_nodes((key, value): (&serde_yaml::Value, &serde_yaml::Value)) -> ConfTree {
-            ConfTree::new(
-                key.as_str().unwrap(),
-                value.clone(),
-            )
-        }
         match self.conf.as_mapping() {
-            Some(m) => Box::new(m.iter().map(map_nodes)),
+            Some(m) => Box::new(m.iter().map(|(key, val)| ConfTree::new(
+                key.as_str().unwrap(),
+                val.clone(),
+            ))),
+            None => Box::new(std::iter::empty()),
+        }
+    }
+    ///
+    /// iterate across all sub nodes
+    pub fn nodes(&self) -> Box<dyn Iterator<Item = ConfTree> + '_> {
+        match self.conf.as_mapping() {
+            Some(m) => Box::new(m.iter().map(|(key, val)| ConfTree::new(
+                key.as_str().unwrap(),
+                val.clone(),
+            ))),
             None => Box::new(std::iter::empty()),
         }
     }
@@ -334,7 +343,7 @@ impl ConfTree {
         let prefix = prefix.into();
         let kind = kind.into();
         let error = Error::new(&self.id, "get_by_keywd");
-        for node in self_conf.sub_nodes() {
+        for node in self_conf.nodes() {
             if let Ok(keyword) = ConfKeywd::from_str(&node.key) {
                 if keyword.kind() == kind && keyword.prefix() == prefix {
                     return Ok((keyword, node))
@@ -359,7 +368,7 @@ impl ConfTree {
         let prefix = prefix.into();
         let keywd = keywd.into();
         let error = Error::new(&self.id, "get_by_custom_keywd");
-        for node in self.sub_nodes() {
+        for node in self.nodes() {
             if let Ok(keyword) = ConfCustomKeywd::from_str(&node.key) {
                 if keyword.name() == keywd && keyword.prefix() == prefix {
                     return Ok((keyword, node))

@@ -222,7 +222,7 @@ impl FnConfig {
         if conf_tree.is_mapping() {
             // has inputs in mapping
             log::trace!("FnConfig.buildInputs | sub nodes - found");
-            for sub_node in conf_tree.sub_nodes() {
+            for sub_node in conf_tree.nodes() {
                 log::trace!("FnConfig.buildInputs | sub node: {:?}", sub_node);
                 match FnConfKeywd::from_str(sub_node.key.as_str()) {
                     Ok(keyword) => {
@@ -304,7 +304,7 @@ impl FnConfig {
     /// Returns ConfTree by keyword or Err
     fn get_param_by_keyword(conf: &ConfTree, input: &str, kind: u8) -> Result<ConfTree, String> {
         log::trace!("FnConfig.getParamByKeyword | conf: {:?}", conf);
-        for node in conf.sub_nodes() {
+        for node in conf.nodes() {
             log::trace!("FnConfig.getParamByKeyword | node: {:?}", node);
             match FnConfKeywd::from_str(&node.key) {
                 Ok(keyword) => {
