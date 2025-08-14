@@ -15,7 +15,7 @@ use super::{conf_duration::ConfDuration, conf_keywd::ConfKeywd, conf_kind::ConfK
 /// Allow to iterate across all yaml config nodes
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ConfTree {
-    id: String,
+    dbg: String,
     pub key: String,
     pub conf: serde_yaml::Value,
 }
@@ -26,16 +26,16 @@ impl ConfTree {
     /// creates iterotor on the serde_yaml::Value mapping
     pub fn new_root(conf: serde_yaml::Value) -> Self {
         Self {
-            id: String::from("ConfTree"),
+            dbg: String::from("ConfTree"),
             key: String::new(),
             conf,
         }
     }
     ///
     /// creates [ConfTree] instance holding the key and serde_yaml::Value
-    pub fn new(key: &str, conf: serde_yaml::Value) -> Self {
+    pub fn new(key: impl Into<String>, conf: serde_yaml::Value) -> Self {
         Self {
-            id: String::from("ConfTree"),
+            dbg: String::from("ConfTree"),
             key: key.into(),
             conf,
         }
@@ -112,7 +112,7 @@ impl ConfTree {
     /// 
     /// Will parsed from self `key` as [ConfKeywd]
     pub fn prefix(&self) -> Result<String, Error> {
-        let error = Error::new(&self.id, "prefix");
+        let error = Error::new(&self.dbg, "prefix");
         match ConfKeywd::from_str(&self.key) {
             Ok(keywd) => {
                 log::trace!("ConfTree.prefix | Keyword: {:?}", keywd);
@@ -131,7 +131,7 @@ impl ConfTree {
     /// 
     /// Will parsed from self `key` as [ConfKeywd]
     pub fn kind(&self) -> Result<String, Error> {
-        let error = Error::new(&self.id, "kind");
+        let error = Error::new(&self.dbg, "kind");
         match ConfKeywd::from_str(&self.key) {
             Ok(keywd) => {
                 log::trace!("ConfTree.kind | Keyword: {:?}", keywd);
@@ -150,7 +150,7 @@ impl ConfTree {
     /// 
     /// Will parsed from self `key` as [ConfKeywd]
     pub fn name(&self) -> Result<String, Error> {
-        let error = Error::new(&self.id, "name");
+        let error = Error::new(&self.dbg, "name");
         match ConfKeywd::from_str(&self.key) {
             Ok(keywd) => {
                 log::trace!("ConfTree.name | Keyword: {:?}", keywd);
@@ -169,7 +169,7 @@ impl ConfTree {
     /// 
     /// Will parsed from self `key` as [ConfKeywd]
     pub fn title(&self) -> Result<String, Error> {
-        let error = Error::new(&self.id, "title");
+        let error = Error::new(&self.dbg, "title");
         match ConfKeywd::from_str(&self.key) {
             Ok(keywd) => {
                 log::trace!("ConfTree.title | Keyword: {:?}", keywd);
@@ -200,7 +200,7 @@ impl ConfTree {
     ///
     /// returns tree node value as bool by it's key if exists
     pub fn as_bool(&self, key: &str) -> Result<bool, Error> {
-        let error = Error::new(&self.id, "as_bool");
+        let error = Error::new(&self.dbg, "as_bool");
         if self.conf.is_mapping() {
             match self.conf.as_mapping().unwrap().get(key) {
                 Some(value) => {
@@ -218,7 +218,7 @@ impl ConfTree {
     ///
     /// returns tree node value as bool by it's key if exists
     pub fn as_i64(&self, key: &str) -> Result<i64, Error> {
-        let error = Error::new(&self.id, "as_i64");
+        let error = Error::new(&self.dbg, "as_i64");
         if self.conf.is_mapping() {
             match self.conf.as_mapping().unwrap().get(key) {
                 Some(value) => {
@@ -236,7 +236,7 @@ impl ConfTree {
     ///
     /// returns tree node value as f32 by it's key if exists
     pub fn as_f32(&self, key: &str) -> Result<f32, Error> {
-        let error = Error::new(&self.id, "as_f32");
+        let error = Error::new(&self.dbg, "as_f32");
         if self.conf.is_mapping() {
             match self.conf.as_mapping().unwrap().get(key) {
                 Some(value) => {
@@ -254,7 +254,7 @@ impl ConfTree {
     ///
     /// returns tree node value as f64 by it's key if exists
     pub fn as_f64(&self, key: &str) -> Result<f64, Error> {
-        let error = Error::new(&self.id, "as_f64");
+        let error = Error::new(&self.dbg, "as_f64");
         if self.conf.is_mapping() {
             match self.conf.as_mapping().unwrap().get(key) {
                 Some(value) => {
@@ -272,7 +272,7 @@ impl ConfTree {
     ///
     /// returns tree node value as str by it's key if exists
     pub fn as_str(&self, key: &str) -> Result<&str, Error> {
-        let error = Error::new(&self.id, "as_str");
+        let error = Error::new(&self.dbg, "as_str");
         if self.conf.is_mapping() {
             match self.conf.as_mapping().unwrap().get(key) {
                 Some(value) => {
@@ -295,13 +295,13 @@ impl ConfTree {
                 match value.as_sequence() {
                     Some(value) => Some(value),
                     None => {
-                        log::warn!("{}.as_vec | Error getting SEQUENCE by key '{}' from node '{:?}'", self.id, key, value);
+                        log::warn!("{}.as_vec | Error getting SEQUENCE by key '{}' from node '{:?}'", self.dbg, key, value);
                         None
                     },
                 }
             }
             None => {
-                log::warn!("{}.as_vec | Key '{}' not found in the node '{:?}'", self.id, key, self.conf);
+                log::warn!("{}.as_vec | Key '{}' not found in the node '{:?}'", self.dbg, key, self.conf);
                 None
             },
         }
@@ -310,7 +310,7 @@ impl ConfTree {
     /// removes node by it's key if exists
     /// returns Result<&Self>
     pub fn remove(&mut self, key: &str) -> Result<serde_yaml::Value, Error> {
-        let error = Error::new(&self.id, "remove");
+        let error = Error::new(&self.dbg, "remove");
         if self.conf.is_mapping() {
             match self.conf.as_mapping_mut().unwrap().remove(key) {
                 Some(value) => Ok(value),
@@ -338,7 +338,7 @@ impl ConfTree {
         let self_conf = self.clone();
         let prefix = prefix.into();
         let kind = kind.into();
-        let error = Error::new(&self.id, "get_by_keywd");
+        let error = Error::new(&self.dbg, "get_by_keywd");
         for node in self_conf.nodes() {
             if let Ok(keyword) = ConfKeywd::from_str(&node.key) {
                 if keyword.kind() == kind && keyword.prefix() == prefix {
@@ -363,7 +363,7 @@ impl ConfTree {
         // let self_conf = self.clone();
         let prefix = prefix.into();
         let keywd = keywd.into();
-        let error = Error::new(&self.id, "get_by_custom_keywd");
+        let error = Error::new(&self.dbg, "get_by_custom_keywd");
         for node in self.nodes() {
             if let Ok(keyword) = ConfCustomKeywd::from_str(&node.key) {
                 if keyword.name() == keywd && keyword.prefix() == prefix {
@@ -378,11 +378,11 @@ impl ConfTree {
     pub fn get_in_queue(&self) -> Result<(String, i64), Error> {
         let prefix = "in";
         let sub_param = "max-length";
-        let error = Error::new(&self.id, "get_in_queue");
+        let error = Error::new(&self.dbg, "get_in_queue");
         match self.get_by_keywd(prefix, ConfKind::Queue) {
             Ok((keyword, self_recv_queue)) => {
                 let name = format!("{} {} {}", keyword.prefix(), keyword.kind().to_string(), keyword.name());
-                log::trace!("{}.get_in_queue | self in-queue params {}: {:?}", self.id, name, self_recv_queue);
+                log::trace!("{}.get_in_queue | self in-queue params {}: {:?}", self.dbg, name, self_recv_queue);
                 match ConfTreeGet::<serde_yaml::Value>::get(&self_recv_queue, sub_param) {
                     Some(val) => match val.as_i64() {
                         Some(max_length) => Ok((keyword.name(), max_length)),
@@ -399,11 +399,11 @@ impl ConfTree {
     #[deprecated(note = "Use ConfTree::get_send_to instead")]
     pub fn get_out_queue(&self) -> Result<String, Error> {
         let prefix = "out";
-        let error = Error::new(&self.id, "get_out_queue");
+        let error = Error::new(&self.dbg, "get_out_queue");
         match self.get_by_keywd(prefix, ConfKind::Queue) {
             Ok((keyword, tx_name)) => {
                 let name = format!("{} {} {}", keyword.prefix(), keyword.kind().to_string(), keyword.name());
-                log::trace!("{}.get_out_queue | self out-queue params {}: {:?}", self.id, name, tx_name);
+                log::trace!("{}.get_out_queue | self out-queue params {}: {:?}", self.dbg, name, tx_name);
                 Ok(tx_name.conf.as_str().unwrap().to_string())
             }
             Err(err) => Err(error.err(format!("{} queue - not found in: {:#?}\n\terror: {:?}", prefix, self.conf, err))),
@@ -412,7 +412,7 @@ impl ConfTree {
     ///
     /// Returns vec of names of the 'send-to' queue
     pub fn get_send_to_many(&self) -> Result<Vec<String>, Error> {
-        let error = Error::new(&self.id, "get_send_to_many");
+        let error = Error::new(&self.dbg, "get_send_to_many");
         match ConfTreeGet::<serde_yaml::Value>::get(self, "send-to") {
             Some(conf) => {
                 match conf {
@@ -424,7 +424,7 @@ impl ConfTree {
                         for item in conf.iter() {
                             match item.as_str() {
                                 Some(item) => items.push(item.to_owned()),
-                                None => log::warn!("{}.get_send_to_many | In parameter 'send-to' String's expected , but found: {:#?}", self.id, item),
+                                None => log::warn!("{}.get_send_to_many | In parameter 'send-to' String's expected , but found: {:#?}", self.dbg, item),
                             }
                         }
                         Ok(items)
@@ -440,7 +440,7 @@ impl ConfTree {
     ///
     /// Returns Type by `key`, parsed from serde_yaml
     pub fn parse<T: DeserializeOwned + std::fmt::Debug>(&self, key: impl AsRef<str>) -> Result<T, Error> {
-        let error = Error::new(&self.id, "parse");
+        let error = Error::new(&self.dbg, "parse");
         let val = self.conf
             .get(key.as_ref())
             .ok_or(error.err(format!("key '{}' - not found in: {:#?}", key.as_ref(), self.conf)))?;
@@ -458,7 +458,7 @@ impl ConfTree {
     /// timeout: 3s         # 3 seconds
     /// ```
     pub fn get_duration(&self, key: impl AsRef<str>) -> Result<Duration, Error> {
-        let error = Error::new(&self.id, "get_duration");
+        let error = Error::new(&self.dbg, "get_duration");
         match ConfTreeGet::<serde_yaml::Value>::get(self, key.as_ref()) {
             Some(value) => {
                 let value = if value.is_u64() {
@@ -488,7 +488,7 @@ impl ConfTree {
     /// height: 3         # 3 meters
     /// ```
     pub fn get_distance(&self, key: impl AsRef<str>) -> Result<ConfDistance, Error> {
-        let error = Error::new(&self.id, "get_distance");
+        let error = Error::new(&self.dbg, "get_distance");
         match ConfTreeGet::<serde_yaml::Value>::get(self, key.as_ref()) {
             Some(value) => {
                 let value = if value.is_u64() {
@@ -530,18 +530,18 @@ impl ConfTree {
                     if keyword.kind() == FnConfKindName::Point {
                         let point_name = Name::new(&parent, keyword.data()).join();
                         let point_conf = conf.get(key).unwrap();
-                        log::trace!("{}.get_diagnosis | Point '{}'", self.id, point_name);
+                        log::trace!("{}.get_diagnosis | Point '{}'", self.dbg, point_name);
                         let point = PointConf::new(&parent, &point_conf);
                         let point_name_keywd = DiagKeywd::new(&point.name);
                         points.insert(point_name_keywd, point);
                     } else {
-                        log::warn!("{}.get_diagnosis | point conf expected, but found: {:?}", self.id, keyword);
+                        log::warn!("{}.get_diagnosis | point conf expected, but found: {:?}", self.dbg, keyword);
                     }
                 }
 
             }
             None => {
-                log::warn!("{}.get_diagnosis | diagnosis - not found in {:#?}", self.id, self.conf);
+                log::warn!("{}.get_diagnosis | diagnosis - not found in {:#?}", self.dbg, self.conf);
             }
         };
         points
@@ -580,7 +580,7 @@ impl ConfTreeGet<'_, ConfTree> for ConfTree {
     fn get(&self, key: impl AsRef<str>) -> Option<ConfTree> {
         if self.conf.is_mapping() {
             self.conf.as_mapping().unwrap().get(key.as_ref()).map(|value| ConfTree {
-                id: String::from("ConfTree"),
+                dbg: String::from("ConfTree"),
                 key: key.as_ref().to_owned(),
                 conf: value.clone(),
             })
@@ -642,18 +642,24 @@ impl<'a> ConfTreeGet<'a, &'a Vec<serde_yaml::Value>> for ConfTree {
     ///
     /// Returns tree node as vec by it's key if exists
     fn get(&'a self, key: impl AsRef<str>) -> Option<&'a Vec<serde_yaml::Value>> {
-        match self.conf.as_mapping().unwrap().get(key.as_ref()) {
-            Some(value) => {
-                match value.as_sequence() {
-                    Some(value) => Some(value),
-                    None => {
-                        log::warn!("ConfTree.get | Error getting SEQUENCE by key '{}' from node '{:?}'", key.as_ref(), value);
-                        None
-                    },
+        match self.conf.as_mapping() {
+            Some(map) => match map.get(key.as_ref()) {
+                Some(value) => {
+                    match value.as_sequence() {
+                        Some(value) => Some(value),
+                        None => {
+                            log::warn!("ConfTree.get | Error getting SEQUENCE by key '{}' from node '{:?}'", key.as_ref(), value);
+                            None
+                        },
+                    }
                 }
+                None => {
+                    log::warn!("ConfTree.get | Key '{}' not found in the node '{:?}'", key.as_ref(), self.conf);
+                    None
+                },
             }
             None => {
-                log::warn!("ConfTree.get | Key '{}' not found in the node '{:?}'", key.as_ref(), self.conf);
+                log::warn!("ConfTree.get | Kan't find Key '{}' - is the: {:#?}", key.as_ref(), self.conf);
                 None
             },
         }
