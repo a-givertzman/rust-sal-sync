@@ -1,4 +1,5 @@
 use std::{str::FromStr, time::Duration};
+use indexmap::IndexMap;
 use sal_core::error::Error;
 use serde::de::DeserializeOwned;
 use crate::{
@@ -60,7 +61,7 @@ impl ConfTree {
         self.nodes().count()
     }
     ///
-    /// iterate across all sub nodes
+    /// Iterate across mapping nodes
     #[deprecated(since="0.3.0", note="please use `nodes` instead")]
     pub fn sub_nodes(&self) -> Box<dyn Iterator<Item = ConfTree> + '_> {
         match self.conf.as_mapping() {
@@ -72,7 +73,7 @@ impl ConfTree {
         }
     }
     ///
-    /// iterate across all sub nodes
+    /// Iterate across mapping nodes
     pub fn nodes(&self) -> Box<dyn Iterator<Item = ConfTree> + '_> {
         match self.conf.as_mapping() {
             Some(m) => Box::new(m.iter().map(|(key, val)| ConfTree::new(
@@ -289,25 +290,20 @@ impl ConfTree {
     ///
     /// Returns tree node value as vec by it's key if exists
     pub fn as_vec(&self, key: &str) -> Option<&Vec<serde_yaml::Value>> {
-        if self.conf.is_mapping() {
-            match self.conf.as_mapping().unwrap().get(key) {
-                Some(value) => {
-                    match value.as_sequence() {
-                        Some(value) => Some(value),
-                        None => {
-                            log::warn!("{}.as_vec | Error getting SEQUENCE by key '{}' from node '{:?}'", self.id, key, value);
-                            None
-                        },
-                    }
+        match self.conf.as_mapping().unwrap().get(key) {
+            Some(value) => {
+                match value.as_sequence() {
+                    Some(value) => Some(value),
+                    None => {
+                        log::warn!("{}.as_vec | Error getting SEQUENCE by key '{}' from node '{:?}'", self.id, key, value);
+                        None
+                    },
                 }
-                None => {
-                    log::warn!("{}.as_vec | Key '{}' not found in the node '{:?}'", self.id, key, self.conf);
-                    None
-                },
             }
-        } else {
-            log::warn!("{}.as_vec | Key '{}' not found in the node '{:?}'", self.id, key, self.conf);
-            None
+            None => {
+                log::warn!("{}.as_vec | Key '{}' not found in the node '{:?}'", self.id, key, self.conf);
+                None
+            },
         }
     }
     ///
@@ -566,7 +562,7 @@ impl ConfTree {
 
 ///
 /// Provides generic access to the containing values by a key
-pub trait ConfTreeGet<T> {
+pub trait ConfTreeGet<'a, T> {
     ///
     /// Returns a value by it key
     /// 
@@ -574,11 +570,11 @@ pub trait ConfTreeGet<T> {
     /// Function Will panic 
     /// - if requested key does not exists
     /// - if the type of value is not matched to the requested
-    fn get(&self, key: impl AsRef<str>) -> Option<T>;
+    fn get(&'a self, key: impl AsRef<str>) -> Option<T>;
 }
 //
 //
-impl ConfTreeGet<ConfTree> for ConfTree {
+impl ConfTreeGet<'_, ConfTree> for ConfTree {
     ///
     /// Returns a sub-node by it's key if exists, else None
     fn get(&self, key: impl AsRef<str>) -> Option<ConfTree> {
@@ -595,7 +591,7 @@ impl ConfTreeGet<ConfTree> for ConfTree {
 }
 //
 //
-impl ConfTreeGet<serde_yaml::Value> for ConfTree {
+impl ConfTreeGet<'_, serde_yaml::Value> for ConfTree {
     fn get(&self, key: impl AsRef<str>) -> Option<serde_yaml::Value> {
         let val = self.conf.get(key.as_ref()).map(|val| val.to_owned());
         log::trace!("ConfTree.get | {}: {:#?}", key.as_ref(), val);
@@ -604,7 +600,68 @@ impl ConfTreeGet<serde_yaml::Value> for ConfTree {
 }
 //
 //
-impl ConfTreeGet<bool> for ConfTree {
+impl<'a> ConfTreeGet<'_, IndexMap<String, serde_yaml::Value>> for ConfTree {
+    ///
+    /// Returns tree node as `IndexMap<String, Value>` by it's key if exists
+    fn get(&self, key: impl AsRef<str>) -> Option<IndexMap<String, serde_yaml::Value>> {
+        match self.conf.as_mapping().unwrap().get(key.as_ref()) {
+            Some(value) => {
+                match value.as_mapping() {
+                    Some(value) => {
+                        let mut res = IndexMap::new();
+                        for (key, val) in value {
+                            match key.as_str() {
+                                Some(key) => {
+                                    res.insert(key.to_owned(),val.to_owned());
+                                }
+                                None => {
+                                    log::warn!("ConfTree.get | Error getting key '{:?}' as string in map: {:?}", key, value);
+                                    return None;
+                                }
+                            }
+                        }
+                        // Some(value.iter().map(|(key, val)| (key.as_str().unwrap().to_owned(), val.to_owned())).collect()),
+                        Some(res)
+                    }
+                    None => {
+                        log::warn!("ConfTree.get | Error getting SEQUENCE by key '{}' from node '{:?}'", key.as_ref(), value);
+                        None
+                    },
+                }
+            }
+            None => {
+                log::warn!("ConfTree.get | Key '{}' not found in the node '{:?}'", key.as_ref(), self.conf);
+                None
+            },
+        }
+    }
+}
+//
+//
+impl<'a> ConfTreeGet<'a, &'a Vec<serde_yaml::Value>> for ConfTree {
+    ///
+    /// Returns tree node as vec by it's key if exists
+    fn get(&'a self, key: impl AsRef<str>) -> Option<&'a Vec<serde_yaml::Value>> {
+        match self.conf.as_mapping().unwrap().get(key.as_ref()) {
+            Some(value) => {
+                match value.as_sequence() {
+                    Some(value) => Some(value),
+                    None => {
+                        log::warn!("ConfTree.get | Error getting SEQUENCE by key '{}' from node '{:?}'", key.as_ref(), value);
+                        None
+                    },
+                }
+            }
+            None => {
+                log::warn!("ConfTree.get | Key '{}' not found in the node '{:?}'", key.as_ref(), self.conf);
+                None
+            },
+        }
+    }
+}
+//
+//
+impl ConfTreeGet<'_, bool> for ConfTree {
     fn get(&self, key: impl AsRef<str>) -> Option<bool> {
         let val = match self.conf.get(key.as_ref()) {
             Some(val) => val.as_bool(),
@@ -616,7 +673,7 @@ impl ConfTreeGet<bool> for ConfTree {
 }
 //
 //
-impl ConfTreeGet<f64> for ConfTree {
+impl ConfTreeGet<'_, f64> for ConfTree {
     fn get(&self, key: impl AsRef<str>) -> Option<f64> {
         let val = match self.conf.get(key.as_ref()) {
             Some(val) => val.as_f64(),
@@ -628,7 +685,7 @@ impl ConfTreeGet<f64> for ConfTree {
 }
 //
 //
-impl ConfTreeGet<i64> for ConfTree {
+impl ConfTreeGet<'_, i64> for ConfTree {
     fn get(&self, key: impl AsRef<str>) -> Option<i64> {
         let val = match self.conf.get(key.as_ref()) {
             Some(val) => val.as_i64(),
@@ -640,7 +697,7 @@ impl ConfTreeGet<i64> for ConfTree {
 }
 //
 //
-impl ConfTreeGet<serde_yaml::Mapping> for ConfTree {
+impl ConfTreeGet<'_, serde_yaml::Mapping> for ConfTree {
     fn get(&self, key: impl AsRef<str>) -> Option<serde_yaml::Mapping> {
         let val = match self.conf.get(key.as_ref()) {
             Some(val) => val.as_mapping().map(|val| val.to_owned()),
@@ -652,7 +709,7 @@ impl ConfTreeGet<serde_yaml::Mapping> for ConfTree {
 }
 //
 //
-impl ConfTreeGet<Vec<serde_yaml::Value>> for ConfTree {
+impl ConfTreeGet<'_, Vec<serde_yaml::Value>> for ConfTree {
     fn get(&self, key: impl AsRef<str>) -> Option<Vec<serde_yaml::Value>> {
         let val = match self.conf.get(key.as_ref()) {
             Some(val) => val.as_sequence().map(|val| val.to_owned()),
@@ -664,7 +721,7 @@ impl ConfTreeGet<Vec<serde_yaml::Value>> for ConfTree {
 }
 //
 //
-impl ConfTreeGet<String> for ConfTree {
+impl ConfTreeGet<'_, String> for ConfTree {
     fn get(&self, key: impl AsRef<str>) -> Option<String> {
         let val = match self.conf.get(key.as_ref()) {
             Some(val) => val.as_str().map(|val| val.to_owned()),
@@ -676,7 +733,7 @@ impl ConfTreeGet<String> for ConfTree {
 }
 //
 //
-impl ConfTreeGet<u64> for ConfTree {
+impl ConfTreeGet<'_, u64> for ConfTree {
     fn get(&self, key: impl AsRef<str>) -> Option<u64> {
         let val = match self.conf.get(key.as_ref()) {
             Some(val) => val.as_u64(),
