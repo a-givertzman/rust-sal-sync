@@ -48,7 +48,22 @@ impl FromStr for ConfDistanceUnit {
         }
     }
 }
-
+//
+//
+impl std::fmt::Display for ConfDistanceUnit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let unit = match self {
+            ConfDistanceUnit::Nanometer => "nm",
+            ConfDistanceUnit::Micrometer => "um",
+            ConfDistanceUnit::Millimeter => "mm",
+            ConfDistanceUnit::Centimetre => "cm",
+            ConfDistanceUnit::Meter => "m",
+            ConfDistanceUnit::Kilometer => "km",
+            ConfDistanceUnit::Inch => "in",
+        };
+        write!(f, "{unit}")
+    }
+}
 
 ///
 /// keyword konsists of 2 fields:
@@ -211,5 +226,12 @@ impl FromStr for ConfDistance {
                 Err(format!("ConfDistance.from_str | Error parsing distance value: '{}'", &input))
             }
         }
+    }
+}
+//
+//
+impl std::fmt::Display for ConfDistance {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.value, self.unit)
     }
 }
