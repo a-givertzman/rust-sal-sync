@@ -2,17 +2,17 @@ use log::error;
 use crate::collections::FxIndexMap;
 ///
 /// Provides callback on connection status changes
-pub struct ChangeNotify<S, T> {
+pub struct ChangeNotify<'a, S, T> {
     id: String,
     state: S,
-    states: FxIndexMap<S, Box<dyn Fn(T)>>
+    states: FxIndexMap<S, Box<dyn Fn(T) + 'a>>
 }
 //
 //
-impl<S: Clone + std::cmp::PartialEq + std::cmp::Eq + std::hash::Hash + std::fmt::Debug, T> ChangeNotify<S, T> {
+impl<'a, S: Clone + std::cmp::PartialEq + std::cmp::Eq + std::hash::Hash + std::fmt::Debug, T> ChangeNotify<'a, S, T> {
     //
     //
-    pub fn new(parent: impl Into<String>, initial: S, states: Vec<(S, Box<dyn Fn(T)>)>) -> Self {
+    pub fn new(parent: impl Into<String>, initial: S, states: Vec<(S, Box<dyn Fn(T) + 'a>)>) -> Self {
         let states = FxIndexMap::from_iter(states);
         Self {
             id: format!("{}/ChangeNotify<{}>", parent.into(), std::any::type_name::<S>()),
