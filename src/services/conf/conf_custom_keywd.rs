@@ -79,7 +79,7 @@ impl FromStr for ConfCustomKeywd {
     fn from_str(input: &str) -> Result<Self, Error> {
         let error = Error::new("ConfCustomKeywd", "from_str");
         log::trace!("ConfCustomKeywd.from_str | input: {}", input);
-        let re = r#"^(?:(\w+)[ \t]+)??(?:(\w+)(?:[ \t]+(\S+))?$)"#;
+        let re = r#"^(?:([^ ]+)[ \t]+)??(?:(\w+)(?:[ \t]+(\S+))?$)"#;
         let re = Regex::new(re).unwrap();
         // let re = RegexBuilder::new(re)..multi_line(false).build().unwrap();
         let group_prefix = 1;

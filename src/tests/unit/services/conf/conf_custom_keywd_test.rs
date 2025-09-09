@@ -27,23 +27,23 @@ fn from_str() {
     // let (initial, switches) = init_each();
     let test_data = vec![
         // input                         prefix,     name,           title
-        ("camera Camera1",              ("",        "camera",       "Camera1")),
-        ("camera",                      ("",        "camera",       "")),
-        ("task Task1",                  ("",        "task",         "Task1")),
-        ("task",                        ("",        "task",         "")),
-        ("in queue Queue1",             ("in",      "queue",        "Queue1")),
-        ("in link Link1",               ("in",      "link",         "Link1")),
-        ("in queue in-queue",           ("in",      "queue",        "in-queue")),
-        ("out queue out-queue",         ("out",     "queue",        "out-queue")),
+        (01, "camera Camera1",              ("",        "camera",       "Camera1")),
+        (02, "camera",                      ("",        "camera",       "")),
+        (03, "task Task1",                  ("",        "task",         "Task1")),
+        (04, "task",                        ("",        "task",         "")),
+        (05, "in queue Queue1",             ("in",      "queue",        "Queue1")),
+        (06, "in link Link1",               ("in",      "link",         "Link1")),
+        (07, "in queue in-queue",           ("in",      "queue",        "in-queue")),
+        (08, "out queue out-queue",         ("out",     "queue",        "out-queue")),
     ];
-    for (value, (target_prefix, target_name, target_title)) in test_data {
+    for (step, value, (target_prefix, target_name, target_title)) in test_data {
         let result = ConfCustomKeywd::from_str(value).unwrap();
         let target = ConfCustomKeywd::new(target_prefix, target_name, target_title);
-        log::debug!("value: {:?}:\n\tresult: {:?}\n\ttarget: {:?}", value, result, target);
-        assert!(result == target, "\nresult: {:?}\ntarget: {:?}", result, target);
-        assert!(result.prefix() == target_prefix, "\nresult: {:?}\ntarget: {:?}", result, target_prefix);
-        assert!(result.name() == target_name, "\nresult: {:?}\ntarget: {:?}", result, target_name);
-        assert!(result.title() == target_title, "\nresult: {:?}\ntarget: {:?}", result, target_title);
+        log::debug!("step {step}  value: {:?}:\n\tresult: {:?}\n\ttarget: {:?}", value, result, target);
+        assert!(result == target, "step {step} \nresult: {:?}\ntarget: {:?}", result, target);
+        assert!(result.prefix() == target_prefix, "step {step} \nresult: {:?}\ntarget: {:?}", result, target_prefix);
+        assert!(result.name() == target_name, "step {step} \nresult: {:?}\ntarget: {:?}", result, target_name);
+        assert!(result.title() == target_title, "step {step} \nresult: {:?}\ntarget: {:?}", result, target_title);
     }
 }
 
