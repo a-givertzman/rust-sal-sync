@@ -49,6 +49,13 @@ impl AtomicUsizeOption {
 }
 //
 //
+impl Default for AtomicUsizeOption {
+    fn default() -> Self {
+        Self { val: Default::default(), option: Default::default() }
+    }
+}
+//
+//
 #[cfg(test)]
 ///
 /// Testing [AtomicUsizeOption]
