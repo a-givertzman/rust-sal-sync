@@ -28,7 +28,7 @@ impl<T> Handles<T> {
     ///
     /// Returns [Handles] new instance
     pub fn from_vec(parent: impl Into<String>, handles: Vec<impl WaitBox<T> + 'static>) -> Self {
-        let h: SegQueue<Box<(dyn WaitBox<T>)>> = SegQueue::new();
+        let h: SegQueue<Box<dyn WaitBox<T>>> = SegQueue::new();
         for handle in handles {
             h.push(Box::new(handle));
         }
