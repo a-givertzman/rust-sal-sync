@@ -235,3 +235,20 @@ impl std::fmt::Display for ConfDistance {
         write!(f, "{} {}", self.value, self.unit)
     }
 }
+impl Default for ConfDistanceUnit {
+    fn default() -> Self {
+        Self::Meter
+    }
+}
+//
+//
+impl Default for ConfDistance {
+    ///
+    /// Returns 0.0 Meters
+    fn default() -> Self {
+        Self {
+            value: Default::default(),
+            unit: Default::default(),
+        }
+    }
+}
