@@ -1,6 +1,7 @@
 #[cfg(test)]
 use std::{sync::Once, str::FromStr};
 use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
+use serde_json::json;
 use crate::services::{conf::{ConfDuration, ConfDurationUnit}, task::functions::FnConfKeywd};
 ///
 ///
@@ -42,7 +43,38 @@ fn test_create_valid() {
     ];
     for (value, target) in test_data {
         let conf_duration = ConfDuration::from_str(value).unwrap();
-        log::debug!("value: {:?}   |   fnConfigType: {:?}   |   target: {:?}", value, conf_duration, target);
+        log::debug!("value: {:?}   |   result: {:?}   |   target: {:?}", value, conf_duration, target);
+        assert_eq!(conf_duration, target);
+    }
+}
+///
+///
+#[test]
+fn test_deserialize_valid() {
+    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    init_once();
+    init_each();
+    println!("test_deserialize_valid");
+    // let (initial, switches) = init_each();
+    let test_data = vec![
+        ("\"111 ns\""   , ConfDuration::new(111, ConfDurationUnit::Nanos)),
+        ("\"112ns\""    , ConfDuration::new(112, ConfDurationUnit::Nanos)),
+        ("\"12  us\""   , ConfDuration::new(12, ConfDurationUnit::Micros)),
+        ("\"13 us\""    , ConfDuration::new(13, ConfDurationUnit::Micros)),
+        ("\"11  ms\""   , ConfDuration::new(11, ConfDurationUnit::Millis)),
+        ("\"10ms\""     , ConfDuration::new(10, ConfDurationUnit::Millis)),
+        ("\"5   s\""    , ConfDuration::new(5, ConfDurationUnit::Secs)),
+        ("\"4s\""       , ConfDuration::new(4, ConfDurationUnit::Secs)),
+        ("\"3\""        , ConfDuration::new(3, ConfDurationUnit::Secs)),
+        ("\"2   m\""    , ConfDuration::new(2, ConfDurationUnit::Mins)),
+        ("\"7m\""       , ConfDuration::new(7, ConfDurationUnit::Mins)),
+        ("\"8   h\""    , ConfDuration::new(8, ConfDurationUnit::Hours)),
+        ("\"9h\""       , ConfDuration::new(9, ConfDurationUnit::Hours)),
+    ];
+    println!("{}", json!("111 ns"));
+    for (value, target) in test_data {
+        let conf_duration: ConfDuration = serde_json::from_str(value).unwrap();
+        log::debug!("value: {:?}   |   result: {:?}   |   target: {:?}", value, conf_duration, target);
         assert_eq!(conf_duration, target);
     }
 }
@@ -70,7 +102,7 @@ fn test_create_invalid() {
     ];
     for (value, target) in test_data {
         let conf_duration = FnConfKeywd::from_str(value);
-        log::debug!("value: {:?}   |   fnConfigType: {:?}   |   target: {:?}", value, conf_duration, target);
+        log::debug!("value: {:?}   |   result: {:?}   |   target: {:?}", value, conf_duration, target);
         assert_eq!(conf_duration.is_err(), true);
     }
 }

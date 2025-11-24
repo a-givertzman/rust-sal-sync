@@ -1,7 +1,7 @@
 use std::{str::FromStr, time::Duration};
 use log::trace;
 use regex::RegexBuilder;
-use serde::Deserialize;
+use serde::{Deserialize, de};
 
 ///
 /// Unit of Duration
@@ -53,7 +53,7 @@ impl FromStr for ConfDurationUnit {
 /// | 3      |  m     | - 3 minutes
 /// | 1      |  h     | - 1 hour
 /// ```
-#[derive(Debug, Clone, Copy, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ConfDuration {
     pub value: u64,
     pub unit: ConfDurationUnit,
@@ -120,5 +120,34 @@ impl FromStr for ConfDuration {
                 Err(format!("ConfDuration.from_str | Error parsing duration value: '{}'", &input))
             }
         }
+    }
+}
+//
+//
+impl<'de> de::Deserialize<'de> for ConfDuration {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        struct ConfDurationVisitor;
+
+        impl<'de> de::Visitor<'de> for ConfDurationVisitor {
+            type Value = ConfDuration;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("ConfDuration '100 ms' etc")
+            }
+
+            fn visit_str<E>(self, val: &str) -> Result<Self::Value, E>
+                where
+                    E: de::Error, {
+                match ConfDuration::from_str(val) {
+                    Ok(val) => Ok(val),
+                    Err(err) => Err(de::Error::custom(err)),
+                }
+            }
+        }
+
+        deserializer.deserialize_str(ConfDurationVisitor {})
     }
 }
