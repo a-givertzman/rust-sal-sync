@@ -30,10 +30,10 @@ mod conf_subscribe {
         init_once();
         init_each();
         println!();
-        let self_id = "conf_subscribe_test";
-        let self_name = Name::new("", self_id);
-        println!("\n{}", self_id);
-        let test_duration = TestDuration::new(self_id, Duration::from_secs(10));
+        let dbg = "conf_subscribe_test";
+        let self_name = Name::new("", dbg);
+        println!("\n{}", dbg);
+        let test_duration = TestDuration::new(dbg, Duration::from_secs(10));
         test_duration.run().unwrap();
         let points = [
             r#"point Drive.Speed:
@@ -92,12 +92,12 @@ mod conf_subscribe {
                             Inf: []
                 "#,
                 HashMap::from([("App/MultiQueue".to_owned(), Some(vec![
-                    SubscriptionCriteria::new(Name::new(self_id, "Drive.Speed").join(), Cot::Inf),
-                    SubscriptionCriteria::new(Name::new(self_id, "Drive.OutputVoltage").join(), Cot::Inf),
-                    SubscriptionCriteria::new(Name::new(self_id, "Drive.DCVoltage").join(), Cot::Inf),
-                    SubscriptionCriteria::new(Name::new(self_id, "Drive.Current").join(), Cot::Inf),
-                    SubscriptionCriteria::new(Name::new(self_id, "Drive.Torque").join(), Cot::Inf),
-                    SubscriptionCriteria::new(Name::new(self_id, "Drive.Torque1").join(), Cot::Inf),
+                    SubscriptionCriteria::new(Name::new(dbg, "Drive.Speed").join(), Cot::Inf),
+                    SubscriptionCriteria::new(Name::new(dbg, "Drive.OutputVoltage").join(), Cot::Inf),
+                    SubscriptionCriteria::new(Name::new(dbg, "Drive.DCVoltage").join(), Cot::Inf),
+                    SubscriptionCriteria::new(Name::new(dbg, "Drive.Current").join(), Cot::Inf),
+                    SubscriptionCriteria::new(Name::new(dbg, "Drive.Torque").join(), Cot::Inf),
+                    SubscriptionCriteria::new(Name::new(dbg, "Drive.Torque1").join(), Cot::Inf),
                 ]))])
             ),
             (
@@ -107,7 +107,7 @@ mod conf_subscribe {
                             {history: rw}: []
                 "#,
                 HashMap::from([("App/MultiQueue".to_owned(), Some(vec![
-                    SubscriptionCriteria::new(Name::new(self_id, "Drive.Current").join(), Cot::All),
+                    SubscriptionCriteria::new(Name::new(dbg, "Drive.Current").join(), Cot::All),
                 ]))])
             ),
             (
@@ -117,7 +117,7 @@ mod conf_subscribe {
                             {alarm: 1}: []
                 "#,
                 HashMap::from([("App/MultiQueue".to_owned(), Some(vec![
-                    SubscriptionCriteria::new(Name::new(self_id, "Drive.Torque1").join(), Cot::All),
+                    SubscriptionCriteria::new(Name::new(dbg, "Drive.Torque1").join(), Cot::All),
                 ]))])
             ),
             (
@@ -127,7 +127,7 @@ mod conf_subscribe {
                             {cot: Inf, history: r}: []
                 "#,
                 HashMap::from([("MultiQueue".to_owned(), Some(vec![
-                    SubscriptionCriteria::new(Name::new(self_id, "Drive.Current").join(), Cot::Inf),
+                    SubscriptionCriteria::new(Name::new(dbg, "Drive.Current").join(), Cot::Inf),
                 ]))])
             ),
             (
@@ -139,6 +139,19 @@ mod conf_subscribe {
                                 - /App/Service/Point.Name.02
                 "#,
                 HashMap::from([("MultiQueue".to_owned(), None)])
+            ),
+            (
+                &format!(r#"
+                    subscribe:
+                        MultiQueue:
+                            Inf:
+                                - /{dbg}/Drive.Torque
+                                - /{dbg}/Drive.Current
+                "#),
+                HashMap::from([("MultiQueue".to_owned(), Some(vec![
+                    SubscriptionCriteria::new(Name::new(dbg, "Drive.Torque").join(), Cot::Inf),
+                    SubscriptionCriteria::new(Name::new(dbg, "Drive.Current").join(), Cot::Inf),
+                ]))])
             ),
         ];
         for (conf, target) in test_data {
