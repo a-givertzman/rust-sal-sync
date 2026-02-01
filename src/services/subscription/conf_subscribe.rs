@@ -98,7 +98,16 @@ impl ConfSubscribe {
         self.conf.is_null()
     }
 }
-
+//
+//
+impl Default for ConfSubscribe {
+    fn default() -> Self {
+        Self {
+            id: Default::default(),
+            conf: Default::default(),
+        }
+    }
+}
 ///         Inf: []         #   - on all points having Cot::Inf
 ///         {cot: Inf, history: r}: []  #   - on all points having Cot::Inf and history::read
 ///         {cot: Inf, history: r}:         #   - on concrete points having Cot::Inf and history::read
