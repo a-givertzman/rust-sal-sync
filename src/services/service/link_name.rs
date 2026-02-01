@@ -1,9 +1,10 @@
 use std::str::FromStr;
 use concat_string::concat_string;
+use sal_core::error::Error;
 ///
 /// Contains Name of the Link (Channel / Queue) in the separate format
 /// Service.Link -> Service & Link
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct LinkName {
     name: String,
     service: String,
@@ -54,7 +55,7 @@ impl std::fmt::Display for LinkName {
 //
 //
 impl FromStr for LinkName {
-    type Err = String;
+    type Err = Error;
     ///
     /// Creates new instance of the LinkName from the string like "Service.Link"  
     /// Spliting name 'Service.Link' into 
@@ -68,10 +69,10 @@ impl FromStr for LinkName {
                     Some(link) => {
                         Ok(Self { name: name.to_owned(), service: service.to_string(), link: link.to_string() })
                     }
-                    None => Err(format!("LinkName.from_str | '{}' does not have structure 'Service.Link'", name)),
+                    None => Err(Error::new("LinkName", "from_str").err(format!("Can't parse 'Service.Link' from '{name}'"))),
                 }
             }
-            None => Err(format!("LinkName.from_str | '{}' does not have structure 'Service.Link'", name)),
+            None => Err(Error::new("LinkName", "from_str").err(format!("Can't parse 'Service.Link' from '{name}'"))),
         }
     }
 }
