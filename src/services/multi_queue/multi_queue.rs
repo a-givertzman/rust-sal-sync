@@ -216,12 +216,12 @@ impl Service for MultiQueue {
         } else {
             let mut message = String::new();
             for subscription_criteria in points {
-                dbg::trace!("Extending (multicast) for receiver: {} ({})...", receiver_name, receiver_hash);
+                dbg::debug!("Extending (multicast) for receiver: {} ({})...", receiver_name, receiver_hash);
                 if let Err(err) = self.subscriptions.extend_multicast(receiver_hash, &subscription_criteria.destination()) {
                     message = concat_string!(message, err.to_string(), "\n");
                 };
             }
-            self.log("/multicast.log", receiver_name, receiver_hash, points);
+            // self.log("/multicast.log", receiver_name, receiver_hash, points);
             if message.is_empty() {
                 dbg::debug!("Extended (multicast), receiver: {} ({})", receiver_name, receiver_hash);
                 self.subscriptions_changed.store(true, Ordering::SeqCst);

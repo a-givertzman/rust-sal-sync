@@ -44,6 +44,7 @@ impl Subscriptions {
     /// Extends subscription if exists, otherwise returns error
     pub fn extend_multicast(&self, receiver_id: usize, destination: &str) -> Result<(), Error> {
         let error = Error::new(&self.dbg, "extend_multicast");
+        log::debug!("{}.extend_multicast | Extending (multicast) for receiver: {} ({})...", self.dbg, destination, receiver_id);
         match self.multicast.iter().find_map(|r| {
             r
                 .value()
@@ -52,9 +53,11 @@ impl Subscriptions {
         }) {
             Some(sender) => {
                 self.add_multicast(receiver_id, destination, sender);
+                log::debug!("{}.extend_multicast | Extending (multicast) for receiver: {} ({}) - Ok", self.dbg, destination, receiver_id);
                 Ok(())
             }
             None => {
+                log::warn!("{}.extend_multicast | Extending (multicast) for receiver: {} ({receiver_id}) - Receiver '{receiver_id}' - not found", self.dbg, destination);
                 Err(error.err(format!("Receiver '{}' - not found in subscriptions", receiver_id)))
             }
         }
