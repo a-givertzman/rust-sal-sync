@@ -53,7 +53,7 @@ impl Subscriptions {
     /// Extends subscription if exists, otherwise returns error
     pub fn extend_multicast(&self, receiver_id: usize, destination: &str) -> Result<(), Error> {
         let error = Error::new(&self.dbg, "extend_multicast");
-        log::debug!("{}.extend_multicast | Extending (multicast) for receiver: {} ({})...", self.dbg, destination, receiver_id);
+        log::trace!("{}.extend_multicast | Extending (multicast) for receiver: {} ({})...", self.dbg, destination, receiver_id);
         let s = self.multicast.iter()
             .find(|r| r.contains_key(&receiver_id))
             .map(|r| r.value().get(&receiver_id).map(|s| s.value().clone()))
@@ -70,7 +70,7 @@ impl Subscriptions {
                         self.multicast.insert(destination.to_owned(), receivers);
                     }
                 }
-                log::debug!("{}.extend_multicast | Extending (multicast) for receiver: {} ({}) - Ok", self.dbg, destination, receiver_id);
+                log::trace!("{}.extend_multicast | Extending (multicast) for receiver: {} ({}) - Ok", self.dbg, destination, receiver_id);
                 Ok(())
             }
             None => {
@@ -92,11 +92,11 @@ impl Subscriptions {
     pub fn get(&self, point_id: &str) -> Vec<(usize, Sender<Point>)> {
         match self.multicast.get(point_id).map(|r| r.value().clone()) {
             Some(multicast) => {
-                log::trace!("{}.iter | \n\t Multicast: {:?} \n\t Broadcast: {:?}", self.dbg, multicast, self.broadcast);
+                // log::trace!("{}.iter | \n\t Multicast: {:?} \n\t Broadcast: {:?}", self.dbg, multicast, self.broadcast);
                 multicast.iter().chain(&self.broadcast).map(|r| (*r.key(), r.value().clone())).collect()
             }
             None => {
-                log::trace!("{}.iter | \n\t Broadcast: {:?}", self.dbg, self.broadcast);
+                // log::trace!("{}.iter | \n\t Broadcast: {:?}", self.dbg, self.broadcast);
                 self.broadcast.iter().map(|r| (*r.key(), r.value().clone())).collect()
             }
         }
