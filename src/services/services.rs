@@ -195,19 +195,25 @@ impl Services {
     /// Inserts a new service into the collection
     pub fn insert(&self, service: Arc<dyn Service>) {
         let name = service.name().join();
+        log::debug!("{}.insert | Inserting Service '{name}' ...", self.dbg);
         if self.map.contains_key(&name) {
-            panic!("{}.insert | Duplicated service name '{:?}'", self.dbg, name);
+            panic!("{}.insert | Duplicated service name '{name}'", self.dbg);
         }
         self.map.insert(name.clone(), service);
-        self.order.insert(name);
+        self.order.insert(name.clone());
+        log::debug!("{}.insert | Inserting Service '{name}' - Ok", self.dbg);
     }
     ///
     /// Returns Service
     pub fn get(&self, name: &str) -> Option<Arc<dyn Service>> {
+        log::debug!("{}.get | Get Service '{name}' ...", self.dbg);
         match self.map.get(name) {
-            Some(r) => Some(r.value().clone()),
+            Some(r) => {
+                log::debug!("{}.get | Get Service '{name}' - Ok", self.dbg);
+                Some(r.value().clone())
+            }
             None => {
-                log::warn!("{}.get | service '{:?}' - not found", self.dbg, name);
+                log::warn!("{}.get | Get Service '{name}' - not found", self.dbg);
                 None
             },
         }
