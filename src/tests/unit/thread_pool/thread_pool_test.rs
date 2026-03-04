@@ -42,16 +42,17 @@ mod thread_pool {
             thread_pool.spawn(move || {
                 log::debug!("{dbg_}", );
                 std::thread::sleep(Duration::from_millis(load));
-                result.fetch_add(1, Ordering::SeqCst);
+                result.fetch_add(1, Ordering::AcqRel);
                 Ok(())
             }).unwrap();
         }
-        std::thread::sleep(Duration::from_millis(load * (threads + 1)));
+        std::thread::sleep(Duration::from_millis(load * (threads + 1) + 5));
         log::debug!("Jobs sheduled: {threads} in: {:?}", time.elapsed());
+        // thread_pool.join().unwrap();
         thread_pool.shutdown().unwrap();
         log::debug!("Total elapsed: {:?}", time.elapsed());
         let target = threads as usize;
-        let result = result.load(Ordering::SeqCst);
+        let result = result.load(Ordering::Acquire);
         assert!(result == target, "{} \nresult: {:?}\ntarget: {:?}", dbg, result, target);
         test_duration.exit();
     }

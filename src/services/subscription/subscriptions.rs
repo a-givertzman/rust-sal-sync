@@ -45,12 +45,17 @@ impl Subscriptions {
     pub fn extend_multicast(&self, receiver_id: usize, destination: &str) -> Result<(), Error> {
         let error = Error::new(&self.dbg, "extend_multicast");
         log::debug!("{}.extend_multicast | Extending (multicast) for receiver: {} ({})...", self.dbg, destination, receiver_id);
-        match self.multicast.iter().find_map(|r| {
-            r
-                .value()
-                .get(&receiver_id)
-                .map(|v| v.clone())
-        }) {
+        // match self.multicast.iter().find_map(|r| {
+        //     r
+        //         .value()
+        //         .get(&receiver_id)
+        //         .map(|v| v.clone())
+        // }) {
+        let s = self.multicast.iter()
+            .find(|r| r.contains_key(&receiver_id))
+            .map(|r| r.value().get(&receiver_id).map(|s| s.value().clone()))
+            .flatten();
+        match s {
             Some(sender) => {
                 self.add_multicast(receiver_id, destination, sender);
                 log::debug!("{}.extend_multicast | Extending (multicast) for receiver: {} ({}) - Ok", self.dbg, destination, receiver_id);

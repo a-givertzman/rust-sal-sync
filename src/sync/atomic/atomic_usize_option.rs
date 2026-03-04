@@ -61,14 +61,16 @@ impl Default for AtomicUsizeOption {
 /// Testing [AtomicUsizeOption]
 #[test]
 fn new() {
+    use debugging::session::debug_session::{Backtrace, DebugSession, LogLevel};
     use sal_core::dbg::Dbg;
     use testing::stuff::max_test_duration::TestDuration;
     use std::{sync::Arc, time::{Duration, Instant}};
 
-    env_logger::Builder::new().filter_level(log::LevelFilter::Debug).init();
+    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    std::thread::sleep(Duration::from_millis(100));
     let dbg = Dbg::own("AtomicUsizeOption-test");
     log::debug!("\n{}", dbg);
-    let test_duration = TestDuration::new(&dbg, Duration::from_secs(1));
+    let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
     test_duration.run().unwrap();
     let test_data = [
         (00, Some(0)),
