@@ -52,16 +52,12 @@ impl ServiceCycle {
             thread::sleep(remainder);
         } else {
             let exceed = elapsed - self.interval;
-            match exceed {
-                e if e >= self.err_exceed => {
-                    log::error!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.dbg, self.interval, elapsed - self.interval, elapsed);
-                }
-                e if e >= self.warn_exceed => {
-                    log::warn!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.dbg, self.interval, elapsed - self.interval, elapsed);
-                }
-                _ => {
-                    log::debug!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.dbg, self.interval, elapsed - self.interval, elapsed);
-                }
+            if exceed >= self.err_exceed {
+                log::error!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.dbg, self.interval, elapsed - self.interval, elapsed);
+            } else if exceed >= self.warn_exceed {
+                log::warn!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.dbg, self.interval, elapsed - self.interval, elapsed);
+            } else {
+                log::debug!("{}.wait | exceeded {:?} by {:?}, elapsed {:?}", self.dbg, self.interval, elapsed - self.interval, elapsed);
             }
         }
     }
