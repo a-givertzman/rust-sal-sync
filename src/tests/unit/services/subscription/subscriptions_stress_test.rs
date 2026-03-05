@@ -1,7 +1,7 @@
-use std::sync::{Arc, Barrier, atomic::AtomicUsize};
+use std::sync::{Arc, Barrier};
 #[cfg(test)]
 
-use std::{sync::Once, time::{Duration, Instant}};
+use std::{sync::Once, time::Duration};
 use rand::Rng;
 use sal_core::dbg::Dbg;
 use testing::stuff::max_test_duration::TestDuration;
@@ -49,7 +49,7 @@ fn subscriptions_stress_test() {
                     let _ = s.extend_multicast(receiver_id, &format!("dest_{}", (j + 1) % 10));
                 }
                 if j % 10 == 0 {
-                    let _ = s.remove(&receiver_id, &dest);
+                    let _ = s.remove(receiver_id, &dest);
                 }
             }
         }));
@@ -61,7 +61,7 @@ fn subscriptions_stress_test() {
             for _ in 0..100 {
                 for j in 0..100 {
                     let receiver_id = i * 1000 + j;
-                    let _ = s.remove_all(&receiver_id);
+                    let _ = s.remove_all(receiver_id);
                 }
             }
         }));
@@ -152,7 +152,7 @@ fn deadlocks_and_race_conditions_hammer() {
                     // 90-99: Remove All (Destructive Write)
                     _ => {
                         // Удаляем случайно, создавая дыры в картах
-                        let _ = subs.remove_all(&receiver_id);
+                        let _ = subs.remove_all(receiver_id);
                     }
                 }
                 // Иногда делаем микро-паузу, чтобы изменить тайминг переключения контекста
@@ -187,7 +187,7 @@ fn logic_consistency_check() {
         let subs = subs.clone();
         move || {
             // Пытаемся удалить в параллельном потоке
-            let _ = subs.remove_all(&1);
+            let _ = subs.remove_all(1);
         }
     });
     // В основном потоке пытаемся читать
@@ -202,7 +202,7 @@ fn zombie_subscription_race() {
     let subs = Arc::new(Subscriptions::new("ZombieTest"));
     let barrier = Arc::new(Barrier::new(2));
     // Мы будем бомбардировать один и тот же ID, чтобы вызвать коллизию
-    let target_receiver = 777;
+    let target_receiver_id = 777;
     let target_dest = "critical_topic";
     let iterations = 5000;
     // let zombies_found = Arc::new(AtomicUsize::new(0));
@@ -214,7 +214,7 @@ fn zombie_subscription_race() {
             barrier.wait();
             let sender = create_dummy_sender();
             for i in 0..iterations {
-                subs.add_multicast(target_receiver, target_dest, sender.clone());
+                subs.add_multicast(target_receiver_id, target_dest, sender.clone());
                 // Микро-пауза, чтобы разорвать атомарность (эмуляция лага)
                 if i % 100 == 0 { std::thread::yield_now(); }
             }
@@ -227,7 +227,7 @@ fn zombie_subscription_race() {
         move || {
             barrier.wait();
             for _ in 0..iterations {
-                let _ = subs.remove_all(&target_receiver);
+                let _ = subs.remove_all(target_receiver_id);
             }
         }
     };
@@ -237,13 +237,13 @@ fn zombie_subscription_race() {
     handle2.join().unwrap();
     // ФИНАЛЬНАЯ ПРОВЕРКА
     // После завершения гонки мы делаем финальную очистку
-    subs.remove_all(&target_receiver).unwrap_or(());
+    subs.remove_all(target_receiver_id).unwrap_or(());
     // Если логика верна, User 777 не должен существовать нигде.
     // Проверяем 'multicast' напрямую через get
     let leaks = subs.get(target_dest);
-    let is_zombie = leaks.iter().any(|(id, _)| *id == target_receiver);
+    let is_zombie = leaks.iter().any(|(id, _)| *id == target_receiver_id);
     if is_zombie {
-        println!("CRITICAL FAILURE: Zombie subscription found! Receiver {} is active in topic '{}' but was supposed to be removed.", target_receiver, target_dest);
+        println!("CRITICAL FAILURE: Zombie subscription found! Receiver {} is active in topic '{}' but was supposed to be removed.", target_receiver_id, target_dest);
         panic!("Test failed: Race condition corrupted internal state.");
     } else {
         println!("Success: No zombies found (Race condition did not corrupt state this time).");

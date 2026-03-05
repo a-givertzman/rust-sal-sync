@@ -241,7 +241,7 @@ impl Service for MultiQueue {
         let error = Error::new(&self.dbg, "unsubscribe");
         let receiver_hash = PointTxId::from_str(receiver_name);
         if points.is_empty() {
-            match self.subscriptions.remove_all(&receiver_hash) {
+            match self.subscriptions.remove_all(receiver_hash) {
                 Ok(_) => {
                     self.receiver_dictionary.remove(&receiver_hash);
                     changed |= true;
@@ -253,7 +253,7 @@ impl Service for MultiQueue {
             }
         } else {
             for subscription_criteria in points {
-                match self.subscriptions.remove(&receiver_hash, &subscription_criteria.destination()) {
+                match self.subscriptions.remove(receiver_hash, &subscription_criteria.destination()) {
                     Ok(_) => {
                         self.receiver_dictionary.remove(&receiver_hash);
                         changed |= true;
