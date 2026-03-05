@@ -47,7 +47,7 @@ impl ServiceCycle {
     pub fn wait(&self) {
         let elapsed = self.instant.elapsed();
         if elapsed <= self.interval {
-            let remainder = self.interval - elapsed;
+            let remainder = self.interval.saturating_sub(elapsed);
             log::trace!("{}.wait | waiting: {:?}", self.dbg, remainder);
             thread::sleep(remainder);
         } else {
