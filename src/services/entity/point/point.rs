@@ -610,10 +610,11 @@ impl<'de> Deserialize<'de> for Point {
                 )))
             }
             PointConfType::String => {
+                let value = visitor.value.as_str().ok_or_else(|| value_parsing_error::<D>("Point<String>", &visitor, "err"))?;
                 Ok(Point::String(PointHlr::new(
                     txid,
                     &visitor.name,
-                    visitor.value.as_str().unwrap().to_owned(),
+                    value.to_owned(),
                     Status::from(visitor.status),
                     visitor.cot,
                     visitor.timestamp.parse().map_err(|err| timestamp_parsing_error::<D>("Point<String>", &visitor, err))?,

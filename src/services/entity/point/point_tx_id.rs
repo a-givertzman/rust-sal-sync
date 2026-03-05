@@ -1,5 +1,3 @@
-#![allow(non_snake_case)]
-
 use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
 
 ///
@@ -13,6 +11,6 @@ impl PointTxId {
     pub fn from_str(id: &str) -> usize {
         let mut hasher = DefaultHasher::new();
         id.hash(&mut hasher);
-        hasher.finish().try_into().unwrap()
+        hasher.finish() as usize
     }
 }

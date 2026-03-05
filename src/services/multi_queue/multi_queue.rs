@@ -67,11 +67,16 @@ impl MultiQueue {
         let destinations: Vec<String> = points.iter().map(|cr| {cr.destination()}).collect();
         match fs::OpenOptions::new().create(true).append(true).open(&path) {
             Ok(mut f) => {
-                f.write_fmt(format_args!("\n\n\t{} ({})", receiver_name, rceiver_hash)).unwrap();
-                match serde_json::to_writer_pretty(f, &destinations) {
-                    Ok(_) => {}
+                match f.write_fmt(format_args!("\n\n\t{} ({})", receiver_name, rceiver_hash)) {
+                    Ok(_) => {
+                        if let Err(err) = serde_json::to_writer_pretty(f, &destinations) {
+                            if log::max_level() >= log::LevelFilter::Debug {
+                                log::warn!("{}.log | Error writing to file: '{}'\n\terror: {:?}", self.dbg, path, err)
+                            }
+                        }
+                    },
                     Err(err) => {
-                        if log::max_level() >= log::LevelFilter::Trace {
+                        if log::max_level() >= log::LevelFilter::Debug {
                             log::warn!("{}.log | Error writing to file: '{}'\n\terror: {:?}", self.dbg, path, err)
                         }
                     }
@@ -90,10 +95,14 @@ impl MultiQueue {
         let path = concat_string!("./logs", parent.join(), "/points.log");
         match fs::OpenOptions::new().create(true).append(true).open(&path) {
             Ok(mut f) => {
-                f.write_fmt(format_args!("'{}': {:?}\n",point_id, point)).unwrap();
+                if let Err(err) = f.write_fmt(format_args!("'{}': {:?}\n",point_id, point)) {
+                    if log::max_level() >= log::LevelFilter::Debug {
+                        log::warn!("{}.log | Error write file: '{}'\n\terror: {:?}", dbg, path, err)
+                    }
+                }
             }
             Err(err) => {
-                if log::max_level() >= log::LevelFilter::Trace {
+                if log::max_level() >= log::LevelFilter::Debug {
                     log::warn!("{}.log | Error open file: '{}'\n\terror: {:?}", dbg, path, err)
                 }
             }
@@ -276,7 +285,7 @@ impl Service for MultiQueue {
         log::info!("{}.run | Starting...", self.dbg);
         let dbg = self.dbg.clone();
         let name = self.name.clone();
-        let recv = self.rx_recv.take().unwrap();
+        let recv = self.rx_recv.take().ok_or(Error::new(&name, "run").err("Can't get required 'self.rx_recv'"))?;
         let subscriptions_ref = self.subscriptions.clone();
         let subscriptions_changed = self.subscriptions_changed.clone();
         // let receiver_dictionary = self.receiver_dictionary.clone();

@@ -5,6 +5,7 @@ use dashmap::DashMap;
 use hashers::fx_hash::FxHasher;
 use concat_string::concat_string;
 use indexmap::IndexMap;
+use sal_core::error::Error;
 use serde::{Deserialize, Serialize};
 use super::retain_conf::RetainConf;
 type RetainedCahe = FxHashMap<String, FxHashMap<String, RetainedPointConf>>;
@@ -77,7 +78,9 @@ impl RetainPointId {
                 .push(point.clone());
         }
         if update_retained {
-            self.write(&self.path, &retained).unwrap();
+            if let Err(err) = self.write(&self.path, &retained) {
+                log::warn!("{}.points | Can't store Point's from '{}', error: \n\t{:?}", self.id, owner, err);
+            }
             self.sql_write(&retained)
         }
         log::debug!("{}.points | Caching Point's from '{}' - Ok", self.id, owner);
@@ -93,8 +96,8 @@ impl RetainPointId {
     ///
     /// Creates directiry (all necessary folders in the 'path' if not exists)
     ///  - path is relative, will be joined with current working dir
-    fn create_dir(self_id: &str, path: &str) -> Result<PathBuf, String> {
-        let current_dir = env::current_dir().unwrap();
+    fn create_dir(self_id: &str, path: &str) -> Result<PathBuf, Error> {
+        let current_dir = env::current_dir().map_err(|err| Error::new(self_id, "create_dir").pass(err.to_string()))?;
         let path = current_dir.join(path);
         match path.exists() {
             true => Ok(path),
@@ -102,9 +105,9 @@ impl RetainPointId {
                 match fs::create_dir_all(&path) {
                     Ok(_) => Ok(path),
                     Err(err) => {
-                        let message = format!("{}.create_dir | Error create path: '{:?}'\n\terror: {:?}", self_id, path, err);
-                        log::error!("{}", message);
-                        Err(message)
+                        let err = Error::new(self_id, "create_dir").pass_with(format!("Can't create dir: '{:?}'", path), err.to_string());
+                        log::error!("{}", err);
+                        Err(err)
                     }
                 }
             }
@@ -146,25 +149,27 @@ impl RetainPointId {
     ///     ...
     /// }
     /// ```
-    fn write<P: AsRef<Path>, S: Serialize>(&self, path: P, points: S) -> Result<(), String> {
+    fn write<P: AsRef<Path>, S: Serialize>(&self, path: P, points: S) -> Result<(), Error> {
+        let error = Error::new(&self.id, "write");
         let path = Path::new(path.as_ref());
-        match Self::create_dir(&self.id, path.parent().unwrap().to_str().unwrap()) {
+        let path = path
+            .parent().ok_or(error.err(format!("Can't get parent from path '{:?}'", path)))?
+            .to_str().ok_or(error.err(format!("Can't get parent from path '{:?}'", path)))?;
+        match Self::create_dir(&self.id, path) {
             Ok(_) => {
                 match fs::OpenOptions::new().truncate(true).create(true).write(true).open(path) {
                     Ok(f) => {
                         match serde_json::to_writer_pretty(f, &points) {
                             Ok(_) => Ok(()),
-                            Err(err) => Err(format!("{}.read | Error writing to file: '{:?}'\n\terror: {:?}", self.id, path, err)),
+                            Err(err) => Err(error.pass_with(format!("Can't writing to file: '{:?}'", path), err.to_string())),
                         }
                     }
-                    Err(err) => {
-                        Err(format!("{}.read | Error open file: '{:?}'\n\terror: {:?}", self.id, path, err))
-                    }
+                    Err(err) => Err(error.pass_with(format!("Can't open to file: '{:?}'", path), err.to_string())),
                 }
             }
             Err(err) => {
                 log::error!("{:#?}", err);
-                Err(err)
+                Err(Error::new(&self.id, "write").pass(err))
             }
         }
     }
@@ -199,7 +204,8 @@ impl RetainPointId {
     }
     ///
     /// Make the sql request to store ponts to the database
-    fn sql_request(&self, request: &mut ApiRequest, sql: &str, keep_alive: bool) -> Result<ApiReply, String> {
+    fn sql_request(&self, request: &mut ApiRequest, sql: &str, keep_alive: bool) -> Result<ApiReply, Error> {
+        let error = Error::new(&self.id, "sql_request");
         match &self.conf.point_api() {
             Ok(api) => {
                 let query = ApiQuery::new(
@@ -209,7 +215,7 @@ impl RetainPointId {
                 match request.fetch_with(&query, keep_alive) {
                     Ok(reply) => {
                         if log::max_level() > log::LevelFilter::Debug {
-                            let reply_str = std::str::from_utf8(&reply).unwrap();
+                            let reply_str = std::str::from_utf8(&reply).map_err(|err| error.pass(err.to_string()))?;
                             log::debug!("{}.send | reply str: {:?}", &self.id, reply_str);
                         }
                         match serde_json::from_slice(&reply) {
@@ -219,23 +225,23 @@ impl RetainPointId {
                                     Ok(reply) => reply.to_string(),
                                     Err(err) => concat_string!(self.id, ".send | Error parsing reply to utf8 string: ", err.to_string()),
                                 };
-                                let message = concat_string!(self.id, ".send | Error parsing API reply: {:?} \n\t reply was: {:?}", err.to_string(), reply);
-                                log::warn!("{}", message);
-                                Err(message)
+                                let err = error.pass_with(format!("Can't parsing API reply: \n\t{:?}", reply), err.to_string());
+                                log::warn!("{}", err);
+                                Err(err)
                             }
                         }
                     }
                     Err(err) => {
-                        let message = concat_string!(self.id, ".send | Error sending API request: {:?}", err.to_string());
-                        log::warn!("{}", message);
-                        Err(message)
+                        let err = error.pass_with(format!("Can't send API request"), err.to_string());
+                        log::warn!("{}", err);
+                        Err(err)
                     }
                 }
             }
             Err(err) => {
-                let message = concat_string!("{}.sql_request | Database cant be updates, api is not specified, \n\t error: {:#?}", self.id, err);
-                log::warn!("{}", message);
-                Err(message)
+                let err = error.pass_with(format!("API is not specified"), err.to_string());
+                log::warn!("{}", err);
+                Err(err)
             }
         }
     }
