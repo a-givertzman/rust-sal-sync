@@ -156,19 +156,24 @@ impl Subscriptions {
         // DashMap держит Write Lock на этот бакет, пока выполняется замыкание.
         // Никто другой не сможет прочитать или записать в этот ключ, пока мы не закончим.
         let mut removed = false;
-        self.multicast.entry(destination.to_owned())
-            .and_modify(|arc_vec| {
+        if let dashmap::Entry::Occupied(mut entry) = self.multicast.entry(destination.to_owned()) {
+            let arc_vec = entry.get_mut();
+            // .and_modify(|arc_vec| {
                 // Внутри этого блока мы в безопасности (Critical Section)
                 // 1. Ищем получателя которого надо удалить
-                if let Some(i) = arc_vec.iter().enumerate().find_map(|(i, (id, _))| (*id == receiver_id).then(|| i)) {
-                    // 2. Клонируем массив получателей если нужно удалить
-                    let mut new_vec = (**arc_vec).clone();
-                    new_vec.remove(i);
-                    // 3. Подменяем обновленный массив получателей
-                    *arc_vec = Arc::new(new_vec);
+            if let Some(pos) = arc_vec.iter().position(|(id, _)| *id == receiver_id) {
+                // 2. Клонируем массив получателей если нужно удалить
+                let mut new_vec = (**arc_vec).clone();
+                new_vec.remove(pos);
+                match new_vec.is_empty() {
+                    // 3b. Подменяем обновленный массив получателей
+                    false => *arc_vec = Arc::new(new_vec),
+                    // 3a. Удаляем массив получателей если он пуст
+                    true => _ = entry.remove_entry(),
                 }
                 removed = true;
-            });
+            }
+        }
         match removed {
             true => Ok(()),
             false => Err(error.err(format!("Subscription '{destination}' - NOT FOUND for receiver '{receiver_id}'"))),
