@@ -54,10 +54,6 @@ impl Subscriptions {
     pub fn extend_multicast(&self, receiver_id: usize, destination: &str) -> Result<(), Error> {
         let error = Error::new(&self.dbg, "extend_multicast");
         log::trace!("{}.extend_multicast | Extending (multicast) for receiver: {} ({})...", self.dbg, destination, receiver_id);
-        let s = self.multicast.iter()
-            .find(|r| r.contains_key(&receiver_id))
-            .map(|r| r.value().get(&receiver_id).map(|s| s.value().clone()))
-            .flatten();
         match self.registry.get(&receiver_id).map(|s| s.clone()) {
             Some(sender) => {
                 match self.multicast.get(destination).map(|r| r.value().clone()) {
@@ -162,6 +158,7 @@ impl Subscriptions {
     ///
     /// Removes all subscriptions
     pub fn exit(&self) {
+        self.registry.clear();
         self.broadcast.clear();
         self.multicast.clear();
     }
