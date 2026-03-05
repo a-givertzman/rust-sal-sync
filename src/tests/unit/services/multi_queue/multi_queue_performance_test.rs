@@ -23,7 +23,7 @@ fn init_each() -> () {}
 const ITERATIONS: usize = 1_000_000;
 ///
 /// Use to estimate performance of multiqueue without matching producer's id
-#[ignore = "MultiQueue Performance test"]
+// #[ignore = "MultiQueue Performance test"]
 #[test]
 fn performance() {
     DebugSession::init(LogLevel::Debug, Backtrace::Short);
