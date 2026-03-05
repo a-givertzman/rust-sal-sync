@@ -124,8 +124,8 @@ impl MultiQueue {
                         let point_id = SubscriptionCriteria::new(&point.name(), point.cot()).destination();
                         log::trace!("{}.run | received: \n\t{:?}", dbg, point);
                         Self::log_point(&dbg, &name, &point_id, &point);
-                        for (receiver_hash, sender) in subscriptions.get(&point_id) {
-                            if receiver_hash != point.txid() {
+                        for (receiver_hash, sender) in subscriptions.get_view(&point_id).iter() {
+                            if *receiver_hash != point.txid() {
                                 match sender.send(point.clone()) {
                                     Ok(_) => {
                                         log::trace!("{}.run | sent to '{}' point: {:?}", dbg, receiver_hash, point);
@@ -136,6 +136,19 @@ impl MultiQueue {
                                 };
                             }
                         }
+
+                        // for (receiver_hash, sender) in subscriptions.get(&point_id) {
+                        //     if receiver_hash != point.txid() {
+                        //         match sender.send(point.clone()) {
+                        //             Ok(_) => {
+                        //                 log::trace!("{}.run | sent to '{}' point: {:?}", dbg, receiver_hash, point);
+                        //             }
+                        //             Err(err) => {
+                        //                 log::error!("{}.run | subscriptions '{}', receiver '{}' - send error: {:?}", dbg, point_id, receiver_hash, err);
+                        //             }
+                        //         };
+                        //     }
+                        // }
                     }
                     Err(err) => {
                         match err {
