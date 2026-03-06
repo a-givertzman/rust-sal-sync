@@ -224,8 +224,8 @@ impl Service for MultiQueue {
             Err(error.err(format!("Can't be extended (broadcast), receiver: {} ({})", receiver_name, receiver_hash)))
         } else {
             let mut message = String::new();
+            dbg::debug!("Extending (multicast) for receiver: {} ({})...", receiver_name, receiver_hash);
             for subscription_criteria in points {
-                dbg::debug!("Extending (multicast) for receiver: {} ({})...", receiver_name, receiver_hash);
                 if let Err(err) = self.subscriptions.extend_multicast(receiver_hash, &subscription_criteria.destination()) {
                     message = concat_string!(message, err.to_string(), "\n");
                 };
