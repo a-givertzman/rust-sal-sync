@@ -147,6 +147,3 @@ impl From<&str> for Name {
         Name::new(parent, "")
     }
 }
-///
-/// 
-unsafe impl Sync for Name {}
