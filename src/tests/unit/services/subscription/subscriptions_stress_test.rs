@@ -49,7 +49,7 @@ fn subscriptions_stress_test() {
                     let _ = s.extend_multicast(receiver_id, &format!("dest_{}", (j + 1) % 10));
                 }
                 if j % 10 == 0 {
-                    let _ = s.remove(receiver_id, &dest);
+                    let _ = s.remove(receiver_id, &[dest]);
                 }
             }
         }));

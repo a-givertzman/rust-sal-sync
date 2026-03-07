@@ -3,7 +3,7 @@ use hashers::fx_hash::FxHasher;
 use sal_core::error::Error;
 use crate::{collections::FxDashMap, services::entity::Point, sync::{RwLock, channel::Sender}};
 ///
-/// Unique id of the service receiving the Point's by the subscription
+/// Unique id of the service (TxId) receiving the Point's by the subscription
 /// This id used to identify the service produced the Points. 
 /// To avoid send back self produced Point's.
 type ReceiverId = usize;
@@ -47,7 +47,7 @@ impl Subscriptions {
     /// Adds subscription for `receiver_id` with destination 
     /// 
     /// COW Write: Медленнее (Copy), но безопасно для Readers
-    pub fn add_multicast(&self, receiver_id: usize, destination: &str, sender: Sender<Point>) {
+    pub fn add_multicast(&self, receiver_id: ReceiverId, destination: &str, sender: Sender<Point>) {
         // 1. Обновляем Registry новым получателем для будущего возможного расширения подписки
         self.registry.entry(receiver_id).or_insert(sender.clone());
         // 2. Атомарная транзакция для Multicast
@@ -72,7 +72,7 @@ impl Subscriptions {
     }
     ///
     /// Extends subscription for `receiver_id` if exists, otherwise returns error
-    pub fn extend_multicast(&self, receiver_id: usize, destination: &str) -> Result<(), Error> {
+    pub fn extend_multicast(&self, receiver_id: ReceiverId, destination: &str) -> Result<(), Error> {
         let error = Error::new(&self.dbg, "extend_multicast");
         log::trace!("{}.extend_multicast | Extending (multicast) for receiver: {} ({})...", self.dbg, destination, receiver_id);
         // 1. Берем из Registry получателя если такой есть
@@ -106,28 +106,31 @@ impl Subscriptions {
     }
     ///
     /// Adds subscription for receiver_id without destination, all destinations will be received
-    pub fn add_broadcast(&self, receiver_id: usize, sender: Sender<Point>) {
+    pub fn add_broadcast(&self, receiver_id: ReceiverId, sender: Sender<Point>) {
         let mut lock = self.broadcast.write();
         let mut new_vec = (**lock).clone();
-        new_vec.push((receiver_id, sender));
+        match new_vec.iter_mut().find(|(id, _)| *id == receiver_id) {
+            Some((_, old_sender)) => *old_sender = sender,
+            None => new_vec.push((receiver_id, sender)),
+        }
         *lock = Arc::new(new_vec);
     }
     ///
-    /// ## Returns all pairs of `key`, `Sender`'s for the specified `point_id`
+    /// ## Returns all pairs of `ReceiverId`, `Sender`'s for the specified `point_id`
     /// 
     /// Worck slow because returns vactor of `Sender`'s copies
     /// 
     /// For faster applications use `get_view` method
-    pub fn get(&self, point_id: &str) -> Vec<(usize, Sender<Point>)> {
+    pub fn get(&self, destination: &str) -> Vec<(ReceiverId, Sender<Point>)> {
         let broadcast = self.broadcast.read();
         // Pre-allocation для оптимизации, мы знаем точный размер заранее, избегаем reallocations
-        let mc_len = self.multicast.get(point_id).map(|v| v.len()).unwrap_or(0);
+        let mc_len = self.multicast.get(destination).map(|v| v.len()).unwrap_or(0);
         let capacity = broadcast.len() + mc_len;
         let mut result = Vec::with_capacity(capacity);
         // Быстрое копирование broadcast
         result.extend(broadcast.iter().map(|(id, s)| (*id, s.clone())));
         // Быстрое копирование multicast
-        if let Some(list) = self.multicast.get(point_id) {
+        if let Some(list) = self.multicast.get(destination) {
              result.extend(list.iter().map(|(id, s)| (*id, s.clone())));
         }
         result
@@ -136,11 +139,11 @@ impl Subscriptions {
     /// ## Returns a snapshort of `Sender`'s for the specified `point_id`
     /// 
     /// Fastest read access, non-blocking non-copy.
-    pub fn get_view(&self, point_id: &str) -> SubscribersView {
+    pub fn get_view(&self, destination: &str) -> SubscribersView {
         // 1. Дешевый клон Arc для Broadcast (просто инкремент счетчика ссылок)
         let broadcast = self.broadcast.read().clone();
         // 2. Дешевый клон Arc для Multicast (если есть)
-        let multicast = self.multicast.get(point_id).map(|v| v.clone());
+        let multicast = self.multicast.get(destination).map(|v| v.clone());
         SubscribersView {
             broadcast,
             multicast,
@@ -148,78 +151,87 @@ impl Subscriptions {
     }
     ///
     /// Removes single subscription by Point Id for receiver ID
-    pub fn remove(&self, receiver_id: usize, destination: &str) -> Result<(), Error> {
+    pub fn remove(&self, receiver_id: ReceiverId, destinations: impl IntoIterator<Item = impl Into<PointDest>>) -> Result<(), Error> {
         let error = Error::new(&self.dbg, "remove");
-        // 1. Обновляем Registry новым получателем для будущего возможного расширения подписки
-    // self.registry.entry(receiver_id).or_insert(sender.clone());
-        // 2. Атомарная транзакция для Multicast
-        // DashMap держит Write Lock на этот бакет, пока выполняется замыкание.
-        // Никто другой не сможет прочитать или записать в этот ключ, пока мы не закончим.
+        let mut errors = vec![];
         let mut removed = false;
-        if let dashmap::Entry::Occupied(mut entry) = self.multicast.entry(destination.to_owned()) {
-            let arc_vec = entry.get_mut();
-            // .and_modify(|arc_vec| {
-                // Внутри этого блока мы в безопасности (Critical Section)
-                // 1. Ищем получателя которого надо удалить
-            if let Some(pos) = arc_vec.iter().position(|(id, _)| *id == receiver_id) {
-                // 2. Клонируем массив получателей если нужно удалить
-                let mut new_vec = (**arc_vec).clone();
-                new_vec.remove(pos);
-                match new_vec.is_empty() {
-                    // 3b. Подменяем обновленный массив получателей
-                    false => *arc_vec = Arc::new(new_vec),
-                    // 3a. Удаляем массив получателей если он пуст
-                    true => _ = entry.remove_entry(),
+        for destination in destinations {
+            let destination: PointDest = destination.into();
+            // Атомарная транзакция для Multicast
+            // DashMap держит Write Lock на этот бакет, пока выполняется замыкание.
+            // Никто другой не сможет прочитать или записать в этот ключ, пока мы не закончим.
+            match self.multicast.entry(destination.clone()) {
+                dashmap::Entry::Occupied(mut entry) => {
+                    let arc_vec = entry.get_mut();
+                    // .and_modify(|arc_vec| {
+                        // Внутри этого блока мы в безопасности (Critical Section)
+                        // Ищем получателя которого надо удалить
+                    match arc_vec.iter().position(|(id, _)| *id == receiver_id) {
+                        Some(pos) => {
+                            // Клонируем массив получателей если нужно удалить
+                            let mut new_vec = (**arc_vec).clone();
+                            new_vec.remove(pos);
+                            match new_vec.is_empty() {
+                                // Подменяем обновленный массив получателей
+                                false => *arc_vec = Arc::new(new_vec),
+                                // Удаляем массив получателей если он пуст
+                                true => _ = entry.remove_entry(),
+                            }
+                            removed = true;
+                        }
+                        _ => errors.push(format!("Subscription '{destination}' - NOT FOUND for receiver '{receiver_id}'")),
+                    }
                 }
-                removed = true;
+                _ => errors.push(format!("Subscription '{destination}' - NOT FOUND")),
             }
+        }
+        if removed && !self.is_subscribed(receiver_id) {
+            // Удаляем из Registry если получателя больше нет в подписках
+            self.registry.remove(&receiver_id);
         }
         match removed {
             true => Ok(()),
-            false => Err(error.err(format!("Subscription '{destination}' - NOT FOUND for receiver '{receiver_id}'"))),
+            false => Err(error.err(errors.join("\n"))),
         }
     }
     ///
     /// Removes all subscriptions for `receiver_id`
-    pub fn remove_all(&self, receiver_id: usize) -> Result<(), Error> {
+    pub fn remove_all(&self, receiver_id: ReceiverId) -> Result<(), Error> {
         let error = Error::new(&self.dbg, "remove_all");
-        let mut errors = vec![];
-        let destinations: Vec<PointDest> = self.multicast.iter().map(|r| r.key().clone()).collect();
-        for destination in destinations {
-            if let Err(err) = self.remove(receiver_id, &destination) {
-                errors.push(format!("{}.remove_all | Can't remove multicast subscription for receiver '{}', error: \n\t {:?}", self.dbg, receiver_id, err));
+        let mut err = None;
+        let destinations: Vec<PointDest> = self.multicast.iter()
+            .filter(|entry| entry.value().iter().any(|(id, _)| *id == receiver_id))
+            .map(|entry| entry.key().clone())
+            .collect();
+        if !destinations.is_empty() {
+            if let Err(e) = self.remove(receiver_id, &destinations) {
+                err = Some(error.pass(e));
             }
-            // match self.multicast.get(&destination).map(|r| r.value().clone()) {
-            //     Some(senders) => {
-            //         match senders.remove(receiver_id) {
-            //             Some(_) => {
-            //                 changed |= true;
-            //             }
-            //             None => {
-            //                 messages.push(format!("{}.run | Multicast Subscription '{}', receiver '{}' - not found", self.dbg, destination, receiver_id));
-            //             }
-            //         }
-            //     }
-            //     None => {
-            //         messages.push(format!("{}.run | Multicast Subscription '{}' - not found", self.dbg, destination));
-            //     }
-            // }
         }
-        self.registry.remove(&receiver_id);
+        if !self.is_subscribed(receiver_id) {
+            self.registry.remove(&receiver_id);
+        }
         // Удаляем Broadcast подписку для получателя (receiver_id)
-        let broadcast= self.broadcast.read();
-        if let Some(i) = broadcast.iter().enumerate().find_map(|(i, (id, _))| (*id == receiver_id).then(|| i)) {
+        let mut lock= self.broadcast.write();
+        if let Some(pos) = lock.iter().position(|(id, _)| *id == receiver_id) {
             // 2. Клонируем массив получателей если нужно удалить
-            let mut new_vec = (**broadcast).clone();
-            drop(broadcast);
-            new_vec.remove(i);
+            let mut new_vec = (**lock).clone();
+            new_vec.remove(pos);
             // 3. Подменяем обновленный массив получателей
-            *self.broadcast.write() = Arc::new(new_vec);
+            *lock = Arc::new(new_vec);
         }
-        match errors.is_empty() {
-            true => Ok(()),
-            false => Err(error.err(errors.join("\n"))),
+        match err {
+            None => Ok(()),
+            Some(err) => Err(err),
         }
+    }
+    ///
+    /// Returns true if [ReceiverId] has any subscriptions
+    pub fn is_subscribed(&self, receiver_id: ReceiverId) -> bool {
+        if self.broadcast.read().iter().any(|(id, _)| *id == receiver_id) {
+            return true;
+        }
+        self.multicast.iter().any(|entry| entry.iter().any(|(id, _)| *id == receiver_id))
     }
     ///
     /// Removes all subscriptions
@@ -250,7 +262,7 @@ pub struct SubscribersView {
 //
 impl SubscribersView {
     /// Возвращает итератор по всем подписчикам (broadcast + multicast)
-    pub fn iter(&self) -> impl Iterator<Item = &(usize, Sender<Point>)> {
+    pub fn iter(&self) -> impl Iterator<Item = &(ReceiverId, Sender<Point>)> {
         // Создаем цепочку итераторов: сначала broadcast, потом multicast (если есть)
         let mc_iter = self.multicast.as_deref().into_iter().flat_map(|v| v.iter());
         self.broadcast.iter().chain(mc_iter)
