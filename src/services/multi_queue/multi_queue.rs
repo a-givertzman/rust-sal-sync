@@ -244,31 +244,20 @@ impl Service for MultiQueue {
         let error = Error::new(&self.dbg, "unsubscribe");
         let receiver_id = PointTxId::from_str(receiver_name);
         if points.is_empty() {
-            match self.subscriptions.remove_all(receiver_id) {
-                Ok(_) => {
-                    self.receiver_dictionary.remove(&receiver_id);
-                    dbg::debug!("Broadcast subscription removed, receiver: {} ({})", receiver_name, receiver_id);
-                    Ok(())
-                }
-                Err(err) => {
-                    return Err(error.pass(err))
-                }
-            }
+            self.subscriptions.remove_all(receiver_id);
+            self.receiver_dictionary.remove(&receiver_id);
+            dbg::debug!("Broadcast subscription removed, receiver: {} ({})", receiver_name, receiver_id);
+            Ok(())
         } else {
             let destinations: Vec<String> = points.into_iter().map(|p| p.destination()).collect();
-            let result = match self.subscriptions.remove(receiver_id, &destinations) {
-                Ok(_) => {
-                    for s in destinations {
-                        dbg::debug!("Multicat subscription '{s}' removed, receiver: {receiver_name} ({receiver_id})");
-                    }
-                    Ok(())
-                }
-                Err(err) => Err(error.pass(err)),
-            };
+            self.subscriptions.remove(receiver_id, &destinations);
+            for s in destinations {
+                dbg::debug!("Multicat subscription '{s}' removed, receiver: {receiver_name} ({receiver_id})");
+            }
             if !self.subscriptions.is_subscribed(receiver_id) {
                 self.receiver_dictionary.remove(&receiver_id);
             }
-            result
+            Ok(())
         }
     }
     //

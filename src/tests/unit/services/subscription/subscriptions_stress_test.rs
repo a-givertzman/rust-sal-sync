@@ -237,7 +237,7 @@ fn zombie_subscription_race() {
     handle2.join().unwrap();
     // ФИНАЛЬНАЯ ПРОВЕРКА
     // После завершения гонки мы делаем финальную очистку
-    subs.remove_all(target_receiver_id).unwrap_or(());
+    subs.remove_all(target_receiver_id);
     // Если логика верна, User 777 не должен существовать нигде.
     // Проверяем 'multicast' напрямую через get
     let leaks = subs.get(target_dest);
