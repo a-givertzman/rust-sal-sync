@@ -35,9 +35,10 @@ mod service_cycle {
                 let _: u128 = (1..=20).product();
             }
         }
+        let allowed_persent = 20.0;
         let test_cycles = 100;
-        let mut errors = 0; // a few errors will be ok, but not more then 5% of test cycles
-        let errors_allowed = (test_cycles as f64 * 0.20) as usize;
+        let mut errors = 0; // a few errors will be ok, but not more then allowed_persent % of test cycles
+        let errors_allowed = test_cycles as f64 * (allowed_persent / 100.0);
         // const TARGET_CYCLE_INTERVALS: [u64; 4] = [1, 10, 100, 1000];
         // const TARGET_CYCLE_INTERVALS: [u64; 3] = [1, 10, 100];
         const TARGET_CYCLE_INTERVALS: [u64; 2] = [1, 10];
@@ -64,7 +65,7 @@ mod service_cycle {
             info!("elapsed for max load: {:?}", t.elapsed());
             let mut cycle = ServiceCycle::new(self_id, Duration::from_millis(target_cycle_interval));
             for _ in 0..test_cycles {
-                let num = rand::rng().random_range(1..max);
+                let num = rand::rng().random_range(10..max);
                 debug!("load: {}", num);
                 cycle.start();
                 let t = Instant::now();
@@ -98,7 +99,7 @@ mod service_cycle {
                     }
                 }
             }
-            assert!(errors < errors_allowed, "to much errors ({}), a few errors will be ok, but not more then 5% ({}) of test cycles", errors, errors_allowed);
+            assert!((errors as f64) < errors_allowed, "to much errors ({}), a few errors will be ok, but not more then 5% ({}) of test cycles", errors, errors_allowed);
         }
     }
 }

@@ -33,11 +33,11 @@ fn subscriptions_stress_test() {
     log::debug!("\n{}", dbg);
     let test_duration = TestDuration::new(dbg, Duration::from_secs(30));
     test_duration.run().unwrap();
-    let subs = Arc::new(Subscriptions::new("test"));
+    let subscriptions = Arc::new(Subscriptions::new("test"));
     let mut handles = vec![];
     // 1. Потоки-«Писатели»: Хаотично добавляют и удаляют подписки
     for i in 0..10 {
-        let s = Arc::clone(&subs);
+        let s = Arc::clone(&subscriptions);
         handles.push(std::thread::spawn(move || {
             for j in 0..1000 {
                 let receiver_id = i * 1000 + j;
@@ -56,7 +56,7 @@ fn subscriptions_stress_test() {
     }
     // 2. Потоки-«Чистильщики»: Провоцируют итерационные дедлоки через remove_all
     for i in 0..5 {
-        let s = Arc::clone(&subs);
+        let s = Arc::clone(&subscriptions);
         handles.push(std::thread::spawn(move || {
             for _ in 0..100 {
                 for j in 0..100 {
@@ -68,7 +68,7 @@ fn subscriptions_stress_test() {
     }
     // 3. Потоки-«Читатели»: Самый опасный сценарий (итерация + вложенный доступ)
     for _ in 0..10 {
-        let s = Arc::clone(&subs);
+        let s = Arc::clone(&subscriptions);
         handles.push(std::thread::spawn(move || {
             for j in 0..1000 {
                 let dest = format!("dest_{}", j % 10);
@@ -81,7 +81,7 @@ fn subscriptions_stress_test() {
     for handle in handles {
         handle.join().expect("Thread panicked - possible deadlock or memory corruption");
     }
-    subs.exit();
+    subscriptions.exit();
     log::debug!("Subscriptions Stress test passed!");
     // assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     test_duration.exit();
@@ -199,7 +199,7 @@ fn logic_consistency_check() {
 
 #[test]
 fn zombie_subscription_race() {
-    let subs = Arc::new(Subscriptions::new("ZombieTest"));
+    let subscription = Arc::new(Subscriptions::new("ZombieTest"));
     let barrier = Arc::new(Barrier::new(2));
     // Мы будем бомбардировать один и тот же ID, чтобы вызвать коллизию
     let target_receiver_id = 777;
@@ -208,7 +208,7 @@ fn zombie_subscription_race() {
     // let zombies_found = Arc::new(AtomicUsize::new(0));
     // Thread A: Постоянно подписывается
     let t1 = {
-        let subs = subs.clone();
+        let subs = subscription.clone();
         let barrier = barrier.clone();
         std::thread::spawn(move || {
             barrier.wait();
@@ -222,7 +222,7 @@ fn zombie_subscription_race() {
     };
     // Thread B: Постоянно удаляет
     let t2 = {
-        let subs = subs.clone();
+        let subs = subscription.clone();
         let barrier = barrier.clone();
         move || {
             barrier.wait();
@@ -237,10 +237,10 @@ fn zombie_subscription_race() {
     handle2.join().unwrap();
     // ФИНАЛЬНАЯ ПРОВЕРКА
     // После завершения гонки мы делаем финальную очистку
-    subs.remove_all(target_receiver_id);
+    subscription.remove_all(target_receiver_id);
     // Если логика верна, User 777 не должен существовать нигде.
     // Проверяем 'multicast' напрямую через get
-    let leaks = subs.get(target_dest);
+    let leaks = subscription.get(target_dest);
     let is_zombie = leaks.iter().any(|(id, _)| *id == target_receiver_id);
     if is_zombie {
         println!("CRITICAL FAILURE: Zombie subscription found! Receiver {} is active in topic '{}' but was supposed to be removed.", target_receiver_id, target_dest);

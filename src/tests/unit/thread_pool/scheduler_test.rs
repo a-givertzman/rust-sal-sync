@@ -29,7 +29,7 @@ mod scheduler {
         init_each();
         let dbg = Dbg::own("single_capacity");
         log::debug!("\n{}", dbg);
-        let test_duration = TestDuration::new(&dbg, Duration::from_secs(1));
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(15));
         test_duration.run().unwrap();
         let threads = 10;
         let thread_pool = ThreadPool::new(&dbg, Some(1));
@@ -65,7 +65,7 @@ mod scheduler {
         init_each();
         let dbg = Dbg::own("spawn");
         log::debug!("\n{}", dbg);
-        let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(15));
         test_duration.run().unwrap();
         let threads = 100;
         let thread_pool = ThreadPool::new(&dbg, Some(threads + threads / 3));

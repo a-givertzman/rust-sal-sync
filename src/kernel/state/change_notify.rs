@@ -1,36 +1,81 @@
-use log::error;
-use crate::collections::FxIndexMap;
+use std::sync::Arc;
+
+use arc_swap::ArcSwap;
+use crate::collections::FxHashMap;
 ///
 /// Provides callback on connection status changes
-pub struct ChangeNotify<'a, S, T> {
+pub struct ChangeNotify<S, T> {
     id: String,
-    state: S,
-    states: FxIndexMap<S, Box<dyn Fn(T) + 'a>>
+    state: ArcSwap<S>,
+    cases: Arc<FxHashMap<S, Box<dyn Fn(T) + Send + Sync + 'static>>>,
 }
 //
 //
-impl<'a, S: Clone + std::cmp::PartialEq + std::cmp::Eq + std::hash::Hash + std::fmt::Debug, T> ChangeNotify<'a, S, T> {
-    //
-    //
-    pub fn new(parent: impl Into<String>, initial: S, states: Vec<(S, Box<dyn Fn(T) + 'a>)>) -> Self {
-        let states = FxIndexMap::from_iter(states);
+impl<S, T> ChangeNotify<S, T> 
+where
+    S: Clone + std::cmp::PartialEq + std::cmp::Eq + std::hash::Hash + std::fmt::Debug {
+    ///
+    /// Returns [ChangeNotify] new instance
+    pub fn new(parent: impl Into<String>, initial: S, cases: Vec<(S, Box<dyn Fn(T) + Send + Sync + 'static>)>) -> Self {
+        let cases = Arc::new(FxHashMap::from_iter(cases));
         Self {
             id: format!("{}/ChangeNotify<{}>", parent.into(), std::any::type_name::<S>()),
-            state: initial,
-            states,
+            state: ArcSwap::new(Arc::new(initial)),
+            cases,
+        }
+    }
+    ///
+    /// Returns [ChangeNotifyBuilder] new instance
+    pub fn builder(parent: impl Into<String>, initial: S) -> ChangeNotifyBuilder<S, T> {
+        ChangeNotifyBuilder {
+            id: format!("{}/ChangeNotify<{}>", parent.into(), std::any::type_name::<S>()),
+            initial,
+            cases: FxHashMap::default(),
         }
     }
     ///
     /// Add new state
-    pub fn add(&mut self, state: S, message: T) {
-        if state != self.state {
-            match self.states.get(&state) {
-                Some(callback) => {
-                    (callback)(message)
-                },
-                None => error!("{}.add | State `{:?}` is not found", self.id, state),
+    pub fn add(&self, state: S, args: T) {
+        let self_state_guard = self.state.load();
+        if state != **self_state_guard {
+            let prev_guard = self.state.compare_and_swap(&self_state_guard, Arc::new(state.clone()));
+            // Если то, что вернул CAS, совпадает с тем, что мы загрузили в начале
+            // - замена успешна (именно данный вызов обновил стейт)
+            // - вызываем калбэк
+            if Arc::ptr_eq(&self_state_guard, &prev_guard) {
+                match self.cases.get(&state) {
+                    Some(callback) => {
+                        (callback)(args)
+                    },
+                    None => log::error!("{}.add | State `{:?}` is not found", self.id, state),
+                }
             }
-            self.state = state;
+        }
+    }
+}
+///
+/// Builder for the ChangeNotify
+pub struct ChangeNotifyBuilder<S, T> {
+    id: String,
+    initial: S,
+    cases: FxHashMap<S, Box<dyn Fn(T) + Send + Sync + 'static>>,
+}
+impl<S, T> ChangeNotifyBuilder<S, T>
+where
+    S: Clone + std::cmp::Eq + std::hash::Hash + std::fmt::Debug {
+    /// 
+    /// Добавляем состояние и колбэк для него
+    pub fn on(mut self, state: S, case: impl Fn(T) + Send + Sync + 'static) -> Self {
+        self.cases.insert(state, Box::new(case));
+        self
+    }
+    ///
+    /// Returns ChangeNotify ready to use
+    pub fn build(self) -> ChangeNotify<S, T> {
+        ChangeNotify {
+            id: self.id,
+            state: ArcSwap::new(Arc::new(self.initial)),
+            cases: Arc::new(self.cases),
         }
     }
 }

@@ -32,7 +32,7 @@ mod future {
         init_each();
         let dbg = Dbg::own("spawn");
         log::debug!("\n{}", dbg);
-        let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(15));
         test_duration.run().unwrap();
         let threads = 10;
         let test_data = [

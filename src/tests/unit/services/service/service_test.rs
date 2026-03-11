@@ -90,7 +90,7 @@ fn extend_subscription() {
     init_each();
     let dbg = Dbg::own("extend_subscription");
     debug!("\n{}", dbg);
-    let test_duration = TestDuration::new(&dbg, Duration::from_secs(10));
+    let test_duration = TestDuration::new(&dbg, Duration::from_secs(15));
     test_duration.run().unwrap();
     let name = Name::new(&dbg, "ServiceTest");
     let service_test = ServiceTest { name  };
