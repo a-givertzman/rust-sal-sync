@@ -24,7 +24,7 @@ mod type_of {
     /// Testing basic functionality
     #[test]
     fn basic() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         println!();

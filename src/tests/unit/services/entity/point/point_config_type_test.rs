@@ -23,7 +23,7 @@ fn init_each() -> () {}
 /// Testing PointConfType::serialize
 #[test]
 fn serialize() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     println!();
@@ -55,7 +55,7 @@ fn serialize() {
 /// Testing PointConfType::deserialize_yaml
 #[test]
 fn deserialize_yaml() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     println!();
@@ -88,7 +88,7 @@ fn deserialize_yaml() {
 /// Testing PointConfType::deserialize_json
 #[test]
 fn deserialize_json() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     println!();
@@ -121,7 +121,7 @@ fn deserialize_json() {
 /// Testing PointConfType::to_string
 #[test]
 fn to_string() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     println!();

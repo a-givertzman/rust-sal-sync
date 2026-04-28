@@ -24,7 +24,7 @@ mod subscriptions {
     /// Testing Subscriptions::new
     #[test]
     fn new() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "new";

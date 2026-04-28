@@ -26,7 +26,7 @@ fn init_each() -> () {}
 ///
 #[test]
 fn serialize_json() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     println!();
@@ -99,7 +99,7 @@ fn serialize_json() {
 ///
 #[test]
 fn deserialize_json() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     println!();
@@ -161,7 +161,7 @@ fn deserialize_json() {
 /// Testing Point::txid
 #[test]
 fn txid() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let self_id = "tx_id";
@@ -218,7 +218,7 @@ fn txid() {
 /// Testing Point::type_
 #[test]
 fn type_() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let self_id = "type_";
@@ -275,7 +275,7 @@ fn type_() {
 /// Testing Point::name
 #[test]
 fn name() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let self_id = "name";
@@ -332,7 +332,7 @@ fn name() {
 /// Testing Point::dest
 #[test]
 fn dest() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let self_id = "dest";
@@ -395,7 +395,7 @@ fn dest() {
 /// Testing Point::value
 #[test]
 fn value() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let self_id = "value";
@@ -452,7 +452,7 @@ fn value() {
 /// Testing Point::status
 #[test]
 fn status() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let self_id = "status";
@@ -509,7 +509,7 @@ fn status() {
 /// Testing Point::cot
 #[test]
 fn cot() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let self_id = "cot";
@@ -566,7 +566,7 @@ fn cot() {
 /// Testing Point::timestamp
 #[test]
 fn timestamp() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let self_id = "timestamp";

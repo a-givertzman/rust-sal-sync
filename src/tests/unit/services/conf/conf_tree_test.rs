@@ -37,7 +37,7 @@ impl Node {
 /// Testing [ConfTree] valid configuration
 #[test]
 fn valid() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     log::info!("test_config_tree_valid");
@@ -198,7 +198,7 @@ fn inputs(conf_tree: &ConfTree) -> Node {
 /// Testing [ConfTree].as...()
 #[test]
 fn as_type() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     log::info!("ConfigTree-as...");
@@ -261,7 +261,7 @@ fn as_type() {
 /// Testing [ConfTree].nodes()
 #[test]
 fn nodes() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     log::info!("ConfigTree-nodes");

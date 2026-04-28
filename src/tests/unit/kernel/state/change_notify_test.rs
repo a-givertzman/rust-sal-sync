@@ -34,7 +34,7 @@ fn init_each() -> () {}
 ///
 #[test]
 fn add() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let dbg = Dbg::own("change_notify.add");
@@ -70,7 +70,7 @@ fn add() {
 ///
 #[test]
 fn builder() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let dbg = Dbg::own("change_notify.add");

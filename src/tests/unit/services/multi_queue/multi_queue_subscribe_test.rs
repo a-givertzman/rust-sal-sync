@@ -32,7 +32,7 @@ fn init_each() -> () {}
 ///     - each receiver must receive events: iterations * sender_count
 #[test]
 fn subscribe_broadcast() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     println!();

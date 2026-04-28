@@ -23,7 +23,7 @@ fn init_each() -> () {}
 /// Testing PointConfAddress::empty
 #[test]
 fn empty() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     println!();
@@ -39,7 +39,7 @@ fn empty() {
 /// Testing PointConfType::serialize yaml
 #[test]
 fn serialize_yaml() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     println!();
@@ -70,7 +70,7 @@ fn serialize_yaml() {
 /// Testing PointConfType::serialize json
 #[test]
 fn serialize_json() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     println!();
@@ -101,7 +101,7 @@ fn serialize_json() {
 /// Testing PointConfType::deserialize_yaml
 #[test]
 fn deserialize_yaml() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     println!();
@@ -131,7 +131,7 @@ fn deserialize_yaml() {
 /// Testing PointConfType::deserialize_json
 #[test]
 fn deserialize_json() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     println!();

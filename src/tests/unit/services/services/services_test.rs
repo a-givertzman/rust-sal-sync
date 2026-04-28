@@ -23,7 +23,7 @@ fn init_each() -> () {}
 /// Testing `Services` on `std::thread`
 #[test]
 fn services_thread() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     let dbg = Dbg::own("test-Services-thread");
@@ -60,7 +60,7 @@ fn services_thread() {
 /// Testing `Services` on `ThreadPool`
 #[test]
 fn services_scheduler() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     let dbg = Dbg::own("test-Services-scheduler");
@@ -98,7 +98,7 @@ fn services_scheduler() {
 /// Testing `Services.all` insertion order
 #[test]
 fn services_all() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     let dbg = Dbg::own("Services-all");

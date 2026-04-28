@@ -23,7 +23,7 @@ mod link_name {
     /// Testing QueueName.split
     #[test]
     fn split() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Info).init();
         init_once();
         init_each();
         println!();
@@ -70,7 +70,7 @@ mod link_name {
     /// Testing QueueName.service
     #[test]
     fn service() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Info).init();
         init_once();
         init_each();
         println!();
@@ -106,7 +106,7 @@ mod link_name {
     /// Testing QueueName.queue
     #[test]
     fn queue() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Info).init();
         init_once();
         init_each();
         println!();

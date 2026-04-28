@@ -24,7 +24,7 @@ mod cot {
     /// Testing Cot::contains
     #[test]
     fn contains() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         println!();
@@ -65,7 +65,7 @@ mod cot {
     /// Testing Cot::contains
     #[test]
     fn default() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         println!();
@@ -82,7 +82,7 @@ mod cot {
     /// Testing Cot::contains
     #[test]
     fn as_str() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         println!();

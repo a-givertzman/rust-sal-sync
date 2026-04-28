@@ -24,7 +24,7 @@ mod map_update_or_insert {
     /// Testing such functionality / behavior
     #[test]
     fn test() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Info).init();
         init_once();
         init_each();
         println!();

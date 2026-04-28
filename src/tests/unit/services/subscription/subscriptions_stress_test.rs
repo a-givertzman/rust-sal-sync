@@ -26,7 +26,7 @@ fn init_each() -> () {}
 /// Testing such functionality / behavior
 #[test]
 fn subscriptions_stress_test() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let dbg = Dbg::own("Subscriptions-stress-test");

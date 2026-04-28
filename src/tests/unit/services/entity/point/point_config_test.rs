@@ -25,7 +25,7 @@ mod point_config {
     ///
     #[test]
     fn serialize() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         println!();
@@ -157,7 +157,7 @@ mod point_config {
     ///
     #[test]
     fn deserialize_yaml() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         println!();
@@ -250,7 +250,7 @@ mod point_config {
     ///
     #[test]
     fn deserialize_json() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         println!();

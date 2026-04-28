@@ -24,7 +24,7 @@ mod subscription_criteria {
     /// Testing SubscriptionCriteria::destination() functionality / behavior
     #[test]
     fn destination() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         println!();
@@ -196,7 +196,7 @@ mod subscription_criteria {
     #[test]
     #[ignore = "Performance test"]
     fn performance() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         println!();

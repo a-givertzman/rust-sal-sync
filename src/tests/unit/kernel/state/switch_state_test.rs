@@ -84,7 +84,7 @@ mod tests {
     ///
     #[test]
     fn test_single() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Info).init();
         init_once();
         init_each();
         log::info!("test_single");
@@ -134,7 +134,7 @@ mod tests {
     ///
     #[test]
     fn test_start_step_back() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Info).init();
         init_once();
         init_each();
         log::info!("test_start_step_back");
@@ -179,7 +179,7 @@ mod tests {
     ///
     #[test]
     fn test_stot_step_back() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Info).init();
         init_once();
         init_each();
         log::info!("test_stot_step_back");

@@ -22,7 +22,7 @@ fn init_each() -> () {}
 /// Testing such functionality / behavior
 #[test]
 fn method() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let dbg = Dbg::own("subject_method");

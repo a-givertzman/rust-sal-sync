@@ -27,7 +27,7 @@ mod future {
     /// Testing spawn method
     #[test]
     fn spawn() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let dbg = Dbg::own("spawn");

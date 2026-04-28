@@ -24,7 +24,7 @@ mod kanal_channel {
     /// Testing such functionality / behavior
     #[test]
     fn iter() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let dbg = Dbg::own("kanal_channel::iter");

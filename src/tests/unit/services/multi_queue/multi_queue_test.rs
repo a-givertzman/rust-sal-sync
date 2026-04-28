@@ -29,7 +29,7 @@ mod multi_queue {
     /// Test [MultiQueue] on `std::thread`
     #[test]
     fn run_thread() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let dbg = "multi_queue_thread_test";
@@ -150,7 +150,7 @@ mod multi_queue {
     /// Test [MultiQueue] on `Scheduler`
     #[test]
     fn run_scheduler() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let dbg = "multi_queue_scheduler_test";

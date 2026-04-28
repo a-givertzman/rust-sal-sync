@@ -24,7 +24,7 @@ mod point_tx_id {
     /// Testing Bool::add
     #[test]
     fn test_add() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         println!();

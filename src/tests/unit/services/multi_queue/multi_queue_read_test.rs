@@ -30,7 +30,7 @@ mod multi_queue {
     /// - action: read
     #[test]
     fn static_read() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         println!();

@@ -20,7 +20,7 @@ fn init_each() -> () {}
 ///
 #[test]
 fn from_str() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     log::debug!("ConfCustomKeyed-from_str");
@@ -49,7 +49,7 @@ fn from_str() {
 
 // #[test]
 // fn test_create_invalid() {
-//     DebugSession::init(LogLevel::Info, Backtrace::Short);
+//     DebugSession::new().filter(LogLevel::Info).init();
 //     init_once();
 //     init_each();
 //     info!("test_create_invalid");

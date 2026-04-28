@@ -49,7 +49,7 @@ mod tests {
     ///
     #[test]
     fn test_state() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Info).init();
         init_once();
         println!();
         println!("test SwitchState");
@@ -77,7 +77,7 @@ mod tests {
     /// 
     #[test]
     fn test_state_empty_steps() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Info).init();
         init_once();
         println!();
         println!("test SwitchState empty steps");

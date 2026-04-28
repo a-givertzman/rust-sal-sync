@@ -5,7 +5,7 @@ use sal_core::{dbg::Dbg, error::Error};
 use std::{sync::Once, time::Duration};
 use testing::stuff::max_test_duration::TestDuration;
 use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-use crate::services::{entity::{Name, Object}, Service};
+use crate::{services::{Service, entity::{Name, Object}}, sync::channel};
 ///
 ///
 static INIT: Once = Once::new();
@@ -24,7 +24,7 @@ fn init_each() -> () {}
 /// Testing trait Service
 #[test]
 fn basic() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let dbg = Dbg::own("basic");
@@ -53,7 +53,7 @@ fn basic() {
 #[test]
 #[should_panic]
 fn get_link() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let dbg = Dbg::own("get_link");
@@ -69,7 +69,7 @@ fn get_link() {
 #[test]
 #[should_panic]
 fn subscribe() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let dbg = Dbg::own("subscribe");
@@ -85,7 +85,7 @@ fn subscribe() {
 #[test]
 #[should_panic]
 fn extend_subscription() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let dbg = Dbg::own("extend_subscription");
@@ -102,7 +102,7 @@ fn extend_subscription() {
 #[test]
 #[should_panic]
 fn unsubscribe() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let dbg = Dbg::own("unsubscribe");
@@ -119,7 +119,7 @@ fn unsubscribe() {
 #[test]
 #[should_panic]
 fn gi() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     let dbg = Dbg::own("gi");
@@ -128,7 +128,8 @@ fn gi() {
     test_duration.run().unwrap();
     let name = Name::new(&dbg, "ServiceTest");
     let service_test = ServiceTest { name  };
-    let _ = service_test.gi(&dbg.to_string(), &[]);
+    let (send, _) = channel::unbounded();
+    let _ = service_test.gi(&dbg.to_string(), &[], send);
     test_duration.exit();
 }
 ///

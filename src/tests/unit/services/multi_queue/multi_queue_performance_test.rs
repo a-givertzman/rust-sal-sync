@@ -26,7 +26,7 @@ const ITERATIONS: usize = 1_000_000;
 #[ignore = "MultiQueue Performance test"]
 #[test]
 fn performance() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     println!();
@@ -144,7 +144,7 @@ fn performance() {
 #[ignore = "Performance test"]
 #[test]
 fn match_performance() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     println!();

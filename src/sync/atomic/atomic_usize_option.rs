@@ -66,7 +66,7 @@ fn new() {
     use testing::stuff::max_test_duration::TestDuration;
     use std::{sync::Arc, time::{Duration, Instant}};
 
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     std::thread::sleep(Duration::from_millis(100));
     let dbg = Dbg::own("AtomicUsizeOption-test");
     log::debug!("\n{}", dbg);

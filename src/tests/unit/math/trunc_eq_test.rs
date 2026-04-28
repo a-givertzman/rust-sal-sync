@@ -21,7 +21,7 @@ fn init_each() -> () {}
 ///
 #[test]
 fn tranc_eq_f32() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     log::info!("test_f32");
@@ -47,7 +47,7 @@ fn tranc_eq_f32() {
 
 #[test]
 fn trunc_eq_f64() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     log::info!("test_f64");

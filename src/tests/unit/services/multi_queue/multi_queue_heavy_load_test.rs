@@ -46,7 +46,7 @@ fn setup_multiqueue(dbg: &Dbg) -> Arc<MultiQueue> {
 /// - показывает производительность (mcs per event)
 #[test]
 fn heavy_load() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     let dbg = Dbg::own("MultiQueue-heavy_load");
     let mq = setup_multiqueue(&dbg);
     mq.run().unwrap();
@@ -214,7 +214,7 @@ fn heavy_load() {
 /// - Делает все эти манипуляции одновременно что бы был реальный стресс-тест
 #[test]
 fn heavy_load_events() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     let dbg = Dbg::own("MultiQueue-heavy_load_events");
     let mq = setup_multiqueue(&dbg);
     mq.run().unwrap();

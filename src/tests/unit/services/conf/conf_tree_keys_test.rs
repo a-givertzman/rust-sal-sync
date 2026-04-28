@@ -20,7 +20,7 @@ fn init_each() -> () {}
 /// Testing [ConfTree].keys() method
 #[test]
 fn keys() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     log::info!("test_config_tree_keys");

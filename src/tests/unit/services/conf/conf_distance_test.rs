@@ -25,7 +25,7 @@ fn init_each() -> () {}
 /// Testing such functionality / behavior
 #[test]
 fn from_str() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     log::debug!("");

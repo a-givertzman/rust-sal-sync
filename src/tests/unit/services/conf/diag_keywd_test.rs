@@ -23,7 +23,7 @@ fn init_each() -> () {}
 /// Testing from_str
 #[test]
 fn variants() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     println!();
@@ -45,7 +45,7 @@ fn variants() {
 /// Testing from_str
 #[test]
 fn from_str() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     println!();

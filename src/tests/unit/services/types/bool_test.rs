@@ -24,7 +24,7 @@ mod bool {
     /// Testing Bool::add
     #[test]
     fn test_add() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         println!();
@@ -49,7 +49,7 @@ mod bool {
     /// Testing Bool::mul
     #[test]
     fn test_mul() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         println!();
@@ -74,7 +74,7 @@ mod bool {
     /// Testing Bool::BitOr
     #[test]
     fn test_bit_or() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         println!();
@@ -99,7 +99,7 @@ mod bool {
     /// Testing Bool::BitAnd
     #[test]
     fn test_bit_and() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         println!();

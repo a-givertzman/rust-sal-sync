@@ -24,7 +24,7 @@ mod point_hlr {
     /// Testing PointHlr::new
     #[test]
     fn new() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "new";
@@ -77,7 +77,7 @@ mod point_hlr {
     /// Testing PointHlr::new_bool
     #[test]
     fn new_bool() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "new_bool";
@@ -103,7 +103,7 @@ mod point_hlr {
     /// Testing PointHlr::new_int
     #[test]
     fn new_int() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "new_int";
@@ -132,7 +132,7 @@ mod point_hlr {
     /// Testing PointHlr::new_real
     #[test]
     fn new_real() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "new_real";
@@ -163,7 +163,7 @@ mod point_hlr {
     /// Testing PointHlr::new_double
     #[test]
     fn new_double() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "new_double";
@@ -194,7 +194,7 @@ mod point_hlr {
     /// Testing PointHlr::new_string
     #[test]
     fn new_string() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "new_string";
@@ -225,7 +225,7 @@ mod point_hlr {
     /// Testing PointHlr::new_bytes
     #[test]
     fn new_bytes() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "new_bytes";
@@ -256,7 +256,7 @@ mod point_hlr {
     /// Testing PointHlr::to_bool
     #[test]
     fn to_bool() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "to_bool";
@@ -309,7 +309,7 @@ mod point_hlr {
     /// Testing PointHlr::to_int
     #[test]
     fn to_int() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "to_int";
@@ -371,7 +371,7 @@ mod point_hlr {
     /// Testing PointHlr::to_real
     #[test]
     fn to_real() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "to_real";
@@ -433,7 +433,7 @@ mod point_hlr {
     /// Testing PointHlr::to_double
     #[test]
     fn to_double() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "to_double";
@@ -495,7 +495,7 @@ mod point_hlr {
     /// Testing PointHlr::to_string
     #[test]
     fn to_string() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "to_string";
@@ -558,7 +558,7 @@ mod point_hlr {
     /// Testing PointHlr::abs
     #[test]
     fn abs() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "abs";
@@ -619,7 +619,7 @@ mod point_hlr {
     /// Testing PointHlr::pow
     #[test]
     fn pow() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "pow";
@@ -670,7 +670,7 @@ mod point_hlr {
     /// Testing PointHlr::add
     #[test]
     fn add() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "add";
@@ -724,7 +724,7 @@ mod point_hlr {
     /// Testing PointHlr::sub
     #[test]
     fn sub() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "sub";
@@ -778,7 +778,7 @@ mod point_hlr {
     /// Testing PointHlr::mul
     #[test]
     fn mul() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "mul";
@@ -832,7 +832,7 @@ mod point_hlr {
     /// Testing PointHlr::div
     #[test]
     fn div() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "div";
@@ -886,7 +886,7 @@ mod point_hlr {
     /// Testing PointHlr::bitor
     #[test]
     fn bitor() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "bitor";
@@ -944,7 +944,7 @@ mod point_hlr {
     /// Testing PointHlr::bitand
     #[test]
     fn bitand() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let self_id = "bitand";

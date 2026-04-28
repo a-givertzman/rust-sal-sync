@@ -57,7 +57,7 @@ impl Kind {
 ///
 #[test]
 fn valid() {
-    DebugSession::init(LogLevel::Debug, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Debug).init();
     init_once();
     init_each();
     log::info!("conf_tree_get");

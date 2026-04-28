@@ -24,7 +24,7 @@ mod services_points {
     /// Testing Services::points()
     #[test]
     fn services_points() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Info).init();
         init_once();
         init_each();
         let self_id = "test Services.points";

@@ -21,7 +21,7 @@ fn init_each() -> () {}
 ///
 #[test]
 fn test_create_valid() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     println!("test_create_valid");
@@ -51,7 +51,7 @@ fn test_create_valid() {
 ///
 #[test]
 fn test_deserialize_valid() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     println!("test_deserialize_valid");
@@ -81,7 +81,7 @@ fn test_deserialize_valid() {
 
 #[test]
 fn test_create_invalid() {
-    DebugSession::init(LogLevel::Info, Backtrace::Short);
+    DebugSession::new().filter(LogLevel::Info).init();
     init_once();
     init_each();
     log::info!("test_create_invalid");

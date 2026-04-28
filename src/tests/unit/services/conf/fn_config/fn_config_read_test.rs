@@ -24,7 +24,7 @@ mod tests {
     ///
     #[test]
     fn test_fn_config_read_valid() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Info).init();
         init_once();
         init_each();
         let self_id = "test FnConfig | read valid";

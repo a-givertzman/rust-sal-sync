@@ -24,7 +24,7 @@ mod scheduler {
     /// Testing spawn with capacity = 1
     #[test]
     fn single_capacity() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let dbg = Dbg::own("single_capacity");
@@ -60,7 +60,7 @@ mod scheduler {
     /// Testing spawn with capacity = jobs + 30 %
     #[test]
     fn spawn() {
-        DebugSession::init(LogLevel::Debug, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
         let dbg = Dbg::own("spawn");

@@ -46,8 +46,10 @@ pub trait Service: Object + std::fmt::Debug + Send + Sync {
     }
     ///
     /// Returns `Future<Point>`, where will be pushed all points by subscription
+    /// - `send` - channel for GI events
     fn gi(&self, recvr_id: &str, points: &[SubscriptionCriteria], send: Sender<Point>) -> Future<Result<(), Error>> {
         let _ = points;
+        let _ = send;
         let err = Error::new(&self.name(), "gi").err(format!("Request from '{recvr_id}', But not implemented"));
         panic!("{err}")
     }

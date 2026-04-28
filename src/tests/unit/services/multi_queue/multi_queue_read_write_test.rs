@@ -31,7 +31,7 @@ mod multi_queue {
     /// - action: read-write
     #[test]
     fn read_write() {
-        DebugSession::init(LogLevel::Info, Backtrace::Short);
+        DebugSession::new().filter(LogLevel::Info).init();
         init_once();
         init_each();
         println!();
