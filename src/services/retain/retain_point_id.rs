@@ -152,10 +152,10 @@ impl RetainPointId {
     fn write<P: AsRef<Path>, S: Serialize>(&self, path: P, points: S) -> Result<(), Error> {
         let error = Error::new(&self.id, "write");
         let path = Path::new(path.as_ref());
-        let path = path
+        let dir = path
             .parent().ok_or(error.err(format!("Can't get parent from path '{:?}'", path)))?
             .to_str().ok_or(error.err(format!("Can't get parent from path '{:?}'", path)))?;
-        match Self::create_dir(&self.id, path) {
+        match Self::create_dir(&self.id, dir) {
             Ok(_) => {
                 match fs::OpenOptions::new().truncate(true).create(true).write(true).open(path) {
                     Ok(f) => {

@@ -1,4 +1,4 @@
-use debugging::session::debug_session::{Backtrace, DebugSession, LogLevel};
+use debugging::session::debug_session::{DebugSession, LogLevel};
 #[cfg(test)]
 use sal_core::dbg::Dbg;
 
