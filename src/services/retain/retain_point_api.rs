@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct RetainPointConfApi {
     pub table: String,
     pub address: String,
+    #[serde(rename = "auth-token")]
     pub auth_token: String,
     pub database: String,
 }
