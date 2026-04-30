@@ -127,7 +127,7 @@ impl RetainPointId {
                             let id = next_id;
                             next_id += 1;
                             update_retained = true;
-                            RetainedPointConf { id, name: point.name.clone(), _type: point.type_.clone() }
+                            RetainedPointConf { id, name: point.name.clone(), typ: point.type_.clone() }
                         }).id;
                     cache
                         .entry(task.owner.to_owned())
@@ -254,7 +254,8 @@ impl RetainPointId {
                 _ = Self::sql_request(dbg, conf, &mut request, "truncate public.tags;", api_keep_alive);
                 for (_owner, points) in retained {
                     for point in points.values() {
-                        let sql = format!("insert into public.tags (id, type, name) values ({},'{:?}','{}');", point.id, point._type, point.name);
+                        let point_name = point.name.replace("'", "''"); // Заменяем одну кавычку на две
+                        let sql = format!("insert into public.tags (id, type, name) values ({},'{:?}','{}');", point.id, point.typ, point_name);
                         _ = Self::sql_request(dbg, conf, &mut request, &sql, api_keep_alive);
                     }
                 }
@@ -327,7 +328,7 @@ struct RetainedPointConf {
     pub name: String,
     #[serde(rename = "type")]
     #[serde(alias = "type", alias = "Type")]
-    pub _type: PointConfType,
+    pub typ: PointConfType,
 }
 // Private entity for enqueue insertion
 struct InsertTask {
@@ -336,9 +337,7 @@ struct InsertTask {
 }
 
 ///
-/// ===========================================================================================
-///                                  ВРЕМЕННОЕ   ТЕСТИРОВАНИЕ
-/// ===========================================================================================
+/// Базовое тестирование
 #[cfg(test)]
 mod tests {
     use debugging::session::debug_session::{DebugSession, LogLevel};
@@ -362,7 +361,7 @@ mod tests {
         }
     }
     /// 
-    /// Ручной тест проверки точности.
+    /// Тест проверки точности.
     /// - Имитирует спам метриками от разных устройств,
     /// - Ждет завершения фонового воркера и жестко проверяет консистентность IDs в горячем кэше и на диске.
     #[test]
