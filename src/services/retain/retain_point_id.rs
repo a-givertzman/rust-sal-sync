@@ -156,7 +156,7 @@ impl RetainPointId {
     ///
     /// Creates directiry (all necessary folders in the 'path' if not exists)
     ///  - path is relative, will be joined with current working dir
-    fn create_dir(dbg: &Dbg, path: &str) -> Result<PathBuf, Error> {
+    fn create_dir(dbg: &Dbg, path: &Path) -> Result<PathBuf, Error> {
         let current_dir = env::current_dir().map_err(|err| Error::new(dbg, "create_dir").pass(err.to_string()))?;
         let path = current_dir.join(path);
         match path.exists() {
@@ -211,27 +211,25 @@ impl RetainPointId {
     /// ```
     fn write<P: AsRef<Path>, S: Serialize>(dbg: &Dbg, path: P, points: S) -> Result<(), Error> {
         let error = Error::new(dbg, "write");
-        let path = Path::new(path.as_ref());
-        let dir = path
-            .parent().ok_or(error.err(format!("Can't get parent from path '{:?}'", path)))?
-            .to_str().ok_or(error.err(format!("Can't get parent from path '{:?}'", path)))?;
-        match Self::create_dir(dbg, dir) {
-            Ok(_) => {
-                match fs::OpenOptions::new().truncate(true).create(true).write(true).open(path) {
-                    Ok(f) => {
-                        match serde_json::to_writer_pretty(f, &points) {
-                            Ok(_) => Ok(()),
-                            Err(err) => Err(error.pass_with(format!("Can't writing to file: '{:?}'", path), err.to_string())),
-                        }
-                    }
-                    Err(err) => Err(error.pass_with(format!("Can't open to file: '{:?}'", path), err.to_string())),
-                }
-            }
-            Err(err) => {
-                log::error!("{:#?}", err);
-                Err(Error::new(dbg, "write").pass(err))
-            }
-        }
+        let path = path.as_ref();
+        let dir = path.parent()
+            .ok_or_else(|| error.err(format!("Can't get parent: '{:?}'", path)))?;
+        Self::create_dir(dbg, dir)
+            .map_err(|err| error.pass(err))?;
+        // 1. Формируем имя временного файла (например: config.json.tmp)
+        let tmp_path = path.with_extension("tmp");
+        let f = fs::OpenOptions::new()
+            .truncate(true)
+            .create(true)
+            .write(true)
+            .open(&tmp_path)
+            .map_err(|err| error.pass_with(format!("Can't open tmp file {}", tmp_path.display()), err.to_string()))?;
+        serde_json::to_writer_pretty(&f, &points)
+            .map_err(|err| error.pass_with("JSON serialization failed", err.to_string()))?;
+        f.sync_all()
+            .map_err(|err| error.pass_with("Disk sync failed", err.to_string()))?;
+        fs::rename(&tmp_path, path)
+            .map_err(|err| error.pass_with(format!("File rename failed {} -> {}", tmp_path.display(), path.display()), err.to_string()))
     }
     ///
     /// Stores points into the database
