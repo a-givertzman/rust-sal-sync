@@ -56,18 +56,19 @@ impl RetainPointId {
     pub fn insert(&self, owner: &str, points: Vec<PointConf>) {
         let dbg = self.dbg.clone();
         log::debug!("{dbg}.insert | Equeuing {} Point's from '{}' for caching", points.len(), owner);
-        let mut pending = self.pending.lock();
+        let mut pending_guard = self.pending.lock();
         // Добавляем в буфер
-        pending.1.push(InsertTask {
+        pending_guard.1.push(InsertTask {
             owner: owner.to_owned(),
             points: points,
         });
         // Если воркер уже работает, просто выходим (он заберет нашу задачу на следующем цикле)
-        if pending.0 {
+        if pending_guard.0 {
             return;
         }
         // Если воркера нет, помечаем, что он запущен
-        pending.0 = true;
+        pending_guard.0 = true;
+        drop(pending_guard);
         // Клонируем Arc-и для передачи в фоновую задачу
         let conf = self.conf.clone();
         let cache = self.cache.clone();
