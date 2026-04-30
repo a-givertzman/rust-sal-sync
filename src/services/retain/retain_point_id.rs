@@ -333,15 +333,12 @@ struct InsertTask {
     owner: String,
     points: Vec<PointConf>,
 }
-
 ///
 /// Базовое тестирование
 #[cfg(test)]
 mod tests {
     use debugging::session::debug_session::{DebugSession, LogLevel};
-
     use crate::services::retain::RetainPointConf;
-
     use super::*;
     use std::{fs, thread, time::Duration};
     ///
@@ -368,7 +365,6 @@ mod tests {
         // 1. Подготовка чистого окружения
         let retain_dir = "src/tests/unit/services/retain/retain_point_id";
         let file_name = "id1.json";
-        // _ = fs::remove_dir_all(test_dir);
         // Предполагаем, что можно создать RetainConf программно (подставь нужный способ)
         let conf = RetainConf::new(Some(retain_dir), Some(RetainPointConf::new(file_name, None))); 
         let dbg = Dbg::own("Test");
@@ -396,11 +392,9 @@ mod tests {
             }
             thread::sleep(Duration::from_millis(50));
         }
-
         // 4. Валидация горячего кэша (DashMap)
         let dev_a = retainer.cache.get("Device_A").expect("Device_A not in cache");
         assert_eq!(dev_a.len(), 4, "Device_A should have 4 points in cache (Temp, Press, Temp, Voltage)");
-        
         // Проверяем точные ID для Device_A
         assert_eq!(dev_a[0].name, "Temp");
         assert_eq!(dev_a[0].id, 0);
@@ -410,20 +404,103 @@ mod tests {
         assert_eq!(dev_a[2].id, 0, "Duplicate point should retain the same ID");
         assert_eq!(dev_a[3].name, "Voltage");
         assert_eq!(dev_a[3].id, 3, "New point should get sequential ID");
-
         let dev_b = retainer.cache.get("Device_B").expect("Device_B not in cache");
         assert_eq!(dev_b[0].name, "Speed");
         assert_eq!(dev_b[0].id, 2);
-
         // 5. Валидация файла (Диск)
         let file_content = fs::read_to_string(&Path::new(retain_dir).join(file_name)).expect("Can't read result file");
         let retained: RetainedCahe = serde_json::from_str(&file_content).expect("Invalid JSON");
-        
         assert_eq!(retained["Device_A"]["Temp"].id, 0);
         assert_eq!(retained["Device_A"]["Press"].id, 1);
         assert_eq!(retained["Device_B"]["Speed"].id, 2);
         assert_eq!(retained["Device_A"]["Voltage"].id, 3);
-
         println!("{dbg} | ✅ Accuracy test passed! Logic is rock solid.");
+    }
+    ///
+    /// Стресс-тест на состояние гонки и консистентность ID.
+    /// - 50 потоков одновременно пытаются вставить по 100 точек.
+    /// - Имена точек специально частично пересекаются, чтобы спровоцировать конфликты.
+    /// - Проверяет, что итоговый словарь ID не имеет пропусков и дубликатов.
+    #[test]
+    fn test_retain_point_id_stress() {
+        // Желательно поставить Info или Warn, чтобы логи не замедляли тест
+        DebugSession::new().filter(LogLevel::Info).init(); 
+        let retain_dir = "src/tests/unit/services/retain/retain_point_id";
+        let file_name = "id0_stress.json";
+        let file_path = Path::new(retain_dir).join(file_name);
+        // Очищаем от предыдущих запусков
+        let conf = RetainConf::new(Some(retain_dir), Some(RetainPointConf::new(file_name, None))); 
+        let dbg = Dbg::own("StressTest");
+        // Оборачиваем в Arc для шаринга между потоками
+        let retainer = Arc::new(RetainPointId::new(&dbg, conf, None));
+        let num_threads = 50;
+        let points_per_thread = 100;
+        let mut handles = vec![];
+        // 1. Атака из множества потоков
+        for t_idx in 0..num_threads {
+            let retainer_clone = retainer.clone();
+            handles.push(thread::spawn(move || {
+                // Симулируем 5 разных девайсов-владельцев
+                let owner = format!("Device_{}", t_idx % 5); 
+                let mut points = vec![];
+                for p_idx in 0..points_per_thread {
+                    // Создаем перекрывающиеся имена (один девайс пришлет Point_x_y несколько раз)
+                    let point_name = format!("Point_{}_{}", t_idx % 10, p_idx); 
+                    points.push(make_point(&point_name));
+                }
+                retainer_clone.insert(&owner, points);
+            }));
+        }
+        // Ждем завершения всех генерирующих потоков
+        for handle in handles {
+            handle.join().unwrap();
+        }
+        // 2. Ждем, пока воркер переварит всю очередь
+        let mut attempts = 0;
+        loop {
+            {
+                let lock = retainer.pending.lock();
+                if !lock.0 && lock.1.is_empty() {
+                    break;
+                }
+            }
+            attempts += 1;
+            if attempts > 200 { // Ждем до 10 секунд
+                panic!("Worker timeout! Воркер не справился со стресс-тестом.");
+            }
+            thread::sleep(Duration::from_millis(50));
+        }
+        // 3. Жесткая валидация результатов на диске
+        let file_content = fs::read_to_string(&file_path).expect("Can't read result file");
+        let retained: RetainedCahe = serde_json::from_str(&file_content).expect("Invalid JSON");
+        let mut all_ids = vec![];
+        // Собираем все присвоенные ID со всех девайсов
+        for (_, points) in retained {
+            for (_, point_conf) in points {
+                all_ids.push(point_conf.id);
+            }
+        }
+        // Сортируем ID по возрастанию
+        all_ids.sort_unstable();
+        let unique_points_count = all_ids.len();
+        assert!(unique_points_count > 0, "Файл пуст, данные не сохранились!");
+        // 4. Проверка №1: Нет ли дубликатов?
+        let mut deduplicated_ids = all_ids.clone();
+        deduplicated_ids.dedup(); // Удаляет дубликаты
+        assert_eq!(
+            all_ids.len(), 
+            deduplicated_ids.len(), 
+            "КРИТИЧЕСКАЯ ОШИБКА: Найдены дублирующиеся ID!"
+        );
+        // 5. Проверка №2: Нет ли пропусков (дырок) в нумерации?
+        // Если ID раздавались корректно, они должны идти строго: 0, 1, 2, 3...
+        for (index, id) in all_ids.into_iter().enumerate() {
+            assert_eq!(
+                index, 
+                id, 
+                "Рассинхрон нумерации! Ожидался ID {}, но встречен {}", index, id
+            );
+        }
+        println!("{} | ✅ Stress test passed! Успешно обработано {} уникальных тегов.", dbg, unique_points_count);
     }
 }
