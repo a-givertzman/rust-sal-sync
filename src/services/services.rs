@@ -43,7 +43,7 @@ impl Services {
             map: Arc::new(DashMap::new()),
             order: SkipSet::new(),
             retain_point_id: match &conf.retain.point {
-                Some(_) => Some(Arc::new(RetainPointId::new(&name_str, conf.retain.clone()))),
+                Some(_) => Some(Arc::new(RetainPointId::new(&name_str, conf.retain.clone(), scheduler.clone()))),
                 None => None,
             },
             conf: conf,
