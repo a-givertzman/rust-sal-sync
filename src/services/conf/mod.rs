@@ -1,6 +1,7 @@
 //!
 //! # Common entities and tools for configuration stored in yaml
 //!
+mod conf_angle;
 mod conf_custom_keywd;
 mod conf_distance;
 mod conf_duration;
@@ -10,6 +11,7 @@ mod conf_tree;
 mod diag_keywd;
 mod services_conf;
 
+pub use conf_angle::*;
 pub use conf_custom_keywd::*;
 pub use conf_distance::*;
 pub use conf_duration::*;

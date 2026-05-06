@@ -1,4 +1,5 @@
 mod fn_config;
+mod conf_angle_test;
 mod conf_custom_keywd_test;
 mod conf_distance_test;
 mod conf_duration_test;

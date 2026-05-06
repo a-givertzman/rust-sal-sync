@@ -1,13 +1,14 @@
-use std::str::FromStr;
+use std::{str::FromStr, sync::OnceLock};
 use log::trace;
-use regex::RegexBuilder;
+use regex::{Regex, RegexBuilder};
+use sal_core::error::Error;
 use serde::Deserialize;
 
 ///
 /// Unit of Distance
 /// ```ignore
 ///  -                 | Millimetre (mm) | Centimetre (cm) | Metre (m) | Kilometre (km)
-///  ---               | ---             | ---             | ---       | ---
+///  :---              | :---            | :---            | :---      | :---
 ///  1 millimetre (mm) |  1              |  0.1            |    0.001  |  0.000001
 ///  1 centimetre (cm) |  10             |  1              |    0.01   |  0.00001
 ///  1 metre (m)       |  1000           |  100            |    1      |  0.001
@@ -34,7 +35,7 @@ pub enum ConfDistanceUnit {
 //
 // 
 impl FromStr for ConfDistanceUnit {
-    type Err = String;
+    type Err = Error;
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         match input {
             "nm" => Ok(Self::Nanometer),
@@ -44,7 +45,7 @@ impl FromStr for ConfDistanceUnit {
             "m"  => Ok(Self::Meter),
             "km"  => Ok(Self::Kilometer),
             "in"  => Ok(Self::Inch),
-            _ => Err(format!("ConfDistanceUnit.from_str | Unknown distance unit: '{}'", input))
+            _ => Err(Error::new("ConfDistanceUnit", "from_str").err(format!("Unknown distance unit: '{}'", input)))
         }
     }
 }
@@ -66,19 +67,19 @@ impl std::fmt::Display for ConfDistanceUnit {
 }
 
 ///
-/// keyword konsists of 2 fields:
+/// Distance keyword consists of 2 fields:
 /// ```ignore
-/// | value  |  unit  |
-/// | ------ | ------ |
-/// | requir | opt    |
-/// | ------ | ------ |
-/// | 111    |  nm    | - 111 nanometers
-/// | 12     |  um    | - 12 micrometers
-/// | 11     |  cm    | - 11 centimeters
-/// | 5      |  m     | - 5 meters
-/// | 5      |        | - 5 meters
-/// | 3      |  km    | - 3 kilometers
-/// | 1      |  in    | - 1 inches
+/// | value  | unit |
+/// | ------ | ---- |
+/// | requir | opt  |
+/// | ------ | ---- |
+/// | 111    |  nm  | - 111 nanometers
+/// | 12     |  um  | - 12 micrometers
+/// | 11     |  cm  | - 11 centimeters
+/// | 5      |  m   | - 5 meters
+/// | 5      |      | - 5 meters
+/// | 3      |  km  | - 3 kilometers
+/// | 1      |  in  | - 1 inches
 /// ```
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq)]
 pub struct ConfDistance {
@@ -178,54 +179,41 @@ impl ConfDistance {
     /// Returns distance in Inches (in)
     pub fn as_in(&self) -> f64 {
         match self.unit {
-            ConfDistanceUnit::Nanometer  => self.value / 2.54e+7,
-            ConfDistanceUnit::Micrometer => self.value / 25400.0,
-            ConfDistanceUnit::Millimeter => self.value / 25.4,
-            ConfDistanceUnit::Centimetre => self.value / 2.54,
-            ConfDistanceUnit::Meter      => self.value * 39.3701 ,
-            ConfDistanceUnit::Kilometer  => self.value * 39370.1,
+            ConfDistanceUnit::Nanometer  => self.value / 2.54e+7,   // На два такта медленнее, но точнее результат
+            ConfDistanceUnit::Micrometer => self.value / 25400.0,   // На два такта медленнее, но точнее результат
+            ConfDistanceUnit::Millimeter => self.value / 25.4,      // На два такта медленнее, но точнее результат
+            ConfDistanceUnit::Centimetre => self.value / 2.54,      // На два такта медленнее, но точнее результат
+            ConfDistanceUnit::Meter      => self.value / 0.0254,    // На два такта медленнее, но точнее результат
+            ConfDistanceUnit::Kilometer  => self.value / 0.0000254, // На два такта медленнее, но точнее результат
             ConfDistanceUnit::Inch       => self.value,
         }
     }
 }
 //
 // 
+static CONF_DISTANCE_RE: OnceLock<Regex> = OnceLock::new();
+//
 impl FromStr for ConfDistance {
-    type Err = String;
-    fn from_str(input: &str) -> Result<ConfDistance, String> {
+    type Err = Error;
+    fn from_str(input: &str) -> Result<ConfDistance, Error> {
         trace!("ConfDistance.from_str | input: {}", input);
-        let re = r"^[ \t]*([-+]?[\d]*\.?[\d]+)[ \t]*(nm|um|mm|cm|m|km|in){0,1}[ \t]*$";
-        let re = RegexBuilder::new(re).multi_line(true).build().unwrap();
+        let re = CONF_DISTANCE_RE.get_or_init(|| RegexBuilder::new(
+            // r"^[ \t]*([-+]?[\d]*\.?[\d]+)[ \t]*(nm|um|mm|cm|m|km|in){0,1}[ \t]*$"
+            r"^[ \t]*([-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)[ \t]*(nm|um|mm|cm|m|km|in)?[ \t]*$"
+        ).multi_line(true).build().unwrap());
         let group_value = 1;
         let group_unit = 2;
-        match re.captures(input) {
-            Some(caps) => {
-                match &caps.get(group_value) {
-                    Some(first) => {
-                        match first.as_str().parse() {
-                            Ok(value) => {
-                                let unit = match &caps.get(group_unit) {
-                                    Some(u) => match ConfDistanceUnit::from_str(u.as_str()) {
-                                        Ok(unit) => Ok(unit),
-                                        Err(err) => Err(err),
-                                    }
-                                    None => Ok(ConfDistanceUnit::Meter),
-                                };
-                                match unit {
-                                    Ok(unit) => Ok(ConfDistance::new(value, unit)),
-                                    Err(err) => Err(err),
-                                }
-                            }
-                            Err(err) => Err(format!("ConfDistance.from_str | Error parsing distance value: '{}'\n\terror: {:?}", &input, err)),
-                        }
-                    }
-                    None => Err(format!("ConfDistance.from_str | Value not found in distance: '{}'", &input)),
-                }
-            }
-            None => {
-                Err(format!("ConfDistance.from_str | Error parsing distance value: '{}'", &input))
-            }
-        }
+        let caps = re.captures(input)
+            .ok_or_else(|| Error::new("ConfDistance", "from_str").err(format!("Can't parse distance '{}'", input)))?;
+        let first = &caps.get(group_value)
+            .ok_or_else(|| Error::new("ConfDistance", "from_str").err(format!("Wrong distance value: '{}'", input)))?;
+        let value = first.as_str().parse()
+            .map_err(|err: std::num::ParseFloatError| Error::new("ConfDistance", "from_str").pass_with(format!("Can't parse distance '{}'", input), err.to_string()))?;
+        let unit = match &caps.get(group_unit) {
+            Some(u) => ConfDistanceUnit::from_str(u.as_str()).map_err(|err| Error::new("ConfDistance", "from_str").pass_with(format!("Can't parse distance '{}'", input), err.to_string()))?,
+            None => ConfDistanceUnit::Meter,
+        };
+        Ok(ConfDistance::new(value, unit))
     }
 }
 //
