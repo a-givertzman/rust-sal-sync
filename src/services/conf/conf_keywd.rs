@@ -1,5 +1,5 @@
-use std::str::FromStr;
-use regex::RegexBuilder;
+use std::{str::FromStr, sync::OnceLock};
+use regex::{Regex, RegexBuilder};
 use sal_core::error::Error;
 use serde::Deserialize;
 ///
@@ -67,6 +67,8 @@ impl ConfKeywd {
 }
 //
 // 
+static CONF_KEYWD_RE: OnceLock<Regex> = OnceLock::new();
+//
 impl FromStr for ConfKeywd {
     type Err = Error;
     ///
@@ -84,8 +86,9 @@ impl FromStr for ConfKeywd {
     fn from_str(input: &str) -> Result<Self, Error> {
         let error = Error::new("ConfKeywd", "from_str");
         log::trace!("ConfKeywd.from_str | input: {}", input);
-        let re = r#"(?:(?:(\w+)[ \t])?(task|service|queue|link)(?:$|(?:[ \t](\S+)(?:[ \t](\S+))?)))"#;
-        let re = RegexBuilder::new(re).multi_line(false).build().unwrap();
+        let re = CONF_KEYWD_RE.get_or_init(|| RegexBuilder::new(
+            r#"(?:(?:(\w+)[ \t])?(task|service|queue|link)(?:$|(?:[ \t](\S+)(?:[ \t](\S+))?)))"#
+        ).multi_line(false).build().unwrap());
         let group_prefix = 1;
         let group_kind = 2;
         let group_name = 3;

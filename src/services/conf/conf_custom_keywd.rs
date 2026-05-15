@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, sync::OnceLock};
 use regex::Regex;
 use sal_core::error::Error;
 use serde::Deserialize;
@@ -64,6 +64,8 @@ impl ConfCustomKeywd {
 }
 //
 // 
+static CONF_CUSTOM_KEYWD_RE: OnceLock<Regex> = OnceLock::new();
+//
 impl FromStr for ConfCustomKeywd {
     type Err = Error;
     ///
@@ -79,9 +81,7 @@ impl FromStr for ConfCustomKeywd {
     fn from_str(input: &str) -> Result<Self, Error> {
         let error = Error::new("ConfCustomKeywd", "from_str");
         log::trace!("ConfCustomKeywd.from_str | input: {}", input);
-        let re = r#"^(?:([^ ]+)[ \t]+)??(?:([^ ]+)(?:[ \t]+(\S+))?$)"#;
-        let re = Regex::new(re).unwrap();
-        // let re = RegexBuilder::new(re)..multi_line(false).build().unwrap();
+        let re = CONF_CUSTOM_KEYWD_RE.get_or_init(|| Regex::new(r#"^(?:([^ ]+)[ \t]+)??(?:([^ ]+)(?:[ \t]+(\S+))?$)"#).unwrap());
         let group_prefix = 1;
         let group_name = 2;
         let group_title = 3;
