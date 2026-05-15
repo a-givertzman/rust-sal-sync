@@ -78,11 +78,11 @@ checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 
 [[package]]
 name = "api-tools"
-version = "0.2.1"
-source = "git+https://github.com/a-givertzman/rust-api-tools.git?tag=0.2.1#e65be09fcef73810298ec63f35fe149002be2ddd"
+version = "0.2.2"
+source = "git+https://github.com/a-givertzman/rust-api-tools.git?tag=0.2.2#619409dacf12d4dd8c23ceee05d0651c470afee5"
 dependencies = [
  "chrono",
- "debugging 0.0.1 (git+https://github.com/a-givertzman/rust-debuging.git?tag=0.1.0)",
+ "debugging",
  "env_logger",
  "indexmap",
  "log",
@@ -374,14 +374,6 @@ dependencies = [
 [[package]]
 name = "debugging"
 version = "0.0.1"
-source = "git+https://github.com/a-givertzman/rust-debuging.git?tag=0.0.1#18c3318af218aa8caa094a7dfda0d71f08a9eeda"
-dependencies = [
- "env_logger",
-]
-
-[[package]]
-name = "debugging"
-version = "0.0.1"
 source = "git+https://github.com/a-givertzman/rust-debuging.git?tag=0.1.0#6550e6d2488f585773fdb9007a0bde872609fbcc"
 dependencies = [
  "env_logger",
@@ -557,9 +549,9 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.16.1"
+version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "841d1cc9bed7f9236f321df977030373f4a4163ae1a7dbfe1a51a2c1a51d9100"
+checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
 
 [[package]]
 name = "hashers"
@@ -626,12 +618,12 @@ checksum = "3d3067d79b975e8844ca9eb072e16b31c3c1c36928edf9c6789548c524d0d954"
 
 [[package]]
 name = "indexmap"
-version = "2.12.1"
+version = "2.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ad4bb2b565bca0645f4d68c5c9af97fba094e9791da685bf83cb5f3ce74acf2"
+checksum = "d466e9454f08e4a911e14806c24e16fba1b4c121d1ea474396f396069cf949d9"
 dependencies = [
  "equivalent",
- "hashbrown 0.16.1",
+ "hashbrown 0.17.1",
  "serde",
  "serde_core",
 ]
@@ -1170,10 +1162,10 @@ checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 [[package]]
 name = "sal-core"
 version = "0.1.0"
-source = "git+https://github.com/a-givertzman/rust-sal-core.git?tag=0.1.0#712382f341e277162ffe4a5e6a65eda5b8b56e82"
+source = "git+https://github.com/a-givertzman/rust-sal-core.git?tag=0.1.0#b3d752738a254de434d7927fed4260938e6acae3"
 dependencies = [
  "bincode",
- "debugging 0.0.1 (git+https://github.com/a-givertzman/rust-debuging.git?tag=0.0.1)",
+ "debugging",
  "env_logger",
  "log",
  "sal-core-macros",
@@ -1183,7 +1175,7 @@ dependencies = [
 [[package]]
 name = "sal-core-macros"
 version = "0.1.0"
-source = "git+https://github.com/a-givertzman/rust-sal-core.git?tag=0.1.0#712382f341e277162ffe4a5e6a65eda5b8b56e82"
+source = "git+https://github.com/a-givertzman/rust-sal-core.git?tag=0.1.0#b3d752738a254de434d7927fed4260938e6acae3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1203,7 +1195,7 @@ dependencies = [
  "crossbeam",
  "crossbeam-skiplist",
  "dashmap",
- "debugging 0.0.1 (git+https://github.com/a-givertzman/rust-debuging.git?tag=0.1.0)",
+ "debugging",
  "env_logger",
  "hashers",
  "indexmap",
