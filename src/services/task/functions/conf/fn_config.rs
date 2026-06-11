@@ -289,8 +289,8 @@ impl FnConfig {
     }
     ///
     /// Returns input config by it's name
-    pub fn input_conf<'a>(&'a mut self, input_name: &str) -> Result<&'a mut FnConfKind, String> {
-        match self.inputs.get_mut(input_name) {
+    pub fn input_conf<'a>(&'a self, input_name: &str) -> Result<&'a FnConfKind, String> {
+        match self.inputs.get(input_name) {
             Some(conf) => Ok(conf),
             None => Err(format!("FnConfig.inputConf | function {:?} must have {:?}", self.name, input_name)),
         }

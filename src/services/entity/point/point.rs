@@ -72,7 +72,7 @@ impl ToPoint for Value {
 }
 
 ///
-/// The enum container for `Point<T>`
+/// ### The enum container for `Point<T>`
 /// - supported types: Bool, Int, Real, Double, String
 #[derive(Debug, Clone, PartialEq)]
 pub enum Point {

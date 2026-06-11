@@ -4,7 +4,7 @@ use crate::services::{
     types::Bool,
 };
 ///
-/// Holds the unit of the information 
+/// ### Holds the unit of the information 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PointHlr<T> {
     pub txid: usize,
