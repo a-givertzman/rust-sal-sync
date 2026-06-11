@@ -1,8 +1,9 @@
 use std::{cmp::Ordering, str::FromStr};
 use concat_string::concat_string;
+use serde::{Deserialize, Serialize};
 ///
 ///
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[repr(u32)]
 pub enum Status {
     Ok              = Self::OK as u32,
