@@ -101,3 +101,38 @@ fn builder() {
         assert!(result == target, "{} | Step {} \nresult: {:?} \ntarget: {:?} ", dbg, step, result, target);
     }
 }
+///
+///
+#[test]
+fn builder_lazy() {
+    DebugSession::new().filter(LogLevel::Debug).init();
+    init_once();
+    init_each();
+    let dbg = Dbg::own("change_notify.add");
+    log::info!("{}", dbg);
+    let test_data = vec![
+        (0, NotifyState::Stop,    None),
+        (1, NotifyState::Start,   Some("Start")),
+        (2, NotifyState::Online,  Some("Online")),
+        (3, NotifyState::Online,  None),
+        (4, NotifyState::Offline, Some("Offline")),
+        (5, NotifyState::Offline, None),
+        (6, NotifyState::Stop,    Some("Stop")),
+    ];
+    type ResultValue = Arc<RwLock<Option<String>>>;
+    let notify = ChangeNotify::builder(&dbg, NotifyState::Stop)
+        .on(NotifyState::Start,   |(result, message): (ResultValue, &str)| *result.write() = Some(format!("{} Start", message)))
+        .on(NotifyState::Online,  |(result, message): (ResultValue, &str)| *result.write() = Some(format!("{} Online", message)))
+        .on(NotifyState::Offline, |(result, message): (ResultValue, &str)| *result.write() = Some(format!("{} Offline", message)))
+        .on(NotifyState::Stop,    |(result, message): (ResultValue, &str)| *result.write() = Some(format!("{} Stop", message)))
+        .build();
+    for (step, value, target) in test_data {
+        let result = Arc::new(RwLock::new(None));
+        let message = "Switched to";
+        notify.update(value, || (result.clone(), message));
+        let result = result.read().clone();
+        log::debug!("{} | Step {} | value: {:?}  message  |  result: {:?}", dbg, step, value, result);
+        let target = target.map(|target| format!("{} {}", message, target));
+        assert!(result == target, "{} | Step {} \nresult: {:?} \ntarget: {:?} ", dbg, step, result, target);
+    }
+}

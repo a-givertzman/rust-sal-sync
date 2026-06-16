@@ -34,7 +34,7 @@ where
         }
     }
     ///
-    /// Add new state
+    /// Update state and arguments
     pub fn add(&self, state: S, args: T) {
         let self_state_guard = self.state.load();
         if state != **self_state_guard {
@@ -48,6 +48,27 @@ where
                         (callback)(args)
                     },
                     None => log::error!("{}.add | State `{:?}` is not found", self.id, state),
+                }
+            }
+        }
+    }
+    ///
+    /// Update state lazily. Arguments is evalueted only if state has changed
+    pub fn update<F>(&self, s: S, f: F)
+    where
+        F: FnOnce() -> T, {
+        let self_state_guard = self.state.load();
+        if s != **self_state_guard {
+            let prev_guard = self.state.compare_and_swap(&self_state_guard, Arc::new(s.clone()));
+            // Если то, что вернул CAS, совпадает с тем, что мы загрузили в начале
+            // - замена успешна (именно данный вызов обновил стейт)
+            // - вызываем калбэк
+            if Arc::ptr_eq(&self_state_guard, &prev_guard) {
+                match self.cases.get(&s) {
+                    Some(callback) => {
+                        (callback)((f)())
+                    },
+                    None => log::error!("{}.add | State `{:?}` is not found", self.id, s),
                 }
             }
         }
