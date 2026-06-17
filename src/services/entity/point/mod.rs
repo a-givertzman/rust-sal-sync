@@ -76,7 +76,7 @@
 mod point;
 mod point_hlr;
 mod point_tx_id;
-mod point_conf_type;
+mod point_type;
 mod point_conf;
 mod point_conf_address;
 mod point_conf_history;
@@ -85,7 +85,7 @@ mod point_conf_filters;
 pub use point::*;
 pub use point_hlr::*;
 pub use point_tx_id::*;
-pub use point_conf_type::*;
+pub use point_type::*;
 pub use point_conf::*;
 pub use point_conf_address::*;
 pub use point_conf_history::*;

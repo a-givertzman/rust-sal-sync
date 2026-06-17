@@ -105,7 +105,21 @@ impl Point {
     }
     ///
     /// Returns type of the containing Point
+    #[deprecated(note="Use point.typ() instead")]
     pub fn type_(&self) -> PointType {
+        match self {
+            Point::Bool(_) => PointType::Bool,
+            Point::Int(_) => PointType::Int,
+            Point::Real(_) => PointType::Real,
+            Point::Double(_) => PointType::Double,
+            Point::String(_) => PointType::String,
+            Point::Bytes(_) => PointType::Bytes,
+        }
+    }
+    ///
+    /// Returns type of the containing Point
+    #[inline]
+    pub fn typ(&self) -> PointType {
         match self {
             Point::Bool(_) => PointType::Bool,
             Point::Int(_) => PointType::Int,
@@ -156,7 +170,7 @@ impl Point {
     pub fn as_bool(&self) -> PointHlr<Bool> {
         match self {
             Point::Bool(point) => point.clone(),
-            _ => panic!("Point.as_bool | Expected type 'Bool', but found '{:?}' point: '{}'", self.type_(), self.name()),
+            _ => panic!("Point.as_bool | Expected type 'Bool', but found '{:?}' point: '{}'", self.typ(), self.name()),
         }
     }
     ///
@@ -164,7 +178,7 @@ impl Point {
     pub fn try_as_bool(&self) -> Result<PointHlr<Bool>, Error> {
         match self {
             Point::Bool(point) => Ok(point.clone()),
-            _ => Err(Error::new("Point", "try_as_bool").err(format!("Expected type 'Bool', but found '{:?}' point: '{}'", self.type_(), self.name()))),
+            _ => Err(Error::new("Point", "try_as_bool").err(format!("Expected type 'Bool', but found '{:?}' point: '{}'", self.typ(), self.name()))),
         }
     }
     ///
@@ -172,7 +186,7 @@ impl Point {
     pub fn as_int(&self) -> PointHlr<i64> {
         match self {
             Point::Int(point) => point.clone(),
-            _ => panic!("Point.as_int | Expected type 'Int', but found '{:?}' point: '{}'", self.type_(), self.name()),
+            _ => panic!("Point.as_int | Expected type 'Int', but found '{:?}' point: '{}'", self.typ(), self.name()),
         }
     }
     ///
@@ -188,7 +202,7 @@ impl Point {
     pub fn as_real(&self) -> PointHlr<f32> {
         match self {
             Point::Real(point) => point.clone(),
-            _ => panic!("Point.as_real | Expected type 'Real', but found '{:?}' point: '{}'", self.type_(), self.name()),
+            _ => panic!("Point.as_real | Expected type 'Real', but found '{:?}' point: '{}'", self.typ(), self.name()),
         }
     }
     ///
@@ -196,7 +210,7 @@ impl Point {
     pub fn try_as_real(&self) -> Result<PointHlr<f32>, Error> {
         match self {
             Point::Real(point) => Ok(point.clone()),
-            _ => Err(Error::new("Point", "try_as_real").err(format!("Expected type 'Real', but found '{:?}' point: '{}'", self.type_(), self.name()))),
+            _ => Err(Error::new("Point", "try_as_real").err(format!("Expected type 'Real', but found '{:?}' point: '{}'", self.typ(), self.name()))),
         }
     }
     ///
@@ -204,7 +218,7 @@ impl Point {
     pub fn as_double(&self) -> PointHlr<f64> {
         match self {
             Point::Double(point) => point.clone(),
-            _ => panic!("Point.as_double | Expected type 'Double', but found '{:?}' point: '{}'", self.type_(), self.name()),
+            _ => panic!("Point.as_double | Expected type 'Double', but found '{:?}' point: '{}'", self.typ(), self.name()),
         }
     }
     ///
@@ -212,7 +226,7 @@ impl Point {
     pub fn try_as_double(&self) -> Result<PointHlr<f64>, Error> {
         match self {
             Point::Double(point) => Ok(point.clone()),
-            _ => Err(Error::new("Point", "try_as_double").err(format!("Expected type 'Double', but found '{:?}' point: '{}'", self.type_(), self.name()))),
+            _ => Err(Error::new("Point", "try_as_double").err(format!("Expected type 'Double', but found '{:?}' point: '{}'", self.typ(), self.name()))),
         }
     }
     ///
@@ -220,7 +234,7 @@ impl Point {
     pub fn as_string(&self) -> PointHlr<String> {
         match self {
             Point::String(point) => point.clone(),
-            _ => panic!("Point.as_string | Expected type 'String', but found '{:?}' point: '{}'", self.type_(), self.name()),
+            _ => panic!("Point.as_string | Expected type 'String', but found '{:?}' point: '{}'", self.typ(), self.name()),
         }
     }
     ///
@@ -228,7 +242,7 @@ impl Point {
     pub fn try_as_string(&self) -> Result<PointHlr<String>, Error> {
         match self {
             Point::String(point) => Ok(point.clone()),
-            _ => Err(Error::new("Point", "try_as_string").err(format!("Expected type 'String', but found '{:?}' point: '{}'", self.type_(), self.name()))),
+            _ => Err(Error::new("Point", "try_as_string").err(format!("Expected type 'String', but found '{:?}' point: '{}'", self.typ(), self.name()))),
         }
     }
     ///
@@ -236,7 +250,7 @@ impl Point {
     pub fn as_bytes(&self) -> PointHlr<Vec<u8>> {
         match self {
             Point::Bytes(point) => point.clone(),
-            _ => panic!("Point.as_bytes | Expected type 'Bytes', but found '{:?}' point: '{}'", self.type_(), self.name()),
+            _ => panic!("Point.as_bytes | Expected type 'Bytes', but found '{:?}' point: '{}'", self.typ(), self.name()),
         }
     }
     ///
@@ -244,7 +258,7 @@ impl Point {
     pub fn try_as_bytes(&self) -> Result<PointHlr<Vec<u8>>, Error> {
         match self {
             Point::Bytes(point) => Ok(point.clone()),
-            _ => Err(Error::new("Point", "try_as_bytes").err(format!("Expected type 'String', but found '{:?}' point: '{}'", self.type_(), self.name()))),
+            _ => Err(Error::new("Point", "try_as_bytes").err(format!("Expected type 'String', but found '{:?}' point: '{}'", self.typ(), self.name()))),
         }
     }    ///
     /// Returns status of the containing Point
@@ -425,7 +439,7 @@ impl Point {
             Point::Int(p) => p.value.to_string(),
             Point::Real(p) => p.value.to_string(),
             Point::Double(p) => p.value.to_string(),
-            Point::String(p) => p.value.to_owned(),
+            Point::String(p) => p.value.clone(),
             Point::Bytes(p) => return Point::String(p.to_string()),
             // _ => panic!("{}.to_double | Conversion to Double for '{}' - is not supported", self.name(),  self.type_of()),
         };
@@ -447,7 +461,7 @@ impl Point {
                     Point::Int(exp) => Point::Int(self_point.pow(exp)),
                     Point::Real(exp) => Point::Int(self_point.to_real().pow(exp).to_int()),
                     Point::Double(exp) => Point::Int(self_point.to_double().pow(exp).to_int()),
-                    _ => panic!("Point.pow | Pow is not supported for 'exp' of type '{:?}'", self.type_()),
+                    _ => panic!("Point.pow | Pow is not supported for 'exp' of type '{:?}'", self.typ()),
                 }
             }
             Point::Real(self_point) => {
@@ -455,7 +469,7 @@ impl Point {
                     Point::Int(exp) => Point::Real(self_point.pow(exp.to_real())),
                     Point::Real(exp) => Point::Real(self_point.pow(exp)),
                     Point::Double(exp) => Point::Real(self_point.pow(exp.to_real())),
-                    _ => panic!("Point.pow | Pow is not supported for 'exp' of type '{:?}'", self.type_()),
+                    _ => panic!("Point.pow | Pow is not supported for 'exp' of type '{:?}'", self.typ()),
                 }
             }
             Point::Double(self_point) => {
@@ -463,14 +477,15 @@ impl Point {
                     Point::Int(exp) => Point::Double(self_point.pow(exp.to_double())),
                     Point::Real(exp) => Point::Double(self_point.pow(exp.to_double())),
                     Point::Double(exp) => Point::Double(self_point.pow(exp)),
-                    _ => panic!("Point.pow | Pow is not supported for 'exp' of type '{:?}'", self.type_()),
+                    _ => panic!("Point.pow | Pow is not supported for 'exp' of type '{:?}'", self.typ()),
                 }
             }
-            _ => panic!("Point.pow | Pow is not supported for type '{:?}'", self.type_()),
+            _ => panic!("Point.pow | Pow is not supported for type '{:?}'", self.typ()),
         }
     }
     ///
     /// Returns `Point` with updated `txid`
+    #[inline]
     pub fn with_txid(self, txid: usize) -> Self {
         match self {
             Point::Bool(p) => Point::Bool(p.with_txid(txid)),
@@ -483,6 +498,7 @@ impl Point {
     }
     ///
     /// Returns `Point` with updated `name`
+    #[inline]
     pub fn with_name(self, name: impl Into<String>) -> Self {
         match self {
             Point::Bool(p) => Point::Bool(p.with_name(name)),
@@ -495,6 +511,7 @@ impl Point {
     }
     ///
     /// Returns `Point` with updated `status`
+    #[inline]
     pub fn with_status(self, status: Status) -> Self {
         match self {
             Point::Bool(p) => Point::Bool(p.with_status(status)),
@@ -507,6 +524,7 @@ impl Point {
     }
     ///
     /// Returns `Point` with updated `cot`
+    #[inline]
     pub fn with_cot(self, cot: Cot) -> Self {
         match self {
             Point::Bool(p) => Point::Bool(p.with_cot(cot)),
@@ -519,6 +537,7 @@ impl Point {
     }
     ///
     /// Returns `Point` with updated `timestamp`
+    #[inline]
     pub fn with_ts(self, ts: DateTime<chrono::Utc>) -> Self {
         match self {
             Point::Bool(p) => Point::Bool(p.with_ts(ts)),
@@ -721,7 +740,7 @@ impl<'de> Deserialize<'de> for Point {
 impl std::ops::Add for Point {
     type Output = Point;
     fn add(self, rhs: Self) -> Self::Output {
-        assert_eq!(self.type_(), rhs.type_(), "Point.add | Incopitable types self: '{:?}' and other: '{:?}'\tin '{}'", self.type_(), rhs.type_(), self.name());
+        assert_eq!(self.typ(), rhs.typ(), "Point.add | Incopitable types self: '{:?}' and other: '{:?}'\tin '{}'", self.typ(), rhs.typ(), self.name());
         match self {
             Point::Bool(self_point) => {
                 Point::Bool(self_point + rhs.as_bool())
@@ -735,7 +754,7 @@ impl std::ops::Add for Point {
             Point::Double(self_point) => {
                 Point::Double(self_point + rhs.as_double())
             }
-            _ => panic!("Point.add | Add is not supported for type '{:?}'", self.type_()),
+            _ => panic!("Point.add | Add is not supported for type '{:?}'", self.typ()),
         }
     }
 }
@@ -744,7 +763,7 @@ impl std::ops::Add for Point {
 impl std::ops::Sub for Point {
     type Output = Point;
     fn sub(self, rhs: Self) -> Self::Output {
-        assert_eq!(self.type_(), rhs.type_(), "Point.sub | Incopitable types self: '{:?}' and other: '{:?}'\tin '{}'", self.type_(), rhs.type_(), self.name());
+        assert_eq!(self.typ(), rhs.typ(), "Point.sub | Incopitable types self: '{:?}' and other: '{:?}'\tin '{}'", self.typ(), rhs.typ(), self.name());
         match self {
             Point::Int(self_point) => {
                 Point::Int(self_point - rhs.as_int())
@@ -755,7 +774,7 @@ impl std::ops::Sub for Point {
             Point::Double(self_point) => {
                 Point::Double(self_point - rhs.as_double())
             }
-            _ => panic!("Point.sub | Sub is not supported for type '{:?}'", self.type_()),
+            _ => panic!("Point.sub | Sub is not supported for type '{:?}'", self.typ()),
         }
     }
 }
@@ -764,7 +783,7 @@ impl std::ops::Sub for Point {
 impl std::ops::Mul for Point {
     type Output = Point;
     fn mul(self, rhs: Self) -> Self::Output {
-        assert_eq!(self.type_(), rhs.type_(), "Point.mul | Incopitable types self: '{:?}' and other: '{:?}'\tin '{}'", self.type_(), rhs.type_(), self.name());
+        assert_eq!(self.typ(), rhs.typ(), "Point.mul | Incopitable types self: '{:?}' and other: '{:?}'\tin '{}'", self.typ(), rhs.typ(), self.name());
         match self {
             Point::Bool(self_point) => {
                 Point::Bool(self_point * rhs.as_bool())
@@ -778,7 +797,7 @@ impl std::ops::Mul for Point {
             Point::Double(self_point) => {
                 Point::Double(self_point * rhs.as_double())
             }
-            _ => panic!("Point.mul | Mul is not supported for type '{:?}'", self.type_()),
+            _ => panic!("Point.mul | Mul is not supported for type '{:?}'", self.typ()),
         }
     }
 }
@@ -787,7 +806,7 @@ impl std::ops::Mul for Point {
 impl std::ops::Div for Point {
     type Output = Point;
     fn div(self, rhs: Self) -> Self::Output {
-        assert_eq!(self.type_(), rhs.type_(), "Point.div | Incopitable types self: '{:?}' and other: '{:?}'\tin '{}'", self.type_(), rhs.type_(), self.name());
+        assert_eq!(self.typ(), rhs.typ(), "Point.div | Incopitable types self: '{:?}' and other: '{:?}'\tin '{}'", self.typ(), rhs.typ(), self.name());
         match self {
             Point::Int(self_point) => {
                 Point::Int(self_point / rhs.as_int())
@@ -798,7 +817,7 @@ impl std::ops::Div for Point {
             Point::Double(self_point) => {
                 Point::Double(self_point / rhs.as_double())
             }
-            _ => panic!("Point.div | Div is not supported for type '{:?}'", self.type_()),
+            _ => panic!("Point.div | Div is not supported for type '{:?}'", self.typ()),
         }
     }
 }
@@ -806,7 +825,7 @@ impl std::ops::Div for Point {
 //
 impl std::cmp::PartialOrd for Point {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        assert_eq!(self.type_(), other.type_(), "Point.partial_cmp | Incopitable types self: '{:?}' and other: '{:?}'\tin '{}'", self.type_(), other.type_(), self.name());
+        assert_eq!(self.typ(), other.typ(), "Point.partial_cmp | Incopitable types self: '{:?}' and other: '{:?}'\tin '{}'", self.typ(), other.typ(), self.name());
         match self {
             Point::Bool(self_point) => {
                 self_point.partial_cmp(&other.as_bool())

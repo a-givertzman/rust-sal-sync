@@ -245,27 +245,27 @@ fn type_() {
         match value {
             Value::Bool(value) => {
                 let result = Point::Bool(PointHlr::new(tx_id, name, Bool(value), status, cot, timestamp));
-                assert!(result.type_() == PointType::Bool, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointType::Bool);
+                assert!(result.typ() == PointType::Bool, "step {} \nresult: {:?}\ntarget: {:?}", step, result.typ(), PointType::Bool);
             }
             Value::Int(value) => {
                 let result = Point::Int(PointHlr::new(tx_id, name, value, status, cot, timestamp));
-                assert!(result.type_() == PointType::Int, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointType::Int);
+                assert!(result.typ() == PointType::Int, "step {} \nresult: {:?}\ntarget: {:?}", step, result.typ(), PointType::Int);
             }
             Value::Real(value) => {
                 let result = Point::Real(PointHlr::new(tx_id, name, value, status, cot, timestamp));
-                assert!(result.type_() == PointType::Real, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointType::Real);
+                assert!(result.typ() == PointType::Real, "step {} \nresult: {:?}\ntarget: {:?}", step, result.typ(), PointType::Real);
             }
             Value::Double(value) => {
                 let result = Point::Double(PointHlr::new(tx_id, name, value, status, cot, timestamp));
-                assert!(result.type_() == PointType::Double, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointType::Double);
+                assert!(result.typ() == PointType::Double, "step {} \nresult: {:?}\ntarget: {:?}", step, result.typ(), PointType::Double);
             }
             Value::String(value) => {
                 let result = Point::String(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
-                assert!(result.type_() == PointType::String, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointType::String);
+                assert!(result.typ() == PointType::String, "step {} \nresult: {:?}\ntarget: {:?}", step, result.typ(), PointType::String);
             }
             Value::Bytes(value) => {
                 let result = Point::Bytes(PointHlr::new(tx_id, name, value.clone(), status, cot, timestamp));
-                assert!(result.type_() == PointType::Bytes, "step {} \nresult: {:?}\ntarget: {:?}", step, result.type_(), PointType::String);
+                assert!(result.typ() == PointType::Bytes, "step {} \nresult: {:?}\ntarget: {:?}", step, result.typ(), PointType::String);
             }
         };
     }
