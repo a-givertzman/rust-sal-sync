@@ -25,14 +25,14 @@ impl<T> PointHlr<T> {
     ///     - status: Status - indicates Ok or some kind of invalidity
     ///     - direction: Direction - the kind of the direction Read / Write
     ///     - timestamp: DateTime<chrono::Utc> - registration timestamp
-    pub fn new(txid: usize, name: impl Into<String>, value: T, status: Status, cot: Cot, timestamp: DateTime<chrono::Utc>) -> PointHlr<T> {
+    pub fn new(txid: usize, name: impl Into<String>, value: T, status: Status, cot: Cot, ts: DateTime<chrono::Utc>) -> PointHlr<T> {
         Self {
             txid,
             name: name.into(),
             value,
             status,
             cot,
-            timestamp,
+            timestamp: ts,
         }
     }
     ///
