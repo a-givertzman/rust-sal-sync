@@ -1,13 +1,10 @@
 use std::fmt::Debug;
-use chrono::DateTime;
+use chrono::{DateTime, Utc};
 use sal_core::error::Error;
 use serde::{Deserialize, Serialize};
 use testing::entities::test_value::Value;
 use crate::services::{
-        entity::{
-            Cot,
-            point::{PointConfType, PointHlr}, Status
-        },
+        entity::{Cot, point::{PointConfType, PointHlr}, Status},
         SubscriptionCriteria,
         types::{Bool, TypeOf},
     };
@@ -275,7 +272,20 @@ impl Point {
     }
     ///
     /// Returns timestamp of the containing Point
+    #[deprecated(note="use point.ts() method instead")]
     pub fn timestamp(&self) -> DateTime<chrono::Utc> {
+        match self {
+            Point::Bool(point) => point.timestamp,
+            Point::Int(point) => point.timestamp,
+            Point::Real(point) => point.timestamp,
+            Point::Double(point) => point.timestamp,
+            Point::String(point) => point.timestamp,
+            Point::Bytes(point) => point.timestamp,
+        }
+    }
+    ///
+    /// Returns timestamp of the containing Point
+    pub fn ts(&self) -> DateTime<chrono::Utc> {
         match self {
             Point::Bool(point) => point.timestamp,
             Point::Int(point) => point.timestamp,
@@ -323,7 +333,7 @@ impl Point {
             Bool(value),
             self.status(),
             self.cot(),
-            self.timestamp(),
+            self.ts(),
         ))
     }
     ///
@@ -350,7 +360,7 @@ impl Point {
             value,
             self.status(),
             self.cot(),
-            self.timestamp(),
+            self.ts(),
         ))
     }
     ///
@@ -377,7 +387,7 @@ impl Point {
             value,
             self.status(),
             self.cot(),
-            self.timestamp(),
+            self.ts(),
         ))
     }
     ///
@@ -404,7 +414,7 @@ impl Point {
             value,
             self.status(),
             self.cot(),
-            self.timestamp(),
+            self.ts(),
         ))
     }
     ///
@@ -425,7 +435,7 @@ impl Point {
             value,
             self.status(),
             self.cot(),
-            self.timestamp(),
+            self.ts(),
         ))
     }
     ///
@@ -459,6 +469,67 @@ impl Point {
             _ => panic!("Point.pow | Pow is not supported for type '{:?}'", self.type_()),
         }
     }
+    ///
+    /// Returns `Point` with updated `txid`
+    pub fn with_txid(self, txid: usize) -> Self {
+        match self {
+            Point::Bool(p) => Point::Bool(p.with_txid(txid)),
+            Point::Int(p) => Point::Int(p.with_txid(txid)),
+            Point::Real(p) => Point::Real(p.with_txid(txid)),
+            Point::Double(p) => Point::Double(p.with_txid(txid)),
+            Point::String(p) => Point::String(p.with_txid(txid)),
+            Point::Bytes(p) => Point::Bytes(p.with_txid(txid)),
+        }
+    }
+    ///
+    /// Returns `Point` with updated `name`
+    pub fn with_name(self, name: impl Into<String>) -> Self {
+        match self {
+            Point::Bool(p) => Point::Bool(p.with_name(name)),
+            Point::Int(p) => Point::Int(p.with_name(name)),
+            Point::Real(p) => Point::Real(p.with_name(name)),
+            Point::Double(p) => Point::Double(p.with_name(name)),
+            Point::String(p) => Point::String(p.with_name(name)),
+            Point::Bytes(p) => Point::Bytes(p.with_name(name)),
+        }
+    }
+    ///
+    /// Returns `Point` with updated `status`
+    pub fn with_status(self, status: Status) -> Self {
+        match self {
+            Point::Bool(p) => Point::Bool(p.with_status(status)),
+            Point::Int(p) => Point::Int(p.with_status(status)),
+            Point::Real(p) => Point::Real(p.with_status(status)),
+            Point::Double(p) => Point::Double(p.with_status(status)),
+            Point::String(p) => Point::String(p.with_status(status)),
+            Point::Bytes(p) => Point::Bytes(p.with_status(status)),
+        }
+    }
+    ///
+    /// Returns `Point` with updated `cot`
+    pub fn with_cot(self, cot: Cot) -> Self {
+        match self {
+            Point::Bool(p) => Point::Bool(p.with_cot(cot)),
+            Point::Int(p) => Point::Int(p.with_cot(cot)),
+            Point::Real(p) => Point::Real(p.with_cot(cot)),
+            Point::Double(p) => Point::Double(p.with_cot(cot)),
+            Point::String(p) => Point::String(p.with_cot(cot)),
+            Point::Bytes(p) => Point::Bytes(p.with_cot(cot)),
+        }
+    }
+    ///
+    /// Returns `Point` with updated `timestamp`
+    pub fn with_ts(self, ts: DateTime<chrono::Utc>) -> Self {
+        match self {
+            Point::Bool(p) => Point::Bool(p.with_ts(ts)),
+            Point::Int(p) => Point::Int(p.with_ts(ts)),
+            Point::Real(p) => Point::Real(p.with_ts(ts)),
+            Point::Double(p) => Point::Double(p.with_ts(ts)),
+            Point::String(p) => Point::String(p.with_ts(ts)),
+            Point::Bytes(p) => Point::Bytes(p.with_ts(ts)),
+        }
+    }
+
 }
 //
 //

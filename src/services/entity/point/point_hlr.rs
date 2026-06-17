@@ -35,6 +35,43 @@ impl<T> PointHlr<T> {
             timestamp,
         }
     }
+    ///
+    /// Returns `PointHlr` with updated `txid`
+    pub fn with_txid(mut self, txid: usize) -> Self {
+        self.txid = txid;
+        self
+    }
+    ///
+    /// Returns `PointHlr` with updated `name`
+    pub fn with_name(mut self, name: impl Into<String>) -> Self {
+        self.name = name.into();
+        self
+    }
+    ///
+    /// Returns `PointHlr` with updated `value`
+    pub fn with_value(mut self, value: T) -> Self {
+        self.value = value;
+        self
+    }
+    ///
+    /// Returns `PointHlr` with updated `status`
+    pub fn with_status(mut self, status: Status) -> Self {
+        self.status = status;
+        self
+    }
+    ///
+    /// Returns `PointHlr` with updated `cot`
+    pub fn with_cot(mut self, cot: Cot) -> Self {
+        self.cot = cot;
+        self
+    }
+    ///
+    /// Returns `PointHlr` with updated `timestamp`
+    pub fn with_ts(mut self, ts: DateTime<chrono::Utc>) -> Self {
+        self.timestamp = ts;
+        self
+    }
+
 }
 //
 // 
