@@ -326,9 +326,9 @@ impl Point {
     pub fn to_bool(&self) -> Self {
         let value = match self {
             Point::Bool(p) => p.value.0,
-            Point::Int(p) => p.value > 0,
-            Point::Real(p) => p.value > 0.0,
-            Point::Double(p) => p.value > 0.0,
+            Point::Int(p) => p.value != 0,
+            Point::Real(p) => p.value.is_finite() && p.value != 0.0,
+            Point::Double(p) => p.value.is_finite() && p.value != 0.0,
             // Point::String(point) => panic!("{}.to_bool | Conversion to Bool for 'String' - is not supported", point.name),
             Point::String(p) => {
                 match p.value.parse() {
