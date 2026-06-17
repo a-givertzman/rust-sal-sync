@@ -4,7 +4,7 @@ mod tests {
     use std::sync::Once;
     use indexmap::IndexMap;
     use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
-    use crate::services::{entity::{Name, PointConf, PointConfHistory, PointConfType}, task::functions::{FnConfKind, FnConfOptions, FnConfPointType, FnConfig, FnPointConf}};
+    use crate::services::{entity::{Name, PointConf, PointConfHistory, PointType}, task::functions::{FnConfKind, FnConfOptions, FnConfPointType, FnConfig, FnPointConf}};
     ///
     ///
     static INIT: Once = Once::new();
@@ -32,7 +32,7 @@ mod tests {
         let test_point1 = PointConf {
             id: 0,
             name: format!("/{}/CraneMovement.BoomUp", self_id),
-            type_: PointConfType::Int,
+            type_: PointType::Int,
             history: PointConfHistory::None,
             alarm: None,
             address: None,
@@ -42,7 +42,7 @@ mod tests {
         let test_point2 = PointConf {
             id: 0,
             name: format!("/{}/CraneMovement.BoomDown", self_id),
-            type_: PointConfType::Real,
+            type_: PointType::Real,
             history: PointConfHistory::Read,
             alarm: None,
             address: None,

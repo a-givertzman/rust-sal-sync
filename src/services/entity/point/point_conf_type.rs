@@ -1,16 +1,9 @@
 use serde::{Serialize, Deserialize};
+
+#[deprecated(note="Use PointType instead")]
+pub type PointConfType = PointType;
 ///
-/// Represents a list of [Point] configuration types
-/// - Bool
-/// - Bytes
-/// - Int
-/// - Real
-/// - Double
-/// - String
-/// - Json
-pub type PointType = PointConfType;
-///
-/// Represents a list of [Point] configuration types
+/// Represents a list of `Point` configuration types
 /// - Bool
 /// - Bytes
 /// - Int
@@ -19,7 +12,7 @@ pub type PointType = PointConfType;
 /// - String
 /// - Json
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum PointConfType {
+pub enum PointType {
     #[serde(rename = "Bool")]
     #[serde(alias = "bool", alias = "Bool")]
     Bool,
@@ -44,16 +37,16 @@ pub enum PointConfType {
 }
 //
 //
-impl ToString for PointConfType {
+impl ToString for PointType {
     fn to_string(&self) -> String {
         match self {
-            PointConfType::Bool => "Bool".to_owned(),
-            PointConfType::Bytes => "Bytes".to_owned(),
-            PointConfType::Int => "Int".to_owned(),
-            PointConfType::Real => "Real".to_owned(),
-            PointConfType::Double => "Double".to_owned(),
-            PointConfType::String => "String".to_owned(),
-            PointConfType::Json => "Json".to_owned(),
+            PointType::Bool => "Bool".to_owned(),
+            PointType::Bytes => "Bytes".to_owned(),
+            PointType::Int => "Int".to_owned(),
+            PointType::Real => "Real".to_owned(),
+            PointType::Double => "Double".to_owned(),
+            PointType::String => "String".to_owned(),
+            PointType::Json => "Json".to_owned(),
         }
     }
 }

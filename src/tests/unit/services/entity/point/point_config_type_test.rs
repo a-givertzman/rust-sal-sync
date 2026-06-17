@@ -4,7 +4,7 @@ use std::{sync::Once, time::Duration};
 use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
 use log::debug;
 use testing::stuff::max_test_duration::TestDuration;
-use crate::services::entity::PointConfType;
+use crate::services::entity::PointType;
 ///
 ///
 static INIT: Once = Once::new();
@@ -20,7 +20,7 @@ fn init_once() {
 ///  - ...
 fn init_each() -> () {}
 ///
-/// Testing PointConfType::serialize
+/// Testing PointType::serialize
 #[test]
 fn serialize() {
     DebugSession::new().filter(LogLevel::Debug).init();
@@ -32,27 +32,27 @@ fn serialize() {
     let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
     test_duration.run().unwrap();
     let test_data = [
-        (01, r#"Bool"#, PointConfType::Bool),
-        (03, r#"Int"#, PointConfType::Int),
-        (05, r#"Real"#, PointConfType::Real),
-        (07, r#"Double"#, PointConfType::Double),
-        (09, r#"String"#, PointConfType::String),
-        (11, r#"Json"#, PointConfType::Json),
+        (01, r#"Bool"#, PointType::Bool),
+        (03, r#"Int"#, PointType::Int),
+        (05, r#"Real"#, PointType::Real),
+        (07, r#"Double"#, PointType::Double),
+        (09, r#"String"#, PointType::String),
+        (11, r#"Json"#, PointType::Json),
     ];
     for (step, target, value) in test_data {
         let result = serde_yaml::to_value(&value).unwrap();
         let result = result.as_str().unwrap();
-        debug!("Step: {}  |  Serialized PointConfType: {:?}", step, result);
+        debug!("Step: {}  |  Serialized PointType: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
         let result = serde_json::to_value(&value).unwrap();
         let result = result.as_str().unwrap();
-        debug!("Step: {}  |  Serialized PointConfType: {:?}", step, result);
+        debug!("Step: {}  |  Serialized PointType: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }
     test_duration.exit();
 }
 ///
-/// Testing PointConfType::deserialize_yaml
+/// Testing PointType::deserialize_yaml
 #[test]
 fn deserialize_yaml() {
     DebugSession::new().filter(LogLevel::Debug).init();
@@ -64,28 +64,28 @@ fn deserialize_yaml() {
     let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
     test_duration.run().unwrap();
     let test_data = [
-        (01, r#"bool"#, PointConfType::Bool),
-        (02, r#"Bool"#, PointConfType::Bool),
-        (03, r#"int"#, PointConfType::Int),
-        (04, r#"Int"#, PointConfType::Int),
-        (05, r#"real"#, PointConfType::Real),
-        (06, r#"Real"#, PointConfType::Real),
-        (07, r#"double"#, PointConfType::Double),
-        (08, r#"Double"#, PointConfType::Double),
-        (09, r#"string"#, PointConfType::String),
-        (10, r#"String"#, PointConfType::String),
-        (11, r#"json"#, PointConfType::Json),
-        (12, r#"Json"#, PointConfType::Json),
+        (01, r#"bool"#, PointType::Bool),
+        (02, r#"Bool"#, PointType::Bool),
+        (03, r#"int"#, PointType::Int),
+        (04, r#"Int"#, PointType::Int),
+        (05, r#"real"#, PointType::Real),
+        (06, r#"Real"#, PointType::Real),
+        (07, r#"double"#, PointType::Double),
+        (08, r#"Double"#, PointType::Double),
+        (09, r#"string"#, PointType::String),
+        (10, r#"String"#, PointType::String),
+        (11, r#"json"#, PointType::Json),
+        (12, r#"Json"#, PointType::Json),
     ];
     for (step, value, target) in test_data {
-        let result: PointConfType = serde_yaml::from_str(value).unwrap();
-        debug!("Step: {}  |  Deserialized yaml PointConfType: {:?}", step, result);
+        let result: PointType = serde_yaml::from_str(value).unwrap();
+        debug!("Step: {}  |  Deserialized yaml PointType: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }
     test_duration.exit();
 }
 ///
-/// Testing PointConfType::deserialize_json
+/// Testing PointType::deserialize_json
 #[test]
 fn deserialize_json() {
     DebugSession::new().filter(LogLevel::Debug).init();
@@ -97,28 +97,28 @@ fn deserialize_json() {
     let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
     test_duration.run().unwrap();
     let test_data = [
-        (01, r#""bool""#, PointConfType::Bool),
-        (02, r#""Bool""#, PointConfType::Bool),
-        (03, r#""int""#, PointConfType::Int),
-        (04, r#""Int""#, PointConfType::Int),
-        (05, r#""real""#, PointConfType::Real),
-        (06, r#""Real""#, PointConfType::Real),
-        (07, r#""double""#, PointConfType::Double),
-        (08, r#""Double""#, PointConfType::Double),
-        (09, r#""string""#, PointConfType::String),
-        (10, r#""String""#, PointConfType::String),
-        (11, r#""json""#, PointConfType::Json),
-        (12, r#""Json""#, PointConfType::Json),
+        (01, r#""bool""#, PointType::Bool),
+        (02, r#""Bool""#, PointType::Bool),
+        (03, r#""int""#, PointType::Int),
+        (04, r#""Int""#, PointType::Int),
+        (05, r#""real""#, PointType::Real),
+        (06, r#""Real""#, PointType::Real),
+        (07, r#""double""#, PointType::Double),
+        (08, r#""Double""#, PointType::Double),
+        (09, r#""string""#, PointType::String),
+        (10, r#""String""#, PointType::String),
+        (11, r#""json""#, PointType::Json),
+        (12, r#""Json""#, PointType::Json),
     ];
     for (step, value, target) in test_data {
-        let result: PointConfType = serde_json::from_str(value).unwrap();
-        debug!("Step: {}  |  Deserialized json PointConfType: {:?}", step, result);
+        let result: PointType = serde_json::from_str(value).unwrap();
+        debug!("Step: {}  |  Deserialized json PointType: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }
     test_duration.exit();
 }
 ///
-/// Testing PointConfType::to_string
+/// Testing PointType::to_string
 #[test]
 fn to_string() {
     DebugSession::new().filter(LogLevel::Debug).init();
@@ -130,16 +130,16 @@ fn to_string() {
     let test_duration = TestDuration::new(self_id, Duration::from_secs(1));
     test_duration.run().unwrap();
     let test_data = [
-        (02, "Bool", PointConfType::Bool),
-        (04, "Int", PointConfType::Int),
-        (06, "Real", PointConfType::Real),
-        (08, "Double", PointConfType::Double),
-        (10, "String", PointConfType::String),
-        (12, "Json", PointConfType::Json),
+        (02, "Bool", PointType::Bool),
+        (04, "Int", PointType::Int),
+        (06, "Real", PointType::Real),
+        (08, "Double", PointType::Double),
+        (10, "String", PointType::String),
+        (12, "Json", PointType::Json),
     ];
     for (step, target, value) in test_data {
         let result = value.to_string();
-        debug!("Step: {}  |  Deserialized json PointConfType: {:?}", step, result);
+        debug!("Step: {}  |  Deserialized json PointType: {:?}", step, result);
         assert!(&result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }
     test_duration.exit();

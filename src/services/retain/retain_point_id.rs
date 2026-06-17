@@ -1,4 +1,4 @@
-use crate::{collections::FxHashMap, services::entity::{PointConf, PointConfType}, sync::Mutex, thread_pool::Scheduler};
+use crate::{collections::FxHashMap, services::entity::{PointConf, PointType}, sync::Mutex, thread_pool::Scheduler};
 use std::{collections::HashMap, env, ffi::OsStr, fmt::{Debug, Display}, fs, hash::BuildHasherDefault, path::{Path, PathBuf}, sync::Arc, time::Instant};
 use api_tools::{api::reply::api_reply::ApiReply, client::{api_query::{ApiQuery, ApiQueryKind, ApiQuerySql}, api_request::ApiRequest}};
 use dashmap::DashMap;
@@ -326,7 +326,7 @@ struct RetainedPointConf {
     pub name: String,
     #[serde(rename = "type")]
     #[serde(alias = "type", alias = "Type")]
-    pub typ: PointConfType,
+    pub typ: PointType,
 }
 // Private entity for enqueue insertion
 struct InsertTask {
@@ -347,7 +347,7 @@ mod tests {
         PointConf {
             id: 0, // Изначально всегда 0
             name: name.to_string(),
-            type_: PointConfType::Int,
+            type_: PointType::Int,
             history: Default::default(),
             alarm: Default::default(),
             address: Default::default(),

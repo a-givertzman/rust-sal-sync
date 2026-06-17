@@ -36,7 +36,7 @@ fn empty() {
     test_duration.exit();
 }
 ///
-/// Testing PointConfType::serialize yaml
+/// Testing PointType::serialize yaml
 #[test]
 fn serialize_yaml() {
     DebugSession::new().filter(LogLevel::Debug).init();
@@ -67,7 +67,7 @@ fn serialize_yaml() {
     test_duration.exit();
 }
 ///
-/// Testing PointConfType::serialize json
+/// Testing PointType::serialize json
 #[test]
 fn serialize_json() {
     DebugSession::new().filter(LogLevel::Debug).init();
@@ -98,7 +98,7 @@ fn serialize_json() {
     test_duration.exit();
 }
 ///
-/// Testing PointConfType::deserialize_yaml
+/// Testing PointType::deserialize_yaml
 #[test]
 fn deserialize_yaml() {
     DebugSession::new().filter(LogLevel::Debug).init();
@@ -122,13 +122,13 @@ fn deserialize_yaml() {
     ];
     for (step, value, target) in test_data {
         let result: PointConfAddress = serde_yaml::from_str(value).unwrap();
-        debug!("Step: {}  |  Deserialized yaml PointConfType: {:?}", step, result);
+        debug!("Step: {}  |  Deserialized yaml PointType: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }
     test_duration.exit();
 }
 ///
-/// Testing PointConfType::deserialize_json
+/// Testing PointType::deserialize_json
 #[test]
 fn deserialize_json() {
     DebugSession::new().filter(LogLevel::Debug).init();
@@ -152,7 +152,7 @@ fn deserialize_json() {
     ];
     for (step, value, target) in test_data {
         let result: PointConfAddress = serde_json::from_str(value).unwrap();
-        debug!("Step: {}  |  Deserialized json PointConfType: {:?}", step, result);
+        debug!("Step: {}  |  Deserialized json PointType: {:?}", step, result);
         assert!(result == target, "step {} \nresult: {:?}\ntarget: {:?}", step, result, target);
     }
     test_duration.exit();

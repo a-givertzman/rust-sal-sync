@@ -5,12 +5,10 @@ use crate::services::{
     // conf::ConfTree,
     // fn_::fn_conf_keywd::FnConfKeywd,
     conf::ConfTree, entity::{
-        Name,
-        point::{
+        Name, PointType, point::{
             point_conf_address::PointConfAddress, 
             point_conf_filters::PointConfFilter, 
-            point_conf_type::PointConfType, 
-        },
+        }
     }, task::functions::FnConfKeywd
 };
 use super::point_conf_history::PointConfHistory;
@@ -37,7 +35,7 @@ pub struct PointConf {
     pub name: String,
     #[serde(rename = "type")]
     #[serde(alias = "type", alias = "Type")]
-    pub type_: PointConfType,
+    pub type_: PointType,
     #[serde(default)]
     #[serde(skip_serializing_if = "is_none")]
     pub history: PointConfHistory,
