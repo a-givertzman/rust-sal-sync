@@ -6,7 +6,7 @@ use concat_string::concat_string;
 use sal_core::{dbg::{self, dbg, Dbg}, error::Error};
 use crate::{
     collections::FxDashMap, services::{
-        entity::{Name, Object, Point, PointTxId}, future::Sink, service::{LinkName, Service, RECV_TIMEOUT}, services::Services, subscription::{SubscriptionCriteria, Subscriptions}, ServiceWaiting
+        entity::{Name, Object, Point, PointTxId}, service::{LinkName, Service, RECV_TIMEOUT}, services::Services, subscription::{SubscriptionCriteria, Subscriptions}, ServiceWaiting
     },
     sync::{channel::{self, Receiver, Sender}, Handles, Owner}, thread_pool::Scheduler,
 };
@@ -37,7 +37,6 @@ pub struct MultiQueue {
     handles: Handles<()>,
     exit: Arc<AtomicBool>,
 }
-//
 //
 impl MultiQueue {
     ///
@@ -118,11 +117,8 @@ impl MultiQueue {
         name: Name,
         recv: Receiver<Point>,
         subscriptions: Arc<Subscriptions>,
-        started: Option<Sink<Result<(), Error>>>,
         exit: Arc<AtomicBool>,
     ) {
-        log::info!("{}.run | Preparing thread - ok", dbg);
-        started.map(|started| started.add(Ok(())));
         loop {
             match recv.recv_timeout(RECV_TIMEOUT) {
                 Ok(point) => {
@@ -163,13 +159,11 @@ impl MultiQueue {
     }
 }
 //
-//
 impl Object for MultiQueue {
     fn name(&self) -> Name {
         self.name.clone()
     }
 }
-//
 //
 impl Debug for MultiQueue {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -180,9 +174,7 @@ impl Debug for MultiQueue {
     }
 }
 //
-//
 impl Service for MultiQueue {
-    //
     //
     fn get_link(&self, name: &str) -> Sender<Point> {
         match self.rx_send.get(name) {
@@ -190,7 +182,6 @@ impl Service for MultiQueue {
             None => panic!("{}.run | link '{:?}' - not found", self.dbg, name),
         }
     }
-    //
     //
     #[dbg]
     fn subscribe(&self, receiver_name: &str, points: &[SubscriptionCriteria]) -> (Sender<Point>, Receiver<Point>) {
@@ -211,7 +202,6 @@ impl Service for MultiQueue {
         }
         (send, recv)
     }
-    //
     //
     #[dbg]
     fn extend_subscription(&self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
@@ -238,10 +228,8 @@ impl Service for MultiQueue {
         }
     }
     //
-    //
     #[dbg]
     fn unsubscribe(&self, receiver_name: &str, points: &[SubscriptionCriteria]) -> Result<(), Error> {
-        let error = Error::new(&self.dbg, "unsubscribe");
         let receiver_id = PointTxId::from_str(receiver_name);
         if points.is_empty() {
             self.subscriptions.remove_all(receiver_id);
@@ -261,37 +249,40 @@ impl Service for MultiQueue {
         }
     }
     //
-    //
     fn run(&self) -> Result<(), Error> {
         log::info!("{}.run | Starting...", self.dbg);
         let dbg = self.dbg.clone();
         let name = self.name.clone();
+        let error = Error::new(&self.dbg, "run");
         let recv = self.rx_recv.take().ok_or(Error::new(&name, "run").err("Can't get required 'self.rx_recv'"))?;
         let subscriptions = self.subscriptions.clone();
         // let receiver_dictionary = self.receiver_dictionary.clone();
         for receiver_name in &self.send_queues {
-            let send = self.services.get_link(receiver_name).unwrap_or_else(|err| {
-                panic!("{}.run | services.get_link error: {:#?}", dbg, err);
-            });
+            let send = self.services.get_link(receiver_name)
+                .map_err(|err| error.pass_with(format!("Can't get link '{}' from services '{}'", receiver_name.link(), receiver_name.service()), err))?;
             let receiver_hash = PointTxId::from_str(&receiver_name.name());
+            log::debug!("{}.run | Broadcast subscription registering ...,  receiver: \n\t{} ({})", self.dbg, receiver_name, receiver_hash);
             self.subscriptions.add_broadcast(receiver_hash, send.clone());
-            log::debug!("{}.run | Broadcast subscription registered, receiver: \n\t{} ({})", self.dbg, receiver_name, receiver_hash);
+            log::debug!("{}.run | Broadcast subscription registering - Ok, receiver: \n\t{} ({})", self.dbg, receiver_name, receiver_hash);
         }
         let service_waiting = ServiceWaiting::new(&name, self.wait_started);
         let service_release = self.wait_started.map(|_| service_waiting.release());
         let exit = self.exit.clone();
-        let error = Error::new(&self.dbg, "run");
         match &self.scheduler {
             Some(scheduler) => {
                 let handle = scheduler.spawn(move|| {
-                    Self::run_(dbg, name, recv, subscriptions, service_release, exit);
+                    log::info!("{}.run | Preparing thread - Ok", dbg);
+                    service_release.map(|started| started.add(Ok(())));
+                    Self::run_(dbg, name, recv, subscriptions, exit);
                     Ok(())
                 }).map_err(|err| error.pass_with("Start failed on Scheduler", err.to_string()))?;
                 self.handles.push(handle);
             }
             None => {
                 let handle= std::thread::Builder::new().name(format!("{}.run", dbg.clone())).spawn(move || {
-                    Self::run_(dbg, name, recv, subscriptions, service_release, exit);
+                    log::info!("{}.run | Preparing thread - Ok", dbg);
+                    service_release.map(|started| started.add(Ok(())));
+                    Self::run_(dbg, name, recv, subscriptions, exit);
                 }).map_err(|err| error.pass_with("Start failed on std::thread", err.to_string()))?;
                 self.handles.push(handle);
             }
@@ -300,20 +291,17 @@ impl Service for MultiQueue {
             Some(_) => service_waiting.wait(),
             None => Ok(()),
         };
-        log::info!("{}.run | Started", self.dbg);
+        log::info!("{}.run | Starting - Ok", self.dbg);
         r
     }
-    //
     //
     fn is_finished(&self) -> bool {
         self.handles.is_finished()
     }
     //
-    //
     fn wait(&self) -> Result<(), Error> {
         self.handles.wait()
     }
-    //
     //
     fn exit(&self) {
         self.exit.store(true, Ordering::Release);
