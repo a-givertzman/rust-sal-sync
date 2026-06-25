@@ -65,11 +65,12 @@ pub mod conf;
 pub mod entity;
 pub mod future;
 mod multi_queue;
-pub mod retain;
+mod point_registry;
 mod subscription;
 pub mod task;
 pub mod types;
 
+pub use point_registry::*;
 pub use multi_queue::*;
 pub use subscription::*;
 pub use service::*;

@@ -2,7 +2,7 @@ use crate::{
     kernel::state::ChangeNotify, services::{
         conf::ServicesConf,
         entity::{Name, Object, Point, PointConf},
-        future::{Future, Sink}, retain::{RetainConf, RetainPointId},
+        future::{Future, Sink}, RegistryConf, PointRegistry,
         service::{LinkName, Service, ServiceCycle},
         subscription::SubscriptionCriteria,
     }, sync::{channel::{Receiver, Sender}, Handles, Owner}, thread_pool::Scheduler
@@ -22,7 +22,7 @@ pub struct Services {
     map: Arc<DashMap<String, Arc<dyn Service>>>,
     order: SkipSet<String>,
     conf: ServicesConf,
-    retain_point_id: Option<Arc<RetainPointId>>,
+    retain_point_id: Option<Arc<PointRegistry>>,
     points_request: Arc<Owner<(String, Sink<Vec<PointConf>>)>>,
     scheduler: Option<Scheduler>,
     handles: Handles<()>,
@@ -43,7 +43,7 @@ impl Services {
             map: Arc::new(DashMap::new()),
             order: SkipSet::new(),
             retain_point_id: match &conf.retain.point {
-                Some(_) => Some(Arc::new(RetainPointId::new(&name_str, conf.retain.clone(), scheduler.clone()))),
+                Some(_) => Some(Arc::new(PointRegistry::new(&name_str, conf.retain.clone(), scheduler.clone()))),
                 None => None,
             },
             conf: conf,
@@ -56,7 +56,7 @@ impl Services {
     }
     ///
     /// Prepairing retained points id's
-    fn prepare_point_ids(dbg: &Dbg, notify: &mut ChangeNotify<NotifyState, String>, retain_point_id: &Option<Arc<RetainPointId>>, services: &Arc<DashMap<String, Arc<dyn Service>>>) {
+    fn prepare_point_ids(dbg: &Dbg, notify: &mut ChangeNotify<NotifyState, String>, retain_point_id: &Option<Arc<PointRegistry>>, services: &Arc<DashMap<String, Arc<dyn Service>>>) {
         match retain_point_id {
             Some(retain_point_id) => {
                 log::info!("{}.prepare_point_ids | Preparing retained Point's id's...", dbg);
@@ -116,7 +116,7 @@ impl Services {
         dbg: Dbg,
         name: Name,
         points_request: Arc<Owner<(String, Sink<Vec<PointConf>>)>>,
-        retain_point_id: Option<Arc<RetainPointId>>,
+        retain_point_id: Option<Arc<PointRegistry>>,
         services: Arc<DashMap<String, Arc<dyn Service + 'static>>>,
         exit: Arc<AtomicBool>,
     ) {
@@ -279,7 +279,7 @@ impl Services {
     }
     ///
     /// Returns Retain configuration
-    pub fn retain(&self) -> RetainConf {
+    pub fn retain(&self) -> RegistryConf {
         self.conf.retain.clone()
     }
     ///

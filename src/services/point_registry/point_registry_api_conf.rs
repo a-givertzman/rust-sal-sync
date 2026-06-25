@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
+
+#[deprecated(note = "Use PointRegistryApiConf instead")]
+pub type RetainPointConfApi = PointRegistryApiConf;
 ///
 /// The databases table conf parameters to store/load Point's Id's 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct RetainPointConfApi {
+pub struct PointRegistryApiConf {
     pub table: String,
     pub address: String,
     #[serde(rename = "auth-token")]
@@ -11,7 +14,7 @@ pub struct RetainPointConfApi {
 }
 //
 //
-impl RetainPointConfApi {
+impl PointRegistryApiConf {
     ///
     /// 
     pub fn new(table: impl Into<String>, address: impl Into<String>, auth_token: impl Into<String>, database: impl Into<String>) -> Self {
@@ -25,12 +28,12 @@ impl RetainPointConfApi {
 }
 //
 //
-impl Default for RetainPointConfApi {
+impl Default for PointRegistryApiConf {
     ///
-    /// **Returns `RetainPointConfApi` with the default walues**
+    /// **Returns `PointRegistryApiConf` with the default walues**
     /// 
     /// ```ignore
-    /// RetainPointConfApi {
+    /// PointRegistryApiConf {
     ///    table: "public.tags",
     ///    address: "0.0.0.0:8080",
     ///    auth_token: "123!@#",

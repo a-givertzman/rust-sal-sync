@@ -1,6 +1,6 @@
 use sal_core::dbg::Dbg;
 use crate::services::{
-    entity::Name, retain::RetainConf,
+    entity::Name, RegistryConf,
 };
 use super::conf_tree::ConfTree;
 ///
@@ -21,7 +21,7 @@ use super::conf_tree::ConfTree;
 #[derive(Debug, Clone, PartialEq)]
 pub struct ServicesConf {
     pub name: Name,
-    pub retain: RetainConf,
+    pub retain: RegistryConf,
 }
 //
 //
@@ -35,14 +35,14 @@ impl ServicesConf {
         log::trace!("{}.new | conf: {:?}", dbg, conf);
         let name = Name::new(parent, me);
         log::debug!("{}.new | name: {:?}", dbg, name);
-        let retain: RetainConf = match conf.parse("retain") {
+        let retain: RegistryConf = match conf.parse("retain") {
             Ok(retain) => {
                 log::debug!("{}.new | retain: {:?}", dbg, retain);
                 retain
             },
             Err(err) => {
                 log::warn!("{}.new | 'retain' parse error: {:?}", dbg, err);
-                let retain = RetainConf::default();
+                let retain = RegistryConf::default();
                 log::debug!("{}.new | Default retain: {:?}", dbg, retain);
                 retain
             },

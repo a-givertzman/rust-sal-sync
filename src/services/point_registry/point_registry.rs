@@ -7,16 +7,21 @@ use concat_string::concat_string;
 use indexmap::IndexMap;
 use sal_core::{dbg::Dbg, error::Error};
 use serde::{Deserialize, Serialize};
-use super::retain_conf::RetainConf;
-type RetainedCahe = FxHashMap<String, FxHashMap<String, RetainedPointConf>>;
+use super::registry_conf::RegistryConf;
+
+#[deprecated(note = "Use PointRegistry instead")]
+pub type RetainPointId = PointRegistry;
 ///
-/// Stores unique Point ID
-/// - In the json file
-/// - In the database, if `api` is specified
-pub struct RetainPointId {
+/// Local registry alias
+type RegistryCahe = FxHashMap<String, FxHashMap<String, RetainedPointConf>>;
+///
+/// Provides access, stores and syncing for the unique Point ID
+/// - In the local registry store (json file)
+/// - In the database registry table, if `api` is specified
+pub struct PointRegistry {
     cache: Arc<DashMap<String, Vec<PointConf>>>,
     path: PathBuf,
-    conf: RetainConf,
+    conf: RegistryConf,
     /// Points pending for insertion
     pending: Arc<Mutex<(bool, Vec<InsertTask>)>>, 
     scheduler: Option<Scheduler>,
@@ -24,15 +29,15 @@ pub struct RetainPointId {
 }
 //
 //
-impl RetainPointId {
+impl PointRegistry {
     ///
-    /// Creates new instance of the RetainPointId
+    /// Creates `PointRegistry` new instance
     ///  - `parent` - the name of the parent object
     ///  - `services` - Services thread safe mutable reference
     ///  - `conf` - path to the file, where point id's will be stored
     ///  - `conf.api` - API parameters to send Point's to the database 
-    pub fn new(parent: impl Into<String>, conf: RetainConf, scheduler: Option<Scheduler>) -> Self {
-        let dbg = Dbg::new(parent, "RetainPointId");
+    pub fn new(parent: impl Into<String>, conf: RegistryConf, scheduler: Option<Scheduler>) -> Self {
+        let dbg = Dbg::new(parent, "PointRegistry");
         let path = match conf.point_path() {
             Ok(path) => path,
             Err(err) => panic!("{}.new | Error: {:#?}", dbg, err),
@@ -86,7 +91,7 @@ impl RetainPointId {
     }
     ///
     /// Worker inserts points into the cache, storing it to the file and DB
-    fn insert_task(dbg: Dbg, conf: RetainConf, path: PathBuf, state_arc: Arc<Mutex<(bool, Vec<InsertTask>)>>, cache: Arc<DashMap<String, Vec<PointConf>>>) {
+    fn insert_task(dbg: Dbg, conf: RegistryConf, path: PathBuf, state_arc: Arc<Mutex<(bool, Vec<InsertTask>)>>, cache: Arc<DashMap<String, Vec<PointConf>>>) {
         loop {
             let t = Instant::now();
             // Атомарно забираем весь буфер, оставляя пустой
@@ -106,7 +111,7 @@ impl RetainPointId {
             };
             log::debug!("{dbg}.insert | Processing {} new insertion requests", tasks.len());
             let mut update_retained = false;
-            let mut retained: RetainedCahe = Self::read(&dbg, path.clone());
+            let mut retained: RegistryCahe = Self::read(&dbg, path.clone());
             // log::trace!("{dbg}.insert | retained: {:#?}", retained);
             let mut next_id = retained.values()
                 .flat_map(|v| v.values())
@@ -233,7 +238,7 @@ impl RetainPointId {
     }
     ///
     /// Stores points into the database
-    fn sql_write(dbg: &Dbg, conf: &RetainConf, retained: &RetainedCahe) {
+    fn sql_write(dbg: &Dbg, conf: &RegistryConf, retained: &RegistryCahe) {
         match conf.point_api() {
             Ok(api) => {
                 let api_keep_alive = true;
@@ -263,7 +268,7 @@ impl RetainPointId {
     }
     ///
     /// Make the sql request to store ponts to the database
-    fn sql_request(dbg: &Dbg, conf: &RetainConf, request: &mut ApiRequest, sql: &str, keep_alive: bool) -> Result<ApiReply, Error> {
+    fn sql_request(dbg: &Dbg, conf: &RegistryConf, request: &mut ApiRequest, sql: &str, keep_alive: bool) -> Result<ApiReply, Error> {
         let error = Error::new(dbg, "sql_request");
         match conf.point_api() {
             Ok(api) => {
@@ -306,9 +311,9 @@ impl RetainPointId {
     }
 }
 //
-impl Debug for RetainPointId {
+impl Debug for PointRegistry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("RetainPointId")
+        f.debug_struct("PointRegistry")
             .field("id", &self.dbg)
             .field("cache", &self.cache)
             .field("path", &self.path)
@@ -338,7 +343,7 @@ struct InsertTask {
 #[cfg(test)]
 mod tests {
     use debugging::session::debug_session::{DebugSession, LogLevel};
-    use crate::services::retain::RetainPointConf;
+    use crate::services::point_registry::PointRegistryConf;
     use super::*;
     use std::{fs, thread, time::Duration};
     ///
@@ -366,9 +371,9 @@ mod tests {
         let retain_dir = "src/tests/unit/services/retain/retain_point_id";
         let file_name = "id1.json";
         // Предполагаем, что можно создать RetainConf программно (подставь нужный способ)
-        let conf = RetainConf::new(Some(retain_dir), Some(RetainPointConf::new(file_name, None))); 
+        let conf = RegistryConf::new(Some(retain_dir), Some(PointRegistryConf::new(file_name, None))); 
         let dbg = Dbg::own("Test");
-        let retainer = RetainPointId::new(&dbg, conf, None);
+        let retainer = PointRegistry::new(&dbg, conf, None);
         // 2. Имитация нагрузки. 
         // Важно: мы шлем данные вперемешку, чтобы проверить правильность сквозной нумерации
         retainer.insert("Device_A", vec![make_point("Temp"), make_point("Press")]); // Ожидаем ID: 0, 1
@@ -409,7 +414,7 @@ mod tests {
         assert_eq!(dev_b[0].id, 2);
         // 5. Валидация файла (Диск)
         let file_content = fs::read_to_string(&Path::new(retain_dir).join(file_name)).expect("Can't read result file");
-        let retained: RetainedCahe = serde_json::from_str(&file_content).expect("Invalid JSON");
+        let retained: RegistryCahe = serde_json::from_str(&file_content).expect("Invalid JSON");
         assert_eq!(retained["Device_A"]["Temp"].id, 0);
         assert_eq!(retained["Device_A"]["Press"].id, 1);
         assert_eq!(retained["Device_B"]["Speed"].id, 2);
@@ -429,10 +434,10 @@ mod tests {
         let file_name = "id0_stress.json";
         let file_path = Path::new(retain_dir).join(file_name);
         // Очищаем от предыдущих запусков
-        let conf = RetainConf::new(Some(retain_dir), Some(RetainPointConf::new(file_name, None))); 
+        let conf = RegistryConf::new(Some(retain_dir), Some(PointRegistryConf::new(file_name, None))); 
         let dbg = Dbg::own("StressTest");
         // Оборачиваем в Arc для шаринга между потоками
-        let retainer = Arc::new(RetainPointId::new(&dbg, conf, None));
+        let retainer = Arc::new(PointRegistry::new(&dbg, conf, None));
         let num_threads = 50;
         let points_per_thread = 100;
         let mut handles = vec![];
@@ -472,7 +477,7 @@ mod tests {
         }
         // 3. Жесткая валидация результатов на диске
         let file_content = fs::read_to_string(&file_path).expect("Can't read result file");
-        let retained: RetainedCahe = serde_json::from_str(&file_content).expect("Invalid JSON");
+        let retained: RegistryCahe = serde_json::from_str(&file_content).expect("Invalid JSON");
         let mut all_ids = vec![];
         // Собираем все присвоенные ID со всех девайсов
         for (_, points) in retained {
