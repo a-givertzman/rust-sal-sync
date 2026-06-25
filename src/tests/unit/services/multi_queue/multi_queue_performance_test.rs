@@ -2,7 +2,7 @@
 
 use std::{sync::{Arc, Once}, thread, time::{Duration, Instant}};
 use testing::{entities::test_value::Value, stuff::{max_test_duration::TestDuration, random_test_values::RandomTestValues}};
-use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
+use debugging::session::debug_session::{DebugSession, LogLevel};
 use crate::{services::{conf::{ConfTree, ServicesConf}, entity::{Name, Object}, MultiQueue, MultiQueueConf, Service, Services}, tests::unit::services::multi_queue::{mock_recv_service::MockRecvService, mock_send_service::MockSendService}, thread_pool::ThreadPool};
 ///
 ///
@@ -46,7 +46,7 @@ fn performance() {
             ConfTree::new_root(serde_yaml::Value::Null),
         ),
         Some(thread_pool.scheduler())
-    ));
+    ).unwrap());
     for i in 0..receiver_count {
         let receiver = Arc::new(MockRecvService::new(
             dbg,
@@ -164,7 +164,7 @@ fn match_performance() {
             ConfTree::new_root(serde_yaml::Value::Null),
         ),
         Some(thread_pool.scheduler()),
-    ));
+    ).unwrap());
     for i in 0..receiver_count {
         let receiver = Arc::new(MockRecvService::new(
             dbg,

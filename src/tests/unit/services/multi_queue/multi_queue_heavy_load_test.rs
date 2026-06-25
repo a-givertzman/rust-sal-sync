@@ -24,7 +24,7 @@ fn setup_multiqueue(dbg: &Dbg) -> Arc<MultiQueue> {
             "#).unwrap()),
         ),
         None,
-    ));
+    ).unwrap());
     let conf = serde_yaml::from_str(r#"
         service MultiQueue:
             in queue in-queue:

@@ -36,20 +36,26 @@ impl PointRegistry {
     ///  - `services` - Services thread safe mutable reference
     ///  - `conf` - path to the file, where point id's will be stored
     ///  - `conf.api` - API parameters to send Point's to the database 
-    pub fn new(parent: impl Into<String>, conf: RegistryConf, scheduler: Option<Scheduler>) -> Self {
+    pub fn new(parent: impl Into<String>, conf: RegistryConf, scheduler: Option<Scheduler>) -> Result<Self, Error> {
         let dbg = Dbg::new(parent, "PointRegistry");
         let path = match conf.point_path() {
             Ok(path) => path,
-            Err(err) => panic!("{}.new | Error: {:#?}", dbg, err),
+            Err(err) => Err(Error::new(&dbg, "new").pass(err))?,
         };
-        Self {
+        Ok(Self {
             cache: Arc::new(DashMap::new()),
             path,
             conf,
             pending: Arc::new(Mutex::new((false, vec![]))),
             scheduler,
             dbg,
-        }
+        })
+    }
+    ///
+    /// Returns `PointRegistry` with the specified registry
+    pub fn with_registry(mut self, points: impl IntoIterator<Item = (String, Vec<PointConf>)>) -> Self {
+        self.cache = Arc::new(points.into_iter().collect());
+        self
     }
     ///
     /// Returns true if already cached
@@ -111,9 +117,9 @@ impl PointRegistry {
             };
             log::debug!("{dbg}.insert | Processing {} new insertion requests", tasks.len());
             let mut update_retained = false;
-            let mut retained: RegistryCahe = Self::read(&dbg, path.clone());
+            let mut registry: RegistryCahe = Self::read(&dbg, path.clone());
             // log::trace!("{dbg}.insert | retained: {:#?}", retained);
-            let mut next_id = retained.values()
+            let mut next_id = registry.values()
                 .flat_map(|v| v.values())
                 .map(|conf| conf.id)
                 .max()
@@ -124,7 +130,7 @@ impl PointRegistry {
                 log::debug!("{dbg}.insert | Caching {task_points_len} Point's from '{}'...", task.owner);
                 for mut point in task.points {
                     log::trace!("{dbg}.insert | point: {}...", point.name);
-                    point.id = retained
+                    point.id = registry
                         .entry(task.owner.clone())
                         .or_insert(FxHashMap::with_hasher(BuildHasherDefault::<FxHasher>::default()))
                         .entry(point.name.clone())
@@ -142,10 +148,10 @@ impl PointRegistry {
                 log::debug!("{dbg}.insert | Caching {task_points_len} Point's from '{}' - Ok", task.owner);
             }
             if update_retained {
-                if let Err(err) = Self::write(&dbg, &path, &retained) {
+                if let Err(err) = Self::write(&dbg, &path, &registry) {
                     log::warn!("{dbg}.insert | Can't store Point's \n\terror: {:?}", err);
                 }
-                Self::sql_write(&dbg, &conf, &retained)
+                Self::sql_write(&dbg, &conf, &registry)
             }
             log::debug!("{dbg}.insert | Elapsed {:?}", t.elapsed());
         }
@@ -368,25 +374,25 @@ mod tests {
     fn test_retain_point_id_accuracy() {
         DebugSession::new().filter(LogLevel::Debug).init();
         // 1. Подготовка чистого окружения
-        let retain_dir = "src/tests/unit/services/retain/retain_point_id";
+        let registry_dir = "assets/testing/registry";
         let file_name = "id1.json";
         // Предполагаем, что можно создать RetainConf программно (подставь нужный способ)
-        let conf = RegistryConf::new(Some(retain_dir), Some(PointRegistryConf::new(file_name, None))); 
+        let conf = RegistryConf::new(Some(registry_dir), Some(PointRegistryConf::new(file_name, None))); 
         let dbg = Dbg::own("Test");
-        let retainer = PointRegistry::new(&dbg, conf, None);
+        let registry = PointRegistry::new(&dbg, conf, None).unwrap();
         // 2. Имитация нагрузки. 
         // Важно: мы шлем данные вперемешку, чтобы проверить правильность сквозной нумерации
-        retainer.insert("Device_A", vec![make_point("Temp"), make_point("Press")]); // Ожидаем ID: 0, 1
-        retainer.insert("Device_B", vec![make_point("Speed")]); // Ожидаем ID: 2
+        registry.insert("Device_A", vec![make_point("Temp"), make_point("Press")]); // Ожидаем ID: 0, 1
+        registry.insert("Device_B", vec![make_point("Speed")]); // Ожидаем ID: 2
         // Повторная вставка существующих + добавление новых
         // Temp уже имеет ID 0, он должен сохраниться. Voltage должен получить ID 3.
-        retainer.insert("Device_A", vec![make_point("Temp"), make_point("Voltage")]); 
+        registry.insert("Device_A", vec![make_point("Temp"), make_point("Voltage")]); 
         // 3. Ожидание обработки очереди
         // Так как воркер работает в фоне, мы должны дождаться опустошения очереди и снятия флага.
         let mut attempts = 0;
         loop {
             {
-                let lock = retainer.pending.lock();
+                let lock = registry.pending.lock();
                 if !lock.0 && lock.1.is_empty() {
                     break;
                 }
@@ -398,7 +404,7 @@ mod tests {
             thread::sleep(Duration::from_millis(50));
         }
         // 4. Валидация горячего кэша (DashMap)
-        let dev_a = retainer.cache.get("Device_A").expect("Device_A not in cache");
+        let dev_a = registry.cache.get("Device_A").expect("Device_A not in cache");
         assert_eq!(dev_a.len(), 4, "Device_A should have 4 points in cache (Temp, Press, Temp, Voltage)");
         // Проверяем точные ID для Device_A
         assert_eq!(dev_a[0].name, "Temp");
@@ -409,11 +415,11 @@ mod tests {
         assert_eq!(dev_a[2].id, 0, "Duplicate point should retain the same ID");
         assert_eq!(dev_a[3].name, "Voltage");
         assert_eq!(dev_a[3].id, 3, "New point should get sequential ID");
-        let dev_b = retainer.cache.get("Device_B").expect("Device_B not in cache");
+        let dev_b = registry.cache.get("Device_B").expect("Device_B not in cache");
         assert_eq!(dev_b[0].name, "Speed");
         assert_eq!(dev_b[0].id, 2);
         // 5. Валидация файла (Диск)
-        let file_content = fs::read_to_string(&Path::new(retain_dir).join(file_name)).expect("Can't read result file");
+        let file_content = fs::read_to_string(&Path::new(registry_dir).join(file_name)).expect("Can't read result file");
         let retained: RegistryCahe = serde_json::from_str(&file_content).expect("Invalid JSON");
         assert_eq!(retained["Device_A"]["Temp"].id, 0);
         assert_eq!(retained["Device_A"]["Press"].id, 1);
@@ -437,13 +443,13 @@ mod tests {
         let conf = RegistryConf::new(Some(retain_dir), Some(PointRegistryConf::new(file_name, None))); 
         let dbg = Dbg::own("StressTest");
         // Оборачиваем в Arc для шаринга между потоками
-        let retainer = Arc::new(PointRegistry::new(&dbg, conf, None));
+        let registry = Arc::new(PointRegistry::new(&dbg, conf, None).unwrap());
         let num_threads = 50;
         let points_per_thread = 100;
         let mut handles = vec![];
         // 1. Атака из множества потоков
         for t_idx in 0..num_threads {
-            let retainer_clone = retainer.clone();
+            let registry_clone = registry.clone();
             handles.push(thread::spawn(move || {
                 // Симулируем 5 разных девайсов-владельцев
                 let owner = format!("Device_{}", t_idx % 5); 
@@ -453,7 +459,7 @@ mod tests {
                     let point_name = format!("Point_{}_{}", t_idx % 10, p_idx); 
                     points.push(make_point(&point_name));
                 }
-                retainer_clone.insert(&owner, points);
+                registry_clone.insert(&owner, points);
             }));
         }
         // Ждем завершения всех генерирующих потоков
@@ -464,7 +470,7 @@ mod tests {
         let mut attempts = 0;
         loop {
             {
-                let lock = retainer.pending.lock();
+                let lock = registry.pending.lock();
                 if !lock.0 && lock.1.is_empty() {
                     break;
                 }

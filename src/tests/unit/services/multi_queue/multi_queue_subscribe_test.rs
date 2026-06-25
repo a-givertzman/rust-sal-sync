@@ -4,7 +4,7 @@ use sal_core::{dbg::Dbg, error::Error};
 use crate::{
     services::{conf::{ConfTree, ServicesConf}, entity::{Name, Object, Point}, MultiQueue, MultiQueueConf, Service, Services}, sync::{channel::RecvTimeoutError, Handles, RwLock}, tests::unit::services::multi_queue::mock_send_service::MockSendService, thread_pool::ThreadPool
 };
-use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
+use debugging::session::debug_session::{DebugSession, LogLevel};
 use testing::{
     entities::test_value::Value,
     stuff::{random_test_values::RandomTestValues, max_test_duration::TestDuration},
@@ -59,7 +59,7 @@ fn subscribe_broadcast() {
             ConfTree::new_root(serde_yaml::from_str(r#""#).unwrap()),
         ),
         Some(thread_pool.scheduler()),
-    ));
+    ).unwrap());
     let mq_service = Arc::new(MultiQueue::new(mq_conf, services.clone(), Some(thread_pool.scheduler())));
     services.insert(mq_service.clone());
     let mut receivers = vec![];

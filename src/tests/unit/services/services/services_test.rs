@@ -3,7 +3,7 @@
 use std::{env, sync::{atomic::{AtomicBool, Ordering}, Arc, Once}, time::{Duration, Instant}};
 use sal_core::dbg::Dbg;
 use testing::stuff::{max_test_duration::TestDuration};
-use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
+use debugging::session::debug_session::{DebugSession, LogLevel};
 use crate::{services::{conf::{ConfTree, ServicesConf}, entity::{Name, Object}, Service, Services}, sync::Handles, thread_pool::{Scheduler, ThreadPool}};
 ///
 ///
@@ -36,7 +36,7 @@ fn services_thread() {
     let services = Arc::new(Services::new(&dbg, ServicesConf::new(
         &dbg, 
         ConfTree::empty(),
-    ), None));
+    ), None).unwrap());
     services.run().unwrap();
     let tasks: Vec<Name> = (0..tasks).map(|i| {
         let task = Arc::new(ServiceMok::new(&dbg, i, None));
@@ -74,7 +74,7 @@ fn services_scheduler() {
     let services = Arc::new(Services::new(&dbg, ServicesConf::new(
         &dbg, 
         ConfTree::empty(),
-    ), Some(thread_pool.scheduler())));
+    ), Some(thread_pool.scheduler())).unwrap());
     services.run().unwrap();
     let tasks: Vec<Name> = (0..tasks).map(|i| {
         let task = Arc::new(ServiceMok::new(&dbg, i, Some(thread_pool.scheduler())));
@@ -112,7 +112,7 @@ fn services_all() {
     let services = Arc::new(Services::new(&dbg, ServicesConf::new(
         &dbg, 
         ConfTree::empty(),
-    ), Some(thread_pool.scheduler())));
+    ), Some(thread_pool.scheduler())).unwrap());
     services.run().unwrap();
     let tasks: Vec<Name> = (0..tasks).map(|i| {
         let task = Arc::new(ServiceMok::new(&dbg, i, Some(thread_pool.scheduler())));

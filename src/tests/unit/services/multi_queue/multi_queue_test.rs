@@ -4,7 +4,7 @@ mod multi_queue {
     use log::debug;
     use std::{sync::{Arc, Once}, time::{Duration, Instant}};
     use testing::{entities::test_value::Value, stuff::{max_test_duration::TestDuration, random_test_values::RandomTestValues}};
-    use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
+    use debugging::session::debug_session::{DebugSession, LogLevel};
     use crate::{
         services::{
             conf::{ConfTree, ServicesConf}, entity::Object, task::functions::AtomicReset, MultiQueue, MultiQueueConf, Service, Services
@@ -82,7 +82,7 @@ mod multi_queue {
                 "#).unwrap()),
             ),
             None,
-        ));
+        ).unwrap());
         let mut recv_services = vec![];
         for _ in 0..count {
             let recv_service = Arc::new(MockRecvService::new(
@@ -204,7 +204,7 @@ mod multi_queue {
                 "#).unwrap()),
             ),
             Some(thread_pool.scheduler()),
-        ));
+        ).unwrap());
         let mut recv_services = vec![];
         for _ in 0..count {
             let recv_service = Arc::new(MockRecvService::new(

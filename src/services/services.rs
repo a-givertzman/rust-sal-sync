@@ -22,28 +22,30 @@ pub struct Services {
     map: Arc<DashMap<String, Arc<dyn Service>>>,
     order: SkipSet<String>,
     conf: ServicesConf,
-    retain_point_id: Option<Arc<PointRegistry>>,
+    point_registry: Option<Arc<PointRegistry>>,
     points_request: Arc<Owner<(String, Sink<Vec<PointConf>>)>>,
     scheduler: Option<Scheduler>,
     handles: Handles<()>,
     exit: Arc<AtomicBool>,
 }
 //
-//
 impl Services {
     ///
-    /// Creates new instance of the Services
-    pub fn new(parent: impl Into<String>, conf: ServicesConf, scheduler: Option<Scheduler>) -> Self {
+    /// Creates `Services` new instance
+    pub fn new(parent: impl Into<String>, conf: ServicesConf, scheduler: Option<Scheduler>) -> Result<Self, Error> {
         let parent = parent.into();
         let name = Name::new(&parent, "Services");
         let name_str = name.join();
         let dbg = Dbg::new(parent, "Services");
-        Self {
+        Ok(Self {
             name,
             map: Arc::new(DashMap::new()),
             order: SkipSet::new(),
-            retain_point_id: match &conf.retain.point {
-                Some(_) => Some(Arc::new(PointRegistry::new(&name_str, conf.retain.clone(), scheduler.clone()))),
+            point_registry: match &conf.retain.point {
+                Some(_) => Some(Arc::new(
+                    PointRegistry::new(&name_str, conf.retain.clone(), scheduler.clone())
+                        .map_err(|err| Error::new(&dbg, "new").pass(err))?
+                )),
                 None => None,
             },
             conf: conf,
@@ -52,20 +54,26 @@ impl Services {
             handles: Handles::new(&dbg),
             dbg,
             exit: Arc::new(AtomicBool::new(false)),
-        }
+        })
     }
     ///
-    /// Prepairing retained points id's
-    fn prepare_point_ids(dbg: &Dbg, notify: &mut ChangeNotify<NotifyState, String>, retain_point_id: &Option<Arc<PointRegistry>>, services: &Arc<DashMap<String, Arc<dyn Service>>>) {
-        match retain_point_id {
-            Some(retain_point_id) => {
-                log::info!("{}.prepare_point_ids | Preparing retained Point's id's...", dbg);
+    /// Creates `Services` new instance with specified `PointRegistry`
+    pub fn with_point_registry(mut self, registry: PointRegistry) -> Self {
+        self.point_registry = Some(Arc::new(registry));
+        self
+    }
+    ///
+    /// Prepairing points registry id's
+    fn prepare_point_registry(dbg: &Dbg, notify: &mut ChangeNotify<NotifyState, String>, point_registry: &Option<Arc<PointRegistry>>, services: &Arc<DashMap<String, Arc<dyn Service>>>) {
+        match point_registry {
+            Some(point_registry) => {
+                log::info!("{}.prepare_point_registry | Preparing Point's id's...", dbg);
                 for (service_id, service) in services.iter().map(|r| (r.key().clone(), r.value().clone())) {
                     let service_points = service.points();
-                    retain_point_id.insert(&service_id, service_points);
+                    point_registry.insert(&service_id, service_points);
                 };
-                log::info!("{}.prepare_point_ids | Point's is chashed: {}", dbg, retain_point_id.is_cached());
-                let points = retain_point_id
+                log::info!("{}.prepare_point_registry | Point's are chashed: {}", dbg, point_registry.is_cached());
+                let points = point_registry
                     .points()
                     .iter()
                     .map(|(owner, p)| {
@@ -73,10 +81,10 @@ impl Services {
                             concat_string!(owner, " | ", p.id.to_string(), " | ", p.type_.to_string(), " | ", p.name, "\n")
                         }).collect()
                     }).collect::<Vec<String>>();
-                log::trace!("{}.prepare_point_ids | Point's: {:#?}", dbg, points);
-                log::info!("{}.prepare_point_ids | Preparing retained Point's id's - ok", dbg);
+                log::trace!("{}.prepare_point_registry | Point's: {:#?}", dbg, points);
+                log::info!("{}.prepare_point_registry | Preparing Point's id's - ok", dbg);
             }
-            None => notify.add(NotifyState::RetainPointNotConfiguredWarn, format!("{}.run | Retain->Point - not configured", dbg)),
+            None => notify.add(NotifyState::RetainPointNotConfiguredWarn, format!("{}.run | retain -> Point - not configured", dbg)),
         }
     }
     ///
@@ -86,14 +94,14 @@ impl Services {
         let dbg = self.dbg.clone();
         let name = self.name.clone();
         let points_request = self.points_request.clone();
-        let retain_point_id = self.retain_point_id.clone();
+        let point_registry = self.point_registry.clone();
         let services = self.map.clone();
         let exit = self.exit.clone();
         match &self.scheduler {
             Some(scheduler) => {
                 log::debug!("{}.run | Starting scheduler::thread...", dbg);
                 let handle = scheduler.spawn(move || {
-                    Self::run_(dbg, name, points_request, retain_point_id, services, exit);
+                    Self::run_(dbg, name, points_request, point_registry, services, exit);
                     Ok(())
                 })?;
                 self.handles.push(handle);
@@ -101,7 +109,7 @@ impl Services {
             None => {
                 log::debug!("{}.run | Starting std::thread...", dbg);
                 let handle = std::thread::Builder::new().name(format!("{}.run", dbg)).spawn(move || {
-                    Self::run_(dbg, name, points_request, retain_point_id, services, exit);
+                    Self::run_(dbg, name, points_request, point_registry, services, exit);
                 }).map_err(|err| Error::new(&self.dbg, "run").err(err.to_string()))?;
                 self.handles.push(handle);
             }
@@ -116,7 +124,7 @@ impl Services {
         dbg: Dbg,
         name: Name,
         points_request: Arc<Owner<(String, Sink<Vec<PointConf>>)>>,
-        retain_point_id: Option<Arc<PointRegistry>>,
+        point_registry: Option<Arc<PointRegistry>>,
         services: Arc<DashMap<String, Arc<dyn Service + 'static>>>,
         exit: Arc<AtomicBool>,
     ) {
@@ -134,7 +142,7 @@ impl Services {
                 (NotifyState::PointsRequestsIsEmpty,  Box::new(|message| log::error!("{}", message))),
             ],
         );
-        Self::prepare_point_ids(&dbg, &mut notify, &retain_point_id, &services);
+        Self::prepare_point_registry(&dbg, &mut notify, &point_registry, &services);
         let mut cycle = ServiceCycle::new(&name.join(), Duration::from_millis(10));
         loop {
             cycle.start();
@@ -142,9 +150,9 @@ impl Services {
                 match points_request.take() {
                     Some((requester_name, sink)) => {
                         log::debug!("{}.run | Points requested from: '{}'", dbg, requester_name);
-                        match &retain_point_id {
-                            Some(retain_point_id) => {
-                                let points = retain_point_id.points()
+                        match &point_registry {
+                            Some(point_registry) => {
+                                let points = point_registry.points()
                                 .into_iter().filter_map(|(owner, points)| {
                                     if *owner != requester_name {
                                         Some(points)

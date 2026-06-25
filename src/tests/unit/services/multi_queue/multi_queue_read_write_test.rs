@@ -4,7 +4,7 @@ mod multi_queue {
     use log::debug;
     use std::{sync::{Arc, Once}, time::{Duration, Instant}};
     use testing::{entities::test_value::Value, stuff::{max_test_duration::TestDuration, random_test_values::RandomTestValues}};
-    use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
+    use debugging::session::debug_session::{DebugSession, LogLevel};
     use crate::{
         services::{
             conf::{ConfTree, ServicesConf}, MultiQueue, MultiQueueConf,
@@ -91,7 +91,7 @@ mod multi_queue {
                 ConfTree::new_root(serde_yaml::from_str(r#""#).unwrap()),
             ),
             Some(thread_pool.scheduler()),
-        ));
+        ).unwrap());
         let mq_service = Arc::new(MultiQueue::new(mq_conf, services.clone(), Some(thread_pool.scheduler())));
         services.insert(mq_service.clone());
         let timer = Instant::now();
