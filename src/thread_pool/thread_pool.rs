@@ -1,4 +1,4 @@
-use std::sync::{Arc, atomic::{AtomicBool, AtomicUsize, Ordering}};
+use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 use crossbeam::queue::SegQueue;
 use sal_core::{dbg::Dbg, error::Error};
 use super::{job::Job, scaling::Scaling, scheduler::Scheduler, worker::Worker, JoinHandle};
@@ -9,14 +9,9 @@ use super::{job::Job, scaling::Scaling, scheduler::Scheduler, worker::Worker, Jo
 /// - Number of threads limited by capacity, by default 64
 pub struct ThreadPool {
     workers: Arc<SegQueue<Worker>>,
+    scheduler: Scheduler,
     sender: kanal::Sender<Job>,
     scaling: Arc<Scaling>,
-    // /// Maximum possible number of [Worker]'s
-    // capacity: Arc<AtomicUsize>,
-    // /// Current number of [Worker]'s
-    // size: Arc<AtomicUsize>,
-    // /// Not busy [Worker]'s
-    // free: Arc<AtomicUsize>,
     /// Shutdoun requested
     exit: Arc<AtomicBool>,
 }
@@ -28,7 +23,7 @@ impl ThreadPool {
     pub fn new(parent: impl Into<String>, capacity: Option<usize>) -> Self {
         let dbg = Dbg::new(parent, "ThreadPool");
         let exit = Arc::new(AtomicBool::new(false));
-        let (sender, receiver) = kanal::bounded(10_000);
+        let (sender, receiver) = kanal::bounded(16_000);
         let workers = Arc::new(SegQueue::new());
         let scaling = Scaling::new(&dbg, capacity, receiver.clone(), workers.clone(), exit.clone());
         let size = (scaling.capacity() / 4).max(1);
@@ -44,6 +39,7 @@ impl ThreadPool {
         }
         ThreadPool {
             workers,
+            scheduler: Scheduler::new(scaling.clone(), sender.clone()),
             sender,
             scaling,
             exit,
@@ -88,19 +84,7 @@ impl ThreadPool {
         F: FnOnce() -> T + Send + 'static,
         T: Send + 'static,
     {
-        if self.exit.load(Ordering::Acquire) {
-            return Err(Error::new("Scheduler", "spawn").pass("ThreadPool is shutting down"));
-        }
-        self.scaling.extend();
-        let (send, recv) = kanal::bounded(1);
-        let task = Box::new(move || {
-            let result = f();
-            let _ = send.send(result);
-        });
-        match self.sender.send(Job::Task(task)) {
-            Ok(_) => Ok(JoinHandle::new("", "", recv)),
-            Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
-        }
+        self.scheduler.spawn(f)
     }
     ///
     /// Spawns a named new task to be scheduled on the [ThreadPool]
@@ -109,19 +93,7 @@ impl ThreadPool {
         F: FnOnce() -> T + Send + 'static,
         T: Send + 'static,
     {
-        if self.exit.load(Ordering::Acquire) {
-            return Err(Error::new("Scheduler", "spawn_named").pass("ThreadPool is shutting down"));
-        }
-        self.scaling.extend();
-        let (send, recv) = kanal::bounded(1);
-        let task = Box::new(move || {
-            let result = f();
-            let _ = send.send(result);
-        });
-        match self.sender.send(Job::Task(task)) {
-            Ok(_) => Ok(JoinHandle::new("", name, recv)),
-            Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
-        }
+        self.scheduler.spawn_named(name, f)
     }
     ///
     /// Returns all workers from self.workers
@@ -150,8 +122,18 @@ impl ThreadPool {
         self.shutdown()
     }
     ///
-    /// Placed a shutdown signal for all workers and gracefully waits for them to finish.
+    /// ### Placed a shutdown signal for all workers and gracefully waits for them to finish.
+    /// 
     /// Existing sheduled tasks will be processed before workers exit.
+    /// 
+    /// > **Важно! Опасность дедлока при Graceful Shutdown:**
+    /// В ThreadPool очередь задач инициализируется как `kanal::bounded(16_000)`.
+    /// Если пользователь закинет 16 000 задач и сразу вызовет `shutdown()` (или объект выйдет из скоупа и сработает Drop),
+    /// очередь будет заполнена под завязку. Добавление новой задачи и постановка ее в очередь это блокирующая операция.
+    /// Главный поток зависнет ожидая, пока воркеры разгребут очередь и освободят место для сигнала `Shutdown`.
+    /// 
+    /// > **Dead Lock**: Если задачи в очереди завязаны на ожидании чего-либо от главного потока (который сейчас заблокирован),
+    /// произойдет глухой дедлок.
     pub fn shutdown(&self) -> Result<(), Error> {
         self.exit.store(true, Ordering::Release);
         let error = Error::new("ThreadPool", "shutdown");

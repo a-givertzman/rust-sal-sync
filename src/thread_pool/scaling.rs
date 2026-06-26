@@ -4,6 +4,14 @@ use sal_core::dbg::Dbg;
 use crate::thread_pool::{job::Job, worker::Worker};
 
 ///
+/// Для автоматического восстановления флага AtomicBool в конце области видимости
+struct ExtendGuard<'a>(&'a AtomicBool);
+impl<'a> Drop for ExtendGuard<'a> {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::Release);
+    }
+}
+///
 /// Manages lifecycle, capacity, and active metrics of ThreadPool workers.
 pub struct Scaling {
     receiver: kanal::Receiver<Job>,
@@ -90,7 +98,11 @@ impl Scaling {
     /// Extending current number of [Worker]'s if required
     pub fn extend(&self) {
         if !self.exit.load(Ordering::Acquire) {
+            if self.size() >= self.capacity() {
+                return;
+            }
             if self.is_extending.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed).is_ok() {
+                let _guard = ExtendGuard(&self.is_extending);
                 if let Some(scaling) = self.me.upgrade() {
                     if let Some(new_workers) = self.new_workers() {
                         log::debug!("{}.extend | Creating {new_workers} new workers...", self.dbg);
@@ -109,14 +121,13 @@ impl Scaling {
                         log::debug!("{}.new | New workers created, size: {} capacity: {}", self.dbg, self.size(), self.capacity());
                     }
                 }
-                self.is_extending.store(false, Ordering::Release);
             }
         }
     }
     ///
     /// Registers worker is busy
     pub fn register_busy(&self) {
-        self.active.fetch_add(1, Ordering::AcqRel);
+        self.active.fetch_add(1, Ordering::Relaxed);
         if log::max_level() >= log::LevelFilter::Debug {
             log::debug!("{}.new | Worker busy {} of {}, capacity: {}", self.dbg, self.busy(), self.size(), self.capacity());
         }
@@ -124,7 +135,7 @@ impl Scaling {
     ///
     /// Registers worker is ready for new job
     pub fn register_idle(&self) {
-        self.active.fetch_sub(1, Ordering::AcqRel);
+        self.active.fetch_sub(1, Ordering::Relaxed);
         if log::max_level() >= log::LevelFilter::Debug {
             log::debug!("{}.new | Worker busy {} of {}, capacity: {}", self.dbg, self.busy(), self.size(), self.capacity());
         }

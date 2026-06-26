@@ -60,6 +60,14 @@ use crossbeam::queue::SegQueue;
 use sal_core::dbg::Dbg;
 use crate::thread_pool::{job::Job, worker::Worker};
 ///
+/// Для автоматического восстановления флага AtomicBool в конце области видимости
+struct ExtendGuard<'a>(&'a AtomicBool);
+impl<'a> Drop for ExtendGuard<'a> {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::Release);
+    }
+}
+///
 /// Manages lifecycle, capacity, and active metrics of ThreadPool workers.
 pub struct Scaling {
     receiver: kanal::Receiver<Job>,
@@ -130,10 +138,14 @@ impl Scaling {
     }
     pub fn extend(&self) {
         if !self.exit.load(Ordering::Acquire) {
+            if self.size() >= self.capacity() {
+                return;
+            }
             if self.is_extending.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed).is_ok() {
+                let _guard = ExtendGuard(&self.is_extending);
                 if let Some(scaling) = self.me.upgrade() {
                     if let Some(new_workers) = self.new_workers() {
-                        log::debug!("{}.extend | Trying to create {new_workers} new workers...", self.dbg);
+                        log::debug!("{}.extend | Creating {new_workers} new workers...", self.dbg);
                         let max_capacity = self.capacity();
                         for _ in 0..new_workers {
                             let size = self.size();
@@ -149,61 +161,45 @@ impl Scaling {
                         log::debug!("{}.new | New workers created, size: {} capacity: {}", self.dbg, self.size(), self.capacity());
                     }
                 }
-                self.is_extending.store(false, Ordering::Release);
             }
         }
     }
     pub fn register_busy(&self) {
-        self.active.fetch_add(1, Ordering::AcqRel);
+        self.active.fetch_add(1, Ordering::Relaxed);
         if log::max_level() >= log::LevelFilter::Debug {
             log::debug!("{}.new | Worker busy {} of {}, capacity: {}", self.dbg, self.busy(), self.size(), self.capacity());
         }
     }
     pub fn register_idle(&self) {
-        let _ = self.active.fetch_update(Ordering::AcqRel, Ordering::Acquire, |x| {
-            if x > 0 { Some(x - 1) } else { None }
-        });
+        self.active.fetch_sub(1, Ordering::Relaxed);
         if log::max_level() >= log::LevelFilter::Debug {
             log::debug!("{}.new | Worker busy {} of {}, capacity: {}", self.dbg, self.busy(), self.size(), self.capacity());
         }
     }
-    pub fn unregister_worker(&self) {
-        let mut tmp = Vec::with_capacity(self.workers.len());
-        while !self.workers.is_empty() {
-            if let Some(w) = self.workers.pop() {
-                if !w.is_closed() {
-                    tmp.push(w);
-                }
-            }
-        }
-        for w in tmp {
-            self.workers.push(w);
-        }
-        if log::max_level() >= log::LevelFilter::Debug {
-            log::debug!("{}.new | Worker closed, size: {}, capacity: {}", self.dbg, self.size(), self.capacity());
-        }
+    pub fn is_exiting(&self) -> bool {
+        self.exit.load(Ordering::Acquire)
     }
 }}
 mod join_handle {
 use sal_core::error::Error;
 pub struct JoinHandle<T> {
-    id: String,
-    name: String,
+    id: Option<String>,
+    name: Option<String>,
     recv: kanal::Receiver<T>,
 }
 impl<T> JoinHandle<T> {
-    pub fn new(id: impl Into<String>, name: impl Into<String>, recv: kanal::Receiver<T>) -> Self {
+    pub fn new(id: Option<impl Into<String>>, name: Option<impl Into<String>>, recv: kanal::Receiver<T>) -> Self {
         Self {
-            id: id.into(),
-            name: name.into(),
+            id: id.map(|v| v.into()),
+            name: name.map(|v| v.into()),
             recv,
         }
     }
     pub fn id(&self) -> String {
-        self.id.clone()
+        self.id.as_ref().map_or("".to_string(), |v| v.clone())
     }
     pub fn name(&self) -> String {
-        self.name.clone()
+        self.name.as_ref().map_or("".to_string(), |v| v.clone())
     }
     pub fn join(self) -> Result<T, Error> {
         match self.recv.recv() {
@@ -243,6 +239,9 @@ impl Scheduler {
         F: FnOnce() -> T + Send + 'static,
         T: Send + 'static,
     {
+        if self.scaling.is_exiting() {
+            return Err(Error::new("Scheduler", "spawn").pass("ThreadPool is shutting down"));
+        }
         self.scaling.extend();
         let (send, recv) = kanal::bounded(1);
         let task = Box::new(move || {
@@ -250,7 +249,7 @@ impl Scheduler {
             let _ = send.send(result);
         });
         match self.sender.send(Job::Task(task)) {
-            Ok(_) => Ok(JoinHandle::new("", "", recv)),
+            Ok(_) => Ok(JoinHandle::new(None::<String>, None::<String>, recv)),
             Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
         }
     }
@@ -259,6 +258,9 @@ impl Scheduler {
         F: FnOnce() -> T + Send + 'static,
         T: Send + 'static,
     {
+        if self.scaling.is_exiting() {
+            return Err(Error::new("Scheduler", "spawn_named").pass("ThreadPool is shutting down"));
+        }
         self.scaling.extend();
         let (send, recv) = kanal::bounded(1);
         let task = Box::new(move || {
@@ -266,18 +268,19 @@ impl Scheduler {
             let _ = send.send(result);
         });
         match self.sender.send(Job::Task(task)) {
-            Ok(_) => Ok(JoinHandle::new("", name, recv)),
+            Ok(_) => Ok(JoinHandle::new(None::<String>, Some(name), recv)),
             Err(err) => Err(Error::new("Scheduler", "spawn_named").pass(err.to_string())),
         }
     }
 }}
 mod thread_pool {
-use std::sync::{Arc, atomic::{AtomicBool, AtomicUsize, Ordering}};
+use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 use crossbeam::queue::SegQueue;
 use sal_core::{dbg::Dbg, error::Error};
 use super::{job::Job, scaling::Scaling, scheduler::Scheduler, worker::Worker, JoinHandle};
 pub struct ThreadPool {
     workers: Arc<SegQueue<Worker>>,
+    scheduler: Scheduler,
     sender: kanal::Sender<Job>,
     scaling: Arc<Scaling>,
     exit: Arc<AtomicBool>,
@@ -286,10 +289,12 @@ impl ThreadPool {
     pub fn new(parent: impl Into<String>, capacity: Option<usize>) -> Self {
         let dbg = Dbg::new(parent, "ThreadPool");
         let exit = Arc::new(AtomicBool::new(false));
-        let (sender, receiver) = kanal::unbounded();
+        let (sender, receiver) = kanal::bounded(16_000);
         let workers = Arc::new(SegQueue::new());
         let scaling = Scaling::new(&dbg, capacity, receiver.clone(), workers.clone(), exit.clone());
-        for _ in 0..(scaling.capacity() / 4) {
+        let size = (scaling.capacity() / 4).max(1);
+        log::debug!("{dbg}.new | Creating {size} new workers...");
+        for _ in 0..size {
             let id = scaling.size() + 1;
             workers.push(Worker::new(
                 &dbg,
@@ -300,6 +305,7 @@ impl ThreadPool {
         }
         ThreadPool {
             workers,
+            scheduler: Scheduler::new(scaling.clone(), sender.clone()),
             sender,
             scaling,
             exit,
@@ -322,32 +328,14 @@ impl ThreadPool {
         F: FnOnce() -> T + Send + 'static,
         T: Send + 'static,
     {
-        self.scaling.extend();
-        let (send, recv) = kanal::bounded(1);
-        let task = Box::new(move || {
-            let result = f();
-            let _ = send.send(result);
-        });
-        match self.sender.send(Job::Task(task)) {
-            Ok(_) => Ok(JoinHandle::new("", "", recv)),
-            Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
-        }
+        self.scheduler.spawn(f)
     }
     pub fn spawn_named<F, T>(&self, name: impl Into<String> ,f: F) -> Result<JoinHandle<T>, Error>
     where
         F: FnOnce() -> T + Send + 'static,
         T: Send + 'static,
     {
-        self.scaling.extend();
-        let (send, recv) = kanal::bounded(1);
-        let task = Box::new(move || {
-            let result = f();
-            let _ = send.send(result);
-        });
-        match self.sender.send(Job::Task(task)) {
-            Ok(_) => Ok(JoinHandle::new("", name, recv)),
-            Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
-        }
+        self.scheduler.spawn_named(name, f)
     }
     fn send_exit_workers(&self) -> Vec<Worker> {
         if self.workers.is_empty() {

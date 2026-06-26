@@ -64,7 +64,7 @@ impl Scheduler {
             let _ = send.send(result);
         });
         match self.sender.send(Job::Task(task)) {
-            Ok(_) => Ok(JoinHandle::new("", "", recv)),
+            Ok(_) => Ok(JoinHandle::new(None::<String>, None::<String>, recv)),
             Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
         }
     }
@@ -96,7 +96,7 @@ impl Scheduler {
             let _ = send.send(result);
         });
         match self.sender.send(Job::Task(task)) {
-            Ok(_) => Ok(JoinHandle::new("", name, recv)),
+            Ok(_) => Ok(JoinHandle::new(None::<String>, Some(name), recv)),
             Err(err) => Err(Error::new("Scheduler", "spawn_named").pass(err.to_string())),
         }
     }
