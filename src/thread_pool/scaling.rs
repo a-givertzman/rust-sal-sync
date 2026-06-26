@@ -71,7 +71,7 @@ impl Scaling {
     ///
     /// Returns maximum possible number of workers
     pub fn free(&self) -> usize {
-        self.size().saturating_sub(self.busy())
+        self.size().saturating_sub(self.busy() + self.receiver.len())
     }
     ///
     /// Returns nimber of workers busy for the moment

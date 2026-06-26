@@ -89,14 +89,16 @@ impl Scheduler {
         if self.scaling.is_exiting() {
             return Err(Error::new("Scheduler", "spawn_named").pass("ThreadPool is shutting down"));
         }
-        self.scaling.extend();
         let (send, recv) = oneshot::channel();
         let task = Box::new(move || {
             let result = f();
             let _ = send.send(result);
         });
         match self.sender.send(Job::Task(task)) {
-            Ok(_) => Ok(JoinHandle::new(None::<String>, name, recv)),
+            Ok(_) => {
+                self.scaling.extend();
+                Ok(JoinHandle::new(None::<String>, name, recv))
+            }
             Err(err) => Err(Error::new("Scheduler", "spawn_named").pass(err.to_string())),
         }
     }

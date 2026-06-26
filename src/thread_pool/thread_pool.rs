@@ -134,6 +134,10 @@ impl ThreadPool {
     pub fn shutdown(&self) -> Result<(), Error> {
         let error = Error::new("ThreadPool", "shutdown");
         self.exit.store(true, Ordering::Release);
+        // Даем воркерам время забрать все задачи из канала
+        while !self.sender.is_empty() {
+            std::thread::yield_now();
+        }
         if let Err(err) = self.sender.close() {
             log::debug!("ThreadPool.shutdown | Channel close error: {:?}", err);
         }
