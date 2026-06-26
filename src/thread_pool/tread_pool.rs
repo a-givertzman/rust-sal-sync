@@ -41,7 +41,7 @@ impl ThreadPool {
         let free = Arc::new(AtomicUsize::new(0));
         let (sender, receiver) = kanal::unbounded();
         let workers = Arc::new(SegQueue::new());
-        for _ in 0..if capacity.load(Ordering::SeqCst) > 1 { 2 } else { 1 } {
+        for _ in 0..if capacity.load(Ordering::Acquire) > 1 { 2 } else { 1 } {
             workers.push(Worker::new(
                 &dbg,
                 receiver.clone(),
@@ -62,17 +62,17 @@ impl ThreadPool {
     ///
     /// Maximum possible number of [Worker]'s
     pub fn capacity(&self) -> usize {
-        self.capacity.load(Ordering::SeqCst)
+        self.capacity.load(Ordering::Acquire)
     }
     ///
     /// Current number of [Worker]'s
     pub fn size(&self) -> usize {
-        self.size.load(Ordering::SeqCst)
+        self.size.load(Ordering::Acquire)
     }
     ///
     /// Current not a busy [Worker]'s
     pub fn free(&self) -> usize {
-        self.free.load(Ordering::SeqCst)
+        self.free.load(Ordering::Acquire)
     }
     ///
     /// Returns [Scheduler] linked to the current [TreadPool]
@@ -83,8 +83,7 @@ impl ThreadPool {
     /// let scheduler = thread_pool.scheduler();
     /// let result = scheduler.spawn(move || {
     ///     std::thread::sleep(Duration::from_millis(load));
-    ///     result.fetch_add(1, Ordering::SeqCst);
-    ///     Ok(())
+    ///     result.fetch_add(1, Ordering::AcqRel);
     /// }).unwrap();
     /// assert!(result.join().unwrap() == ());
     /// thread_pool.join().unwrap();

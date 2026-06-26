@@ -26,8 +26,7 @@ impl Scheduler {
     /// let scheduler = thread_pool.scheduler();
     /// let result = scheduler.spawn(move || {
     ///     std::thread::sleep(Duration::from_millis(load));
-    ///     result.fetch_add(1, Ordering::SeqCst);
-    ///     Ok(())
+    ///     result.fetch_add(1, Ordering::AcqRel);
     /// }).unwrap();
     /// assert!(result.join().unwrap() == ());
     /// thread_pool.join().unwrap();    
@@ -55,8 +54,7 @@ impl Scheduler {
     /// let scheduler = thread_pool.scheduler();
     /// let result = scheduler.spawn("Task", move || {
     ///     std::thread::sleep(Duration::from_millis(load));
-    ///     result.fetch_add(1, Ordering::SeqCst);
-    ///     Ok(())
+    ///     result.fetch_add(1, Ordering::AcqRel);
     /// }).unwrap();
     /// assert!(result.join().unwrap() == ());
     /// thread_pool.join().unwrap();    

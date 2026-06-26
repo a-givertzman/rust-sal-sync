@@ -27,25 +27,27 @@ impl Worker {
         workers: Arc<SegQueue<Worker>>,
     ) -> Worker {
         let parent = parent.into();
-        let id = size.load(Ordering::SeqCst);
+        let id = size.load(Ordering::Acquire);
         let dbg = Dbg::new(&parent, format!("Worker({id})"));
-        size.fetch_add(1, Ordering::SeqCst);
-        log::debug!("{dbg}.new | Created, capacity: {}, size: {}, free: {}", capacity.load(Ordering::SeqCst), size.load(Ordering::SeqCst), free.load(Ordering::SeqCst));
+        size.fetch_add(1, Ordering::AcqRel);
+        log::debug!("{dbg}.new | Created, capacity: {}, size: {}, free: {}", capacity.load(Ordering::Acquire), size.load(Ordering::Acquire), free.load(Ordering::Acquire));
         let thread = std::thread::spawn(move || loop {
-            free.fetch_add(1, Ordering::SeqCst);
+            free.fetch_add(1, Ordering::Release);
             match receiver.recv() {
                 Ok(Job::Task(job)) => {
-                    if (free.load(Ordering::SeqCst) < 2) && (size.load(Ordering::SeqCst) < capacity.load(Ordering::SeqCst)) {
+                    if (free.load(Ordering::Acquire) < 2) && (size.load(Ordering::Acquire) < capacity.load(Ordering::Acquire)) {
                         Self::extend(&parent, &dbg, receiver.clone(), capacity.clone(), size.clone(), free.clone(), workers.clone());
                     }
                     log::debug!("{dbg}.new | Executing job...");
-                    free.fetch_sub(1, Ordering::SeqCst);
-                    job();
-                    let busy = size.load(Ordering::SeqCst) - free.load(Ordering::SeqCst) - 1;
+                    free.fetch_sub(1, Ordering::AcqRel);
+                    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        job();
+                    }));
+                    let busy = size.load(Ordering::Acquire) - free.load(Ordering::Acquire) - 1;
                     log::debug!("{dbg}.new | Done job {id}, busy {busy}");
                 }
                 Ok(Job::Shutdown) => {
-                    let busy = size.load(Ordering::SeqCst) - free.load(Ordering::SeqCst);
+                    let busy = size.load(Ordering::Acquire) - free.load(Ordering::Acquire);
                     log::info!("{dbg}.new | Exit, busy {busy}");
                     break;
                 }
