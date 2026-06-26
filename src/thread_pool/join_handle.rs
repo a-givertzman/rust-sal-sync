@@ -6,14 +6,14 @@ use sal_core::error::Error;
 pub struct JoinHandle<T> {
     id: Option<String>,
     name: Option<String>,
-    recv: kanal::Receiver<T>,
+    recv: oneshot::Receiver<T>,
 }
 //
 //
 impl<T> JoinHandle<T> {
     ///
     /// Returns [JoinHandle] new instance
-    pub fn new(id: Option<impl Into<String>>, name: Option<impl Into<String>>, recv: kanal::Receiver<T>) -> Self {
+    pub fn new(id: Option<impl Into<String>>, name: Option<impl Into<String>>, recv: oneshot::Receiver<T>) -> Self {
         Self {
             id: id.map(|v| v.into()),
             name: name.map(|v| v.into()),

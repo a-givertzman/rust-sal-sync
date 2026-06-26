@@ -6,7 +6,7 @@ use super::job::Job;
 ///
 /// Picks up code to be executed in the [Worker]’s thread on the `ThreadPool`
 pub struct Worker {
-    pub id: usize,
+    id: usize,
     handle: std::thread::JoinHandle<()>,
 }
 //
@@ -38,17 +38,18 @@ impl Worker {
                     log::debug!("{dbg}.new | Job done");
                     scaling.register_idle();
                 }
-                Ok(Job::Shutdown) => {
-                    log::info!("{dbg}.new | Exit");
-                    break;
-                }
-                Err(err) => {
-                    log::error!("{dbg}.new | Recv error, channel closed, details: \n\t{:?}", err);
+                Err(_) => {
+                    log::info!("{dbg}.new | Job queue closed. Shutting down");
                     break;
                 }
             };
         });
-        Worker { id, handle }
+        Worker { id, handle}
+    }
+    ///
+    /// Returns identifier of the Worker
+    pub fn id(&self) -> usize {
+        self.id
     }
     ///
     /// Returns true if `Worker` is exited

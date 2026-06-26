@@ -27,9 +27,9 @@ mod thread_pool {
         DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
-        let dbg = Dbg::own("single_capacity");
+        let dbg = Dbg::own("ThreadPool-test-single_capacity");
         log::debug!("\n{}", dbg);
-        let test_duration = TestDuration::new(&dbg, Duration::from_secs(15));
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(60));
         test_duration.run().unwrap();
         let threads = 10;
         let thread_pool = ThreadPool::new(&dbg, Some(1));
@@ -62,9 +62,9 @@ mod thread_pool {
         DebugSession::new().filter(LogLevel::Debug).init();
         init_once();
         init_each();
-        let dbg = Dbg::own("spawn");
+        let dbg = Dbg::own("ThreadPool-test-spawn");
         log::debug!("\n{}", dbg);
-        let test_duration = TestDuration::new(&dbg, Duration::from_secs(15));
+        let test_duration = TestDuration::new(&dbg, Duration::from_secs(60));
         test_duration.run().unwrap();
         let threads = 100;
         let thread_pool = ThreadPool::new(&dbg, Some(threads + threads / 3));

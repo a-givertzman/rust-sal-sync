@@ -4,7 +4,7 @@ use sal_core::{dbg::Dbg, error::Error};
 use crate::thread_pool::scaling::Scaling;
 use super::job::Job;
 pub struct Worker {
-    pub id: usize,
+    id: usize,
     handle: std::thread::JoinHandle<()>,
 }
 impl Worker {
@@ -27,17 +27,16 @@ impl Worker {
                     log::debug!("{dbg}.new | Job done");
                     scaling.register_idle();
                 }
-                Ok(Job::Shutdown) => {
-                    log::info!("{dbg}.new | Exit");
-                    break;
-                }
-                Err(err) => {
-                    log::error!("{dbg}.new | Recv error, channel closed, details: \n\t{:?}", err);
+                Err(_) => {
+                    log::info!("{dbg}.new | Job queue closed. Shutting down");
                     break;
                 }
             };
         });
-        Worker { id, handle }
+        Worker { id, handle}
+    }
+    pub fn id(&self) -> usize {
+        self.id
     }
     pub fn is_closed(&self) -> bool {
         self.handle.is_finished()
@@ -51,7 +50,7 @@ impl Worker {
 pub(super) mod job {
 pub enum Job {
     Task(Box<dyn FnOnce() + Send + 'static>),
-    Shutdown,
+    // Shutdown,
 }
 }
 mod scaling {
@@ -129,7 +128,7 @@ impl Scaling {
         if current_size >= max_capacity {
             return None;
         }
-        if self.free() < 1 {
+        if self.free() < 3 {
             let target_size = (current_size * 2).clamp(1, max_capacity);
             let new_size = target_size.saturating_sub(current_size);
             return (new_size > 0).then_some(new_size);
@@ -185,10 +184,10 @@ use sal_core::error::Error;
 pub struct JoinHandle<T> {
     id: Option<String>,
     name: Option<String>,
-    recv: kanal::Receiver<T>,
+    recv: oneshot::Receiver<T>,
 }
 impl<T> JoinHandle<T> {
-    pub fn new(id: Option<impl Into<String>>, name: Option<impl Into<String>>, recv: kanal::Receiver<T>) -> Self {
+    pub fn new(id: Option<impl Into<String>>, name: Option<impl Into<String>>, recv: oneshot::Receiver<T>) -> Self {
         Self {
             id: id.map(|v| v.into()),
             name: name.map(|v| v.into()),
@@ -239,21 +238,17 @@ impl Scheduler {
         F: FnOnce() -> T + Send + 'static,
         T: Send + 'static,
     {
-        if self.scaling.is_exiting() {
-            return Err(Error::new("Scheduler", "spawn").pass("ThreadPool is shutting down"));
-        }
-        self.scaling.extend();
-        let (send, recv) = kanal::bounded(1);
-        let task = Box::new(move || {
-            let result = f();
-            let _ = send.send(result);
-        });
-        match self.sender.send(Job::Task(task)) {
-            Ok(_) => Ok(JoinHandle::new(None::<String>, None::<String>, recv)),
-            Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
-        }
+        self.spawn_internal(None::<String>, f)
     }
     pub fn spawn_named<F, T>(&self, name: impl Into<String>, f: F) -> Result<JoinHandle<T>, Error>
+    where
+        F: FnOnce() -> T + Send + 'static,
+        T: Send + 'static,
+    {
+        self.spawn_internal(Some(name), f)
+    }
+    #[inline]
+    fn spawn_internal<F, T>(&self, name: Option<impl Into<String>>, f: F) -> Result<JoinHandle<T>, Error>
     where
         F: FnOnce() -> T + Send + 'static,
         T: Send + 'static,
@@ -262,13 +257,13 @@ impl Scheduler {
             return Err(Error::new("Scheduler", "spawn_named").pass("ThreadPool is shutting down"));
         }
         self.scaling.extend();
-        let (send, recv) = kanal::bounded(1);
+        let (send, recv) = oneshot::channel();
         let task = Box::new(move || {
             let result = f();
             let _ = send.send(result);
         });
         match self.sender.send(Job::Task(task)) {
-            Ok(_) => Ok(JoinHandle::new(None::<String>, Some(name), recv)),
+            Ok(_) => Ok(JoinHandle::new(None::<String>, name, recv)),
             Err(err) => Err(Error::new("Scheduler", "spawn_named").pass(err.to_string())),
         }
     }
@@ -345,9 +340,6 @@ impl ThreadPool {
         while !self.workers.is_empty() {
             match self.workers.pop() {
                 Some(worker) => {
-                    if let Err(err) = self.sender.send(Job::Shutdown) {
-                        log::warn!("ThreadPool.shutdown | Can't send 'Shutdown' signal to worker {}, error: {:?}", worker.id, err);
-                    }
                     workers.push(worker);
                 }
                 None => break,
@@ -359,14 +351,17 @@ impl ThreadPool {
         self.shutdown()
     }
     pub fn shutdown(&self) -> Result<(), Error> {
-        self.exit.store(true, Ordering::Release);
         let error = Error::new("ThreadPool", "shutdown");
+        self.exit.store(true, Ordering::Release);
+        if let Err(err) = self.sender.close() {
+            log::debug!("ThreadPool.shutdown | Channel close error: {:?}", err);
+        }
         let mut errors = vec![];
         let mut remaining_workers = self.send_exit_workers();
         log::trace!("ThreadPool.shutdown | Shutdown signal sent to {} workers", remaining_workers.len());
         while !remaining_workers.is_empty() {
             if let Some(worker) = remaining_workers.pop() {
-                log::debug!("ThreadPool.shutdown | Wait for worker {} of {}...", worker.id, remaining_workers.len() + 1);
+                log::debug!("ThreadPool.shutdown | Wait for worker {} of {}...", worker.id(), remaining_workers.len() + 1);
                 if let Err(err) = worker.join() {
                     let err = error.pass(format!("{:?}", err));
                     log::warn!("{}", err);

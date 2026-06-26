@@ -105,9 +105,6 @@ impl ThreadPool {
         while !self.workers.is_empty() {
             match self.workers.pop() {
                 Some(worker) => {
-                    if let Err(err) = self.sender.send(Job::Shutdown) {
-                        log::warn!("ThreadPool.shutdown | Can't send 'Shutdown' signal to worker {}, error: {:?}", worker.id, err);
-                    }
                     workers.push(worker);
                 }
                 None => break,
@@ -135,14 +132,17 @@ impl ThreadPool {
     /// > **Dead Lock**: Если задачи в очереди завязаны на ожидании чего-либо от главного потока (который сейчас заблокирован),
     /// произойдет глухой дедлок.
     pub fn shutdown(&self) -> Result<(), Error> {
-        self.exit.store(true, Ordering::Release);
         let error = Error::new("ThreadPool", "shutdown");
+        self.exit.store(true, Ordering::Release);
+        if let Err(err) = self.sender.close() {
+            log::debug!("ThreadPool.shutdown | Channel close error: {:?}", err);
+        }
         let mut errors = vec![];
         let mut remaining_workers = self.send_exit_workers();
         log::trace!("ThreadPool.shutdown | Shutdown signal sent to {} workers", remaining_workers.len());
         while !remaining_workers.is_empty() {
             if let Some(worker) = remaining_workers.pop() {
-                log::debug!("ThreadPool.shutdown | Wait for worker {} of {}...", worker.id, remaining_workers.len() + 1);
+                log::debug!("ThreadPool.shutdown | Wait for worker {} of {}...", worker.id(), remaining_workers.len() + 1);
                 if let Err(err) = worker.join() {
                     let err = error.pass(format!("{:?}", err));
                     log::warn!("{}", err);

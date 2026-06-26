@@ -86,8 +86,8 @@ impl Scaling {
         if current_size >= max_capacity {
             return None;
         }
-        // Scale ONLY if there are no free workers left
-        if self.free() < 1 {
+        // Scale ONLY condition
+        if self.free() < 3 {
             let target_size = (current_size * 2).clamp(1, max_capacity);
             let new_size = target_size.saturating_sub(current_size);
             return (new_size > 0).then_some(new_size);

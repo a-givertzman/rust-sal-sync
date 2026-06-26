@@ -45,3 +45,4 @@ coco = "^0.3"
 dashmap = "^6.1"
 parking_lot = "^0.12"
 arc-swap = "^1.8"
+oneshot = { version = "^0.2", features = ["std"] }
