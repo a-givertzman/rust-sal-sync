@@ -71,18 +71,27 @@ impl Worker {
         workers: Arc<SegQueue<Worker>>
     ) {
         let parent = parent.into();
-        let new_workers = size.load(Ordering::SeqCst) * 2;
-        log::debug!("{dbg}.extend | Trying to creating {new_workers} new workers...");
-        for _ in 0..new_workers {
-            if size.load(Ordering::SeqCst) < capacity.load(Ordering::SeqCst) {
-                workers.push(Worker::new(
-                    &parent,
-                    receiver.clone(),
-                    capacity.clone(),
-                    size.clone(),
-                    free.clone(),
-                    workers.clone(),
-                ));
+        let current_size = size.load(Ordering::Relaxed);
+        let max_capacity = capacity.load(Ordering::Relaxed);
+        if current_size >= max_capacity {
+            return;
+        }
+        // Вычисляем, сколько реально нужно создать, не превышая capacity
+        let target_size = (current_size * 2).min(max_capacity);
+        let new_workers = target_size.saturating_sub(current_size);
+        if new_workers > 0 {
+            log::debug!("{dbg}.extend | Trying to creating {new_workers} new workers...");
+            for _ in 0..new_workers {
+                if size.load(Ordering::Acquire) < max_capacity {
+                    workers.push(Worker::new(
+                        &parent,
+                        receiver.clone(),
+                        capacity.clone(),
+                        size.clone(),
+                        free.clone(),
+                        workers.clone(),
+                    ));
+                }
             }
         }
     }

@@ -1,4 +1,4 @@
-use std::sync::{atomic::{AtomicUsize, Ordering}, Arc, Mutex};
+use std::sync::{Arc, Mutex, atomic::{AtomicBool, AtomicUsize, Ordering}};
 use crossbeam::queue::SegQueue;
 use sal_core::{dbg::Dbg, error::Error};
 use super::{job::Job, scheduler::Scheduler, worker::Worker, JoinHandle};
@@ -16,6 +16,8 @@ pub struct ThreadPool {
     size: Arc<AtomicUsize>,
     /// Not busy [Worker]'s
     free: Arc<AtomicUsize>,
+    /// Shutdoun requested
+    exit: Arc<AtomicBool>,
 }
 //
 impl ThreadPool {
@@ -57,6 +59,7 @@ impl ThreadPool {
             capacity,
             size,
             free,
+            exit: Arc::new(AtomicBool::new(false)),
         }
     }
     ///
@@ -128,7 +131,10 @@ impl ThreadPool {
     ///
     /// Returns all workers from self.workers
     fn send_exit_workers(&self) -> Vec<Worker> {
-        let mut workers = vec![];
+        if self.workers.is_empty() {
+            return vec![];
+        }
+        let mut workers = Vec::with_capacity(self.workers.len());
         while !self.workers.is_empty() {
             match self.workers.pop() {
                 Some(worker) => {
@@ -149,28 +155,26 @@ impl ThreadPool {
         self.shutdown()
     }
     ///
-    /// Sends `Shutdown` signal to all scheduled tasks and join them.
-    /// This means all tasks will finish current jobs and then exit.
+    /// Placed a shutdown signal for all workers and gracefully waits for them to finish.
+    /// Existing sheduled tasks will be processed before workers exit.
     pub fn shutdown(&self) -> Result<(), Error> {
+        self.exit.store(true, Ordering::Release);
         let error = Error::new("ThreadPool", "shutdown");
         let mut errors = vec![];
         let mut remaining_workers = self.send_exit_workers();
         log::trace!("ThreadPool.shutdown | Shutdown signal sent to {} workers", remaining_workers.len());
-        while !self.workers.is_empty() {
-            match remaining_workers.pop() {
-                Some(worker) => {
-                    log::debug!("ThreadPool.shutdown | Wait for worker {} of {}...", worker.id, remaining_workers.len());
-                    if let Err(err) = worker.join() {
-                        let err = error.pass(format!("{:?}", err));
-                        log::warn!("{}", err);
-                        errors.push(err);
-                    }
+        while !remaining_workers.is_empty() {
+            if let Some(worker) = remaining_workers.pop() {
+                log::debug!("ThreadPool.shutdown | Wait for worker {} of {}...", worker.id, remaining_workers.len());
+                if let Err(err) = worker.join() {
+                    let err = error.pass(format!("{:?}", err));
+                    log::warn!("{}", err);
+                    errors.push(err);
                 }
-                None => {}
             }
-            let mut workers = self.send_exit_workers();
-            log::trace!("ThreadPool.shutdown | Shutdown signal sent to {} workers", workers.len());
-            remaining_workers.append(&mut workers);
+            if !self.workers.is_empty() {
+                remaining_workers.extend(self.send_exit_workers());
+            }
         }
         if !errors.is_empty() {
             return Err(error.err(
