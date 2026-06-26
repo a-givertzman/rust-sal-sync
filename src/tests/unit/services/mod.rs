@@ -2,7 +2,7 @@ mod conf;
 mod entity;
 mod future;
 mod multi_queue;
-mod retain;
+mod registry;
 mod service;
 mod services;
 mod subscription;

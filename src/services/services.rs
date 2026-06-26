@@ -102,7 +102,6 @@ impl Services {
                 log::debug!("{}.run | Starting scheduler::thread...", dbg);
                 let handle = scheduler.spawn(move || {
                     Self::run_(dbg, name, points_request, point_registry, services, exit);
-                    Ok(())
                 })?;
                 self.handles.push(handle);
             }

@@ -274,7 +274,6 @@ impl Service for MultiQueue {
                     log::info!("{}.run | Preparing thread - Ok", dbg);
                     service_release.map(|started| started.add(Ok(())));
                     Self::run_(dbg, name, recv, subscriptions, exit);
-                    Ok(())
                 }).map_err(|err| error.pass_with("Start failed on Scheduler", err.to_string()))?;
                 self.handles.push(handle);
             }

@@ -18,7 +18,6 @@ pub struct ThreadPool {
     free: Arc<AtomicUsize>,
 }
 //
-//
 impl ThreadPool {
     ///
     /// Returns [ThreadPool] new instance
@@ -41,7 +40,6 @@ impl ThreadPool {
         let size = Arc::new(AtomicUsize::new(0));
         let free = Arc::new(AtomicUsize::new(0));
         let (sender, receiver) = kanal::unbounded();
-        let receiver = Arc::new(Mutex::new(receiver));
         let workers = Arc::new(SegQueue::new());
         for _ in 0..if capacity.load(Ordering::SeqCst) > 1 { 2 } else { 1 } {
             workers.push(Worker::new(
@@ -62,7 +60,7 @@ impl ThreadPool {
         }
     }
     ///
-    /// Maximum avalible number of [Worker]'s
+    /// Maximum possible number of [Worker]'s
     pub fn capacity(&self) -> usize {
         self.capacity.load(Ordering::SeqCst)
     }
@@ -96,24 +94,34 @@ impl ThreadPool {
     }
     ///
     /// Spawns a new task to be scheduled on the [ThreadPool]
-    pub fn spawn<F>(&self, f: F) -> Result<JoinHandle<()>, Error>
+    pub fn spawn<F, T>(&self, f: F) -> Result<JoinHandle<T>, Error>
     where
-        F: FnOnce() -> Result<(), Error> + Send + 'static
+        F: FnOnce() -> T + Send + 'static,
+        T: Send + 'static,
     {
         let (send, recv) = kanal::bounded(1);
-        match self.sender.send(Job::Task((Box::new(f), send))) {
+        let task = Box::new(move || {
+            let result = f();
+            let _ = send.send(result);
+        });
+        match self.sender.send(Job::Task(task)) {
             Ok(_) => Ok(JoinHandle::new("", "", recv)),
             Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
         }
     }
     ///
     /// Spawns a named new task to be scheduled on the [ThreadPool]
-    pub fn spawn_named<F>(&self, name: impl Into<String> ,f: F) -> Result<JoinHandle<()>, Error>
+    pub fn spawn_named<F, T>(&self, name: impl Into<String> ,f: F) -> Result<JoinHandle<T>, Error>
     where
-        F: FnOnce() -> Result<(), Error> + Send + 'static
+        F: FnOnce() -> T + Send + 'static,
+        T: Send + 'static,
     {
         let (send, recv) = kanal::bounded(1);
-        match self.sender.send(Job::Task((Box::new(f), send))) {
+        let task = Box::new(move || {
+            let result = f();
+            let _ = send.send(result);
+        });
+        match self.sender.send(Job::Task(task)) {
             Ok(_) => Ok(JoinHandle::new("", name, recv)),
             Err(err) => Err(Error::new("Scheduler", "spawn").pass(err.to_string())),
         }

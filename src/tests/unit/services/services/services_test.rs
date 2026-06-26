@@ -176,7 +176,6 @@ impl Service for ServiceMok {
             Some(scheduler) => {
                 let h = scheduler.spawn(move|| {
                     Self::run_(dbg, exit);
-                    Ok(())
                 })?;
                 self.handle.push(h);
             }

@@ -4,7 +4,7 @@ mod thread_pool {
     use std::{sync::{atomic::{AtomicUsize, Ordering}, Arc, Once}, time::{Duration, Instant}};
     use sal_core::dbg::Dbg;
     use testing::stuff::max_test_duration::TestDuration;
-    use debugging::session::debug_session::{DebugSession, LogLevel, Backtrace};
+    use debugging::session::debug_session::{DebugSession, LogLevel};
     use crate::{sync::Handles, thread_pool::ThreadPool};
     ///
     ///
@@ -43,7 +43,6 @@ mod thread_pool {
                 log::debug!("{dbg_}", );
                 std::thread::sleep(Duration::from_millis(load));
                 result.fetch_add(1, Ordering::AcqRel);
-                Ok(())
             }).unwrap();
         }
         std::thread::sleep(Duration::from_millis(load * (threads + 1) + 5));
@@ -79,7 +78,6 @@ mod thread_pool {
                 log::debug!("{dbg_}", );
                 std::thread::sleep(Duration::from_millis(100));
                 result.fetch_add(1, Ordering::SeqCst);
-                Ok(())
             }).unwrap();
             handles.push(handle);
             std::thread::sleep(Duration::from_millis(4));

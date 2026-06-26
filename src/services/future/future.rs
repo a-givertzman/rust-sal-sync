@@ -55,7 +55,6 @@ impl<T: Send + 'static> Future<T> {
             if let Err(err) = send.send(result) {
                 log::warn!("Future.spawn | Send error: {:?}", err);
             }
-            Ok(())
         });
         match h {
             Ok(_) => Ok(Self { recv }),

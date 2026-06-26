@@ -88,7 +88,6 @@ impl PointRegistry {
         match &self.scheduler {
             Some(scheduler) => _ = scheduler.spawn(|| {
                 Self::insert_task(dbg, conf, path, pending, cache);
-                Ok(())
             }),
             None => _ = std::thread::spawn(|| {
                 Self::insert_task(dbg, conf, path, pending, cache);

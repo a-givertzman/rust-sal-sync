@@ -1,4 +1,4 @@
-use std::sync::{atomic::{AtomicUsize, Ordering}, Arc, Mutex};
+use std::sync::{atomic::{AtomicUsize, Ordering}, Arc};
 use crossbeam::queue::SegQueue;
 use sal_core::{dbg::Dbg, error::Error};
 use super::job::Job;
@@ -20,7 +20,7 @@ impl Worker {
     /// - `workers` - collection of [Worker]'s in the `ThreadPool`
     pub fn new(
         parent: impl Into<String>,
-        receiver: Arc<Mutex<kanal::Receiver<Job>>>,
+        receiver: kanal::Receiver<Job>,
         capacity: Arc<AtomicUsize>,
         size: Arc<AtomicUsize>,
         free: Arc<AtomicUsize>,
@@ -32,51 +32,28 @@ impl Worker {
         size.fetch_add(1, Ordering::SeqCst);
         log::debug!("{dbg}.new | Created, capacity: {}, size: {}, free: {}", capacity.load(Ordering::SeqCst), size.load(Ordering::SeqCst), free.load(Ordering::SeqCst));
         let thread = std::thread::spawn(move || loop {
-            // let error = Error::new(&dbg, "new");
             free.fetch_add(1, Ordering::SeqCst);
-            let receiver_lock = receiver.lock();
-            let job = match receiver_lock {
-                Ok(recv) => {
-                    let job = recv.recv();
-                    match job {
-                        Ok(job) => match job {
-                            Job::Task(job) => {
-                                if (free.load(Ordering::SeqCst) < 2) & (size.load(Ordering::SeqCst) < capacity.load(Ordering::SeqCst)) {
-                                    Self::extend(&parent, &dbg, receiver.clone(), capacity.clone(), size.clone(), free.clone(), workers.clone());
-                                }
-                                // let job = receiver.lock().unwrap().recv().unwrap();
-                                Some(job)
-                            }
-                            Job::Shutdown => {
-                                let busy = size.load(Ordering::SeqCst) - free.load(Ordering::SeqCst);
-                                log::info!("{dbg}.new | Exit, busy {busy}");
-                                break;
-                            }
-                        }
-                        Err(err) => {
-                            log::error!("{dbg}.new | Recv error, channel closed, details: \n\t{:?}", err);
-                            break;
-                        }
+            match receiver.recv() {
+                Ok(Job::Task(job)) => {
+                    if (free.load(Ordering::SeqCst) < 2) && (size.load(Ordering::SeqCst) < capacity.load(Ordering::SeqCst)) {
+                        Self::extend(&parent, &dbg, receiver.clone(), capacity.clone(), size.clone(), free.clone(), workers.clone());
                     }
-                }
-                Err(err) => {
-                    log::error!("{dbg}.new | Lock error: {:?}", err);
-                    None
-                }
-            };
-            match job {
-                Some((job, done)) => {
                     log::debug!("{dbg}.new | Executing job...");
                     free.fetch_sub(1, Ordering::SeqCst);
-                    let _ = job();
-                    if let Err(err) = done.send(()) {
-                        log::trace!("{dbg}.new | Send 'Done' error: {:?}", err);
-                    }
+                    job();
                     let busy = size.load(Ordering::SeqCst) - free.load(Ordering::SeqCst) - 1;
                     log::debug!("{dbg}.new | Done job {id}, busy {busy}");
                 }
-                None => {}
-            }
+                Ok(Job::Shutdown) => {
+                    let busy = size.load(Ordering::SeqCst) - free.load(Ordering::SeqCst);
+                    log::info!("{dbg}.new | Exit, busy {busy}");
+                    break;
+                }
+                Err(err) => {
+                    log::error!("{dbg}.new | Recv error, channel closed, details: \n\t{:?}", err);
+                    break;
+                }
+            };
         });
         Worker { id, thread }
     }
@@ -85,7 +62,7 @@ impl Worker {
     fn extend(
         parent: impl Into<String>,
         dbg: &Dbg,
-        receiver: Arc<Mutex<kanal::Receiver<Job>>>,
+        receiver: kanal::Receiver<Job>,
         capacity: Arc<AtomicUsize>,
         size: Arc<AtomicUsize>,
         free: Arc<AtomicUsize>,
