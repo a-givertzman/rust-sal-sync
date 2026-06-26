@@ -28,8 +28,8 @@ pub(super) mod job;
 
 mod join_handle; 
 mod scheduler;
-mod tread_pool;
+mod thread_pool;
 
 pub use join_handle::*;
 pub use scheduler::*;
-pub use tread_pool::*;
+pub use thread_pool::*;
