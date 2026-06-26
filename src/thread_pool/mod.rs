@@ -25,6 +25,7 @@
 //!
 mod worker;
 pub(super) mod job;
+mod scaling;
 
 mod join_handle; 
 mod scheduler;

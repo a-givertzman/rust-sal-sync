@@ -1,22 +1,40 @@
+use std::sync::Arc;
 use sal_core::error::Error;
+use crate::thread_pool::scaling::Scaling;
 use super::{job::Job, JoinHandle};
+
 ///
 /// Provides schedule task to be executed on the [ThreadPool]
 #[derive(Clone)]
 pub struct Scheduler {
+    scaling: Arc<Scaling>,
     sender: kanal::Sender<Job>,
 }
 //
 //
 impl Scheduler {
     ///
-    ///
-    pub fn new(
-        send: kanal::Sender<Job>,
-    ) -> Self {
+    /// Returns `Scheduler` new instance
+    pub fn new(scaling: Arc<Scaling>, send: kanal::Sender<Job>) -> Self {
         Self {
+            scaling,
             sender: send,
         }
+    }
+    ///
+    /// Maximum possible number of [Worker]'s
+    pub fn capacity(&self) -> usize {
+        self.scaling.capacity()
+    }
+    ///
+    /// Current number of [Worker]'s
+    pub fn size(&self) -> usize {
+        self.scaling.size()
+    }
+    ///
+    /// Current not a busy [Worker]'s
+    pub fn free(&self) -> usize {
+        self.scaling.free()
     }
     ///
     /// Spawns a new task to be scheduled on the [ThreadPool]
@@ -36,6 +54,10 @@ impl Scheduler {
         F: FnOnce() -> T + Send + 'static,
         T: Send + 'static,
     {
+        if self.scaling.is_exiting() {
+            return Err(Error::new("Scheduler", "spawn").pass("ThreadPool is shutting down"));
+        }
+        self.scaling.extend();
         let (send, recv) = kanal::bounded(1);
         let task = Box::new(move || {
             let result = f();
@@ -64,6 +86,10 @@ impl Scheduler {
         F: FnOnce() -> T + Send + 'static,
         T: Send + 'static,
     {
+        if self.scaling.is_exiting() {
+            return Err(Error::new("Scheduler", "spawn_named").pass("ThreadPool is shutting down"));
+        }
+        self.scaling.extend();
         let (send, recv) = kanal::bounded(1);
         let task = Box::new(move || {
             let result = f();

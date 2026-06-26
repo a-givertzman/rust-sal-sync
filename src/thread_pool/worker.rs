@@ -1,12 +1,13 @@
-use std::sync::{atomic::{AtomicUsize, Ordering}, Arc};
-use crossbeam::queue::SegQueue;
+use std::sync::Arc;
 use sal_core::{dbg::Dbg, error::Error};
+use crate::thread_pool::scaling::Scaling;
+
 use super::job::Job;
 ///
 /// Picks up code to be executed in the [Worker]’s thread on the `ThreadPool`
 pub struct Worker {
     pub id: usize,
-    thread: std::thread::JoinHandle<()>,
+    handle: std::thread::JoinHandle<()>,
 }
 //
 //
@@ -20,35 +21,25 @@ impl Worker {
     /// - `workers` - collection of [Worker]'s in the `ThreadPool`
     pub fn new(
         parent: impl Into<String>,
+        id: usize,
         receiver: kanal::Receiver<Job>,
-        capacity: Arc<AtomicUsize>,
-        size: Arc<AtomicUsize>,
-        free: Arc<AtomicUsize>,
-        workers: Arc<SegQueue<Worker>>,
+        scaling: Arc<Scaling>,
     ) -> Worker {
         let parent = parent.into();
-        let id = size.load(Ordering::Acquire);
         let dbg = Dbg::new(&parent, format!("Worker({id})"));
-        size.fetch_add(1, Ordering::AcqRel);
-        log::debug!("{dbg}.new | Created, capacity: {}, size: {}, free: {}", capacity.load(Ordering::Acquire), size.load(Ordering::Acquire), free.load(Ordering::Acquire));
-        let thread = std::thread::spawn(move || loop {
-            free.fetch_add(1, Ordering::Release);
+        let handle = std::thread::spawn(move || loop {
             match receiver.recv() {
                 Ok(Job::Task(job)) => {
-                    if (free.load(Ordering::Acquire) < 2) && (size.load(Ordering::Acquire) < capacity.load(Ordering::Acquire)) {
-                        Self::extend(&parent, &dbg, receiver.clone(), capacity.clone(), size.clone(), free.clone(), workers.clone());
-                    }
-                    log::debug!("{dbg}.new | Executing job...");
-                    free.fetch_sub(1, Ordering::AcqRel);
+                    log::debug!("{dbg}.new | Take Job...");
+                    scaling.register_busy();
                     let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                         job();
                     }));
-                    let busy = size.load(Ordering::Acquire) - free.load(Ordering::Acquire) - 1;
-                    log::debug!("{dbg}.new | Done job {id}, busy {busy}");
+                    log::debug!("{dbg}.new | Job done");
+                    scaling.register_idle();
                 }
                 Ok(Job::Shutdown) => {
-                    let busy = size.load(Ordering::Acquire) - free.load(Ordering::Acquire);
-                    log::info!("{dbg}.new | Exit, busy {busy}");
+                    log::info!("{dbg}.new | Exit");
                     break;
                 }
                 Err(err) => {
@@ -57,43 +48,12 @@ impl Worker {
                 }
             };
         });
-        Worker { id, thread }
+        Worker { id, handle }
     }
     ///
-    /// Extending current number of [Worker]'s if required
-    fn extend(
-        parent: impl Into<String>,
-        dbg: &Dbg,
-        receiver: kanal::Receiver<Job>,
-        capacity: Arc<AtomicUsize>,
-        size: Arc<AtomicUsize>,
-        free: Arc<AtomicUsize>,
-        workers: Arc<SegQueue<Worker>>
-    ) {
-        let parent = parent.into();
-        let current_size = size.load(Ordering::Relaxed);
-        let max_capacity = capacity.load(Ordering::Relaxed);
-        if current_size >= max_capacity {
-            return;
-        }
-        // Вычисляем, сколько реально нужно создать, не превышая capacity
-        let target_size = (current_size * 2).min(max_capacity);
-        let new_workers = target_size.saturating_sub(current_size);
-        if new_workers > 0 {
-            log::debug!("{dbg}.extend | Trying to creating {new_workers} new workers...");
-            for _ in 0..new_workers {
-                if size.load(Ordering::Acquire) < max_capacity {
-                    workers.push(Worker::new(
-                        &parent,
-                        receiver.clone(),
-                        capacity.clone(),
-                        size.clone(),
-                        free.clone(),
-                        workers.clone(),
-                    ));
-                }
-            }
-        }
+    /// Returns true if `Worker` is exited
+    pub fn is_closed(&self) -> bool {
+        self.handle.is_finished()
     }
     ///
     /// Waits for the associated thread to finish.
@@ -107,7 +67,7 @@ impl Worker {
     /// ## Panics
     /// This function may panic on some platforms if a thread attempts to join itself or otherwise may create a deadlock with joining threads.
     pub fn join(self) -> Result<(), Error> {
-        self.thread
+        self.handle
             .join()
             .map_err(|err| Error::new(format!("Worker({})", self.id), "join").pass(format!("{:?}", err)))
     }

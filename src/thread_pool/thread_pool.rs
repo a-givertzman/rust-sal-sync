@@ -1,7 +1,7 @@
-use std::sync::{Arc, Mutex, atomic::{AtomicBool, AtomicUsize, Ordering}};
+use std::sync::{Arc, atomic::{AtomicBool, AtomicUsize, Ordering}};
 use crossbeam::queue::SegQueue;
 use sal_core::{dbg::Dbg, error::Error};
-use super::{job::Job, scheduler::Scheduler, worker::Worker, JoinHandle};
+use super::{job::Job, scaling::Scaling, scheduler::Scheduler, worker::Worker, JoinHandle};
 ///
 /// Provides ready to execute specified number of threads
 /// - From start has only 1 or 2 prepared treads
@@ -10,12 +10,13 @@ use super::{job::Job, scheduler::Scheduler, worker::Worker, JoinHandle};
 pub struct ThreadPool {
     workers: Arc<SegQueue<Worker>>,
     sender: kanal::Sender<Job>,
-    /// Maximum possible number of [Worker]'s
-    capacity: Arc<AtomicUsize>,
-    /// Current number of [Worker]'s
-    size: Arc<AtomicUsize>,
-    /// Not busy [Worker]'s
-    free: Arc<AtomicUsize>,
+    scaling: Arc<Scaling>,
+    // /// Maximum possible number of [Worker]'s
+    // capacity: Arc<AtomicUsize>,
+    // /// Current number of [Worker]'s
+    // size: Arc<AtomicUsize>,
+    // /// Not busy [Worker]'s
+    // free: Arc<AtomicUsize>,
     /// Shutdoun requested
     exit: Arc<AtomicBool>,
 }
@@ -26,56 +27,42 @@ impl ThreadPool {
     /// - `capacity` maximum number of threads, by default 64
     pub fn new(parent: impl Into<String>, capacity: Option<usize>) -> Self {
         let dbg = Dbg::new(parent, "ThreadPool");
-        let default_capacity = 64;
-        let capacity_ = match capacity {
-            Some(capacity) => {
-                if capacity == 0 {
-                    log::warn!("{dbg} | Capacity of th ThreadPool cant be zero, used default {default_capacity}");
-                    default_capacity
-                } else {
-                    capacity
-                }
-            }
-            None => default_capacity,
-        };
-        let capacity = Arc::new(AtomicUsize::new(capacity_));
-        let size = Arc::new(AtomicUsize::new(0));
-        let free = Arc::new(AtomicUsize::new(0));
-        let (sender, receiver) = kanal::unbounded();
+        let exit = Arc::new(AtomicBool::new(false));
+        let (sender, receiver) = kanal::bounded(10_000);
         let workers = Arc::new(SegQueue::new());
-        for _ in 0..if capacity.load(Ordering::Acquire) > 1 { 2 } else { 1 } {
+        let scaling = Scaling::new(&dbg, capacity, receiver.clone(), workers.clone(), exit.clone());
+        let size = (scaling.capacity() / 4).max(1);
+        log::debug!("{dbg}.new | Creating {size} new workers...");
+        for _ in 0..size {
+            let id = scaling.size() + 1;
             workers.push(Worker::new(
                 &dbg,
+                id,
                 receiver.clone(),
-                capacity.clone(),
-                size.clone(),
-                free.clone(),
-                workers.clone(),
+                scaling.clone(),
             ));
         }
         ThreadPool {
             workers,
             sender,
-            capacity,
-            size,
-            free,
-            exit: Arc::new(AtomicBool::new(false)),
+            scaling,
+            exit,
         }
     }
     ///
     /// Maximum possible number of [Worker]'s
     pub fn capacity(&self) -> usize {
-        self.capacity.load(Ordering::Acquire)
+        self.scaling.capacity()
     }
     ///
     /// Current number of [Worker]'s
     pub fn size(&self) -> usize {
-        self.size.load(Ordering::Acquire)
+        self.scaling.size()
     }
     ///
     /// Current not a busy [Worker]'s
     pub fn free(&self) -> usize {
-        self.free.load(Ordering::Acquire)
+        self.scaling.free()
     }
     ///
     /// Returns [Scheduler] linked to the current [TreadPool]
@@ -92,7 +79,7 @@ impl ThreadPool {
     /// thread_pool.join().unwrap();
     /// ```
     pub fn scheduler(&self) -> Scheduler {
-        Scheduler::new(self.sender.clone())
+        Scheduler::new(self.scaling.clone(), self.sender.clone())
     }
     ///
     /// Spawns a new task to be scheduled on the [ThreadPool]
@@ -101,6 +88,10 @@ impl ThreadPool {
         F: FnOnce() -> T + Send + 'static,
         T: Send + 'static,
     {
+        if self.exit.load(Ordering::Acquire) {
+            return Err(Error::new("Scheduler", "spawn").pass("ThreadPool is shutting down"));
+        }
+        self.scaling.extend();
         let (send, recv) = kanal::bounded(1);
         let task = Box::new(move || {
             let result = f();
@@ -118,6 +109,10 @@ impl ThreadPool {
         F: FnOnce() -> T + Send + 'static,
         T: Send + 'static,
     {
+        if self.exit.load(Ordering::Acquire) {
+            return Err(Error::new("Scheduler", "spawn_named").pass("ThreadPool is shutting down"));
+        }
+        self.scaling.extend();
         let (send, recv) = kanal::bounded(1);
         let task = Box::new(move || {
             let result = f();
@@ -165,7 +160,7 @@ impl ThreadPool {
         log::trace!("ThreadPool.shutdown | Shutdown signal sent to {} workers", remaining_workers.len());
         while !remaining_workers.is_empty() {
             if let Some(worker) = remaining_workers.pop() {
-                log::debug!("ThreadPool.shutdown | Wait for worker {} of {}...", worker.id, remaining_workers.len());
+                log::debug!("ThreadPool.shutdown | Wait for worker {} of {}...", worker.id, remaining_workers.len() + 1);
                 if let Err(err) = worker.join() {
                     let err = error.pass(format!("{:?}", err));
                     log::warn!("{}", err);
