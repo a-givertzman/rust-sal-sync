@@ -26,7 +26,7 @@ where
     }
     ///
     /// Returns [ChangeNotifyBuilder] new instance
-    pub fn builder(parent: impl Into<String>, initial: S) -> ChangeNotifyBuilder<S, T> {
+    pub fn builder(parent: impl Into<String>, initial: S) -> ChangeNotifyBuilder<'a, S, T> {
         ChangeNotifyBuilder {
             id: format!("{}/ChangeNotify<{}>", parent.into(), std::any::type_name::<S>()),
             initial,
@@ -76,17 +76,17 @@ where
 }
 ///
 /// Builder for the ChangeNotify
-pub struct ChangeNotifyBuilder<S, T> {
+pub struct ChangeNotifyBuilder<'a, S, T> {
     id: String,
     initial: S,
-    cases: FxHashMap<S, Box<dyn Fn(T) + Send + Sync + 'static>>,
+    cases: FxHashMap<S, Box<dyn Fn(T) + Send + Sync + 'a>>,
 }
-impl<'a, S, T> ChangeNotifyBuilder<S, T>
+impl<'a, S, T> ChangeNotifyBuilder<'a, S, T>
 where
     S: Clone + std::cmp::Eq + std::hash::Hash + std::fmt::Debug {
     /// 
     /// Добавляем состояние и колбэк для него
-    pub fn on(mut self, state: S, case: impl Fn(T) + Send + Sync + 'static) -> Self {
+    pub fn on(mut self, state: S, case: impl Fn(T) + Send + Sync + 'a) -> Self {
         self.cases.insert(state, Box::new(case));
         self
     }
