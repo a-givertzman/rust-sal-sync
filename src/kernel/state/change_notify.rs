@@ -4,19 +4,19 @@ use arc_swap::ArcSwap;
 use crate::collections::FxHashMap;
 ///
 /// Provides callback on connection status changes
-pub struct ChangeNotify<S, T> {
+pub struct ChangeNotify<'a, S, T> {
     id: String,
     state: ArcSwap<S>,
-    cases: Arc<FxHashMap<S, Box<dyn Fn(T) + Send + Sync + 'static>>>,
+    cases: Arc<FxHashMap<S, Box<dyn Fn(T) + Send + Sync + 'a>>>,
 }
 //
 //
-impl<S, T> ChangeNotify<S, T> 
+impl<'a, S, T> ChangeNotify<'a, S, T> 
 where
     S: Clone + std::cmp::PartialEq + std::cmp::Eq + std::hash::Hash + std::fmt::Debug {
     ///
     /// Returns [ChangeNotify] new instance
-    pub fn new(parent: impl Into<String>, initial: S, cases: Vec<(S, Box<dyn Fn(T) + Send + Sync + 'static>)>) -> Self {
+    pub fn new(parent: impl Into<String>, initial: S, cases: Vec<(S, Box<dyn Fn(T) + Send + Sync + 'a>)>) -> Self {
         let cases = Arc::new(FxHashMap::from_iter(cases));
         Self {
             id: format!("{}/ChangeNotify<{}>", parent.into(), std::any::type_name::<S>()),
@@ -81,7 +81,7 @@ pub struct ChangeNotifyBuilder<S, T> {
     initial: S,
     cases: FxHashMap<S, Box<dyn Fn(T) + Send + Sync + 'static>>,
 }
-impl<S, T> ChangeNotifyBuilder<S, T>
+impl<'a, S, T> ChangeNotifyBuilder<S, T>
 where
     S: Clone + std::cmp::Eq + std::hash::Hash + std::fmt::Debug {
     /// 
@@ -92,7 +92,7 @@ where
     }
     ///
     /// Returns ChangeNotify ready to use
-    pub fn build(self) -> ChangeNotify<S, T> {
+    pub fn build(self) -> ChangeNotify<'a, S, T> {
         ChangeNotify {
             id: self.id,
             state: ArcSwap::new(Arc::new(self.initial)),
