@@ -10,16 +10,16 @@ env_logger = "^0.11"
 sal-core = { git = "https://github.com/a-givertzman/rust-sal-core.git", tag = "0.1.0" }
 testing = { git = "https://github.com/a-givertzman/rust-testing.git", tag = "0.1.2" }
 debugging = { git = "https://github.com/a-givertzman/rust-debuging.git", tag = "0.1.0" }
-api-tools = { git = "https://github.com/a-givertzman/rust-api-tools.git", tag = "0.2.2" }
+api-tools = { git = "https://github.com/a-givertzman/rust-api-tools.git", tag = "0.2.3" }
 
 #
 # Time
 chrono = "^0.4"
 #
 # Serde
-serde = { version = "~1.0", features = ["derive"] }
+serde = { version = "^1.0", features = ["derive"] }
 serde_yaml = "~0.9"
-serde_json = "~1.0"
+serde_json = "^1.0"
 #
 # Collection
 hashers = "^1.0"
