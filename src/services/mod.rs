@@ -75,3 +75,5 @@ pub use multi_queue::*;
 pub use subscription::*;
 pub use service::*;
 pub use services::*;
+mod event_value;
+pub use event_value::*;
