@@ -13,5 +13,5 @@ where
     /// ### Performs a lock-free lookup for the most recent value of the specified `key`.
     /// 
     /// Returns `None` if the event key is unregistered or no data has been received yet.
-    fn get<Q>(&self, key: &K) -> Option<V>;
+    fn get(&self, key: &K) -> Option<V>;
 }
