@@ -1,6 +1,8 @@
+use std::time::Duration;
+
 use log::error;
 use sal_core::error::Error;
-use crate::{services::types::TypeOf, sync::channel::{self, Receiver, Sender}, thread_pool::Scheduler};
+use crate::{services::types::TypeOf, sync::channel::{self, Receiver, RecvTimeoutError, Sender}, thread_pool::Scheduler};
 ///
 /// Contains future callback
 pub struct Future<T> {
@@ -25,6 +27,20 @@ impl<T: Send + 'static> Future<T> {
     pub fn wait(&self) -> Result<T, Error> {
         match self.recv.recv() {
             Ok(event) => Ok(event),
+            Err(err) => {
+                log::warn!("Future.wait | Recv error: {:?}", err);
+                Err(Error::new("Future", "wait").pass(err.to_string()))
+            }
+        }
+    }
+    /// 
+    /// Returns value in the specified `duration`, else returns `Ok(None)`.
+    /// 
+    /// Returns `Error` in case of other side is closed/
+    pub fn timeout(&self, dur: Duration) -> Result<Option<T>, Error> {
+        match self.recv.recv_timeout(dur) {
+            Ok(event) => Ok(Some(event)),
+            Err(RecvTimeoutError::Timeout) => Ok(None),
             Err(err) => {
                 log::warn!("Future.wait | Recv error: {:?}", err);
                 Err(Error::new("Future", "wait").pass(err.to_string()))
