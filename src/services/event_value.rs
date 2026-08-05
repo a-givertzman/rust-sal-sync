@@ -9,9 +9,14 @@ where
     /// ### Registers an event key for subsequent stream subscription.
     /// 
     /// Must be called during the initialization phase before the services starts.
-    fn subscribe(&self, key: &K);
+    fn register(&self, key: &K);
     /// ### Performs a lock-free lookup for the most recent value of the specified `key`.
     /// 
     /// Returns `None` if the event key is unregistered or no data has been received yet.
     fn get(&self, key: &K) -> Option<V>;
+    /// ### Apply new value into the current state.
+    /// 
+    /// Used for manual setup or testing purposes.
+    /// In nornal operation events should be received by the subscription.
+    fn insert(&self, key: &K, val: V);
 }
